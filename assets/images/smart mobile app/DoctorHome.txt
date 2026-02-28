@@ -1,0 +1,496 @@
+import 'package:flutter/material.dart';
+import 'MonitorEx.dart';
+import 'patientRequest.dart';
+import 'AiReports.dart';
+import 'ManageWounds.dart';
+
+class DoctorHome extends StatefulWidget {
+  const DoctorHome({Key? key}) : super(key: key);
+
+  @override
+  State<DoctorHome> createState() => _DoctorHomeState();
+}
+
+class _DoctorHomeState extends State<DoctorHome> {
+  String? selectedAppointment;
+  String? selectedExercise;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              _buildHeader(),
+              const SizedBox(height: 8),
+
+              // Reminders Section
+              _buildRemindersSection(),
+              const SizedBox(height: 16),
+
+              // Patients Section
+              _buildPatientsSection(),
+              const SizedBox(height: 32),
+
+              // Activities Section
+              _buildActivitiesSection(),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'FLEXIO',
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.search, color: Colors.black),
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.notifications_none, color: Colors.black),
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.black),
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRemindersSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 25),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.grey[200]!,
+            width: 1,
+          ),
+          color: Colors.white,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Reminders',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const Text(
+                  'See All >',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF95B8D1),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 0),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Appointments:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          _buildReminder('11:00:John Miller', 'apt1'),
+                          _buildReminder('12:00:Harry Black', 'apt2'),
+                          _buildReminder('13:00:Jack Doe', 'apt3'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Exercises:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          _buildReminder('Fred Nerk', 'ex1', isExercise: true),
+                          _buildReminder('Alice Smith', 'ex2',
+                              isExercise: true),
+                          _buildReminder('Jane Doe', 'ex3', isExercise: true),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReminder(String text, String id, {bool isExercise = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 10,
+            child: Radio<String>(
+              value: id,
+              groupValue: isExercise ? selectedExercise : selectedAppointment,
+              onChanged: (value) {
+                setState(() {
+                  if (isExercise) {
+                    selectedExercise = value;
+                  } else {
+                    selectedAppointment = value;
+                  }
+                });
+              },
+              activeColor: const Color(0xFF95B8D1),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            fit: FlexFit.loose,
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPatientsSection() {
+    final patients = [
+      {'name': 'John Miller', 'age': '22', 'injury': 'ACL', 'progress': '45%'},
+      {'name': 'Joe Smith', 'age': '34', 'injury': 'ACL', 'progress': '15%'},
+      {'name': 'Alice Brown', 'age': '28', 'injury': 'ACL', 'progress': '60%'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8), // Added vertical padding for better spacing
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Patients',
+                style: TextStyle(
+                  fontFamily: 'Poppins', // Applied Poppins for consistency
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black, // Solid black as requested
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // Add navigation to See All Patients page here
+                },
+                child: const Text(
+                  'See All >',
+                  style: TextStyle(
+                    //fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color:
+                        Color(0xFF95B8D1), // Using your specific blue hex code
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                ...patients.map((patient) => Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: _buildPatientCard(patient),
+                    )),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPatientCard(Map<String, String> patient) {
+    return Container(
+      width: 120,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0x95B8D1FF),
+        borderRadius: BorderRadius.circular(0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Name: ${patient['name']}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Age: ${patient['age']}',
+            style: const TextStyle(
+              // Added 'const' here to remove the blue zigzag
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+              height: 1.0, // Use the built-in solid black
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Injury: ${patient['injury']}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Progress: ${patient['progress']}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivitiesSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: 16, vertical: 8), // Added requested padding here
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Activities',
+            style: TextStyle(
+              fontFamily: 'Poppins', // Ensuring consistency with your theme
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Activities Grid
+          Column(
+            children: [
+              // Row 1: Monitor Exercise, Manage Wound, Manage Appointment
+              Row(
+                children: [
+                  Expanded(
+                    child: _activityTile('Monitor\nExercise'),
+                  ),
+                  const SizedBox(width: 40),
+                  Expanded(
+                    child: _activityTile('Manage\nWound'),
+                  ),
+                  const SizedBox(width: 40),
+                  Expanded(
+                    child: _activityTile('Manage\nAppoint.'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 40),
+
+              // Row 2: View AI Reports, Patient Requests (centered)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 112) /
+                        3, // Adjusted math to account for new padding
+                    child: _activityTile('View AI\nReports'),
+                  ),
+                  const SizedBox(width: 40),
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 112) /
+                        3, // Adjusted math to account for new padding
+                    child: _activityTile('Patient\nRequests'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activityTile(String label) {
+    return GestureDetector(
+      onTap: () {
+        if (label == 'Monitor\nExercise') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MonitorEx()),
+          );
+        } else if (label == 'Manage\nWound') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ManageWounds()),
+          );
+        } else if (label == 'Patient\nRequests') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PatientRequest()),
+          );
+        } else if (label == 'View AI\nReports') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AiReports()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$label tapped')),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.grey[100]!,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: Colors.white,
+      selectedItemColor: Colors.blue,
+      unselectedItemColor: Colors.grey,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline),
+          label: 'Chats',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+}

@@ -1,0 +1,261 @@
+import 'package:flutter/material.dart';
+
+class PatientRequest extends StatefulWidget {
+  const PatientRequest({Key? key}) : super(key: key);
+
+  @override
+  State<PatientRequest> createState() => _PatientRequestState();
+}
+
+class _PatientRequestState extends State<PatientRequest> {
+  final List<Map<String, String>> requests = [
+    {
+      'name': 'John Doe',
+      'category': 'Extra exercise session',
+      'message': 'Can we add another session this week?',
+      'leftButton': 'Decline',
+      'rightButton': 'Accept',
+    },
+    {
+      'name': 'Alice Smith',
+      'category': 'Change appointment time',
+      'message': 'Can we move tomorrow\'s session to afternoon?',
+      'leftButton': 'Decline',
+      'rightButton': 'Accept',
+    },
+    {
+      'name': 'Mark Lee',
+      'category': 'Pain increase report',
+      'message': 'Experiencing shoulder pain during exercise.',
+      'leftButton': 'View Details',
+      'rightButton': 'Contact',
+    },
+    {
+      'name': 'Emma Brown',
+      'category': 'Wound check',
+      'message': 'I uploaded new wound photos.',
+      'leftButton': 'Review',
+      'rightButton': 'Message',
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: _buildAppBar(),
+      body: SafeArea(
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          itemCount: requests.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildRequestCard(requests[index]),
+            );
+          },
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: const Color(0xFF95B8D1),
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () {
+          Navigator.pop(context);
+        },
+      ),
+      title: const Text(
+        'Patient Requests',
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Poppins',
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_none, color: Colors.black),
+          onPressed: () {},
+        ),
+        IconButton(
+          icon: const Icon(Icons.settings, color: Colors.black),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRequestCard(Map<String, String> request) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey[200]!,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Patient Name
+          Text(
+            request['name']!,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+              fontFamily: 'Poppins',
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Request Category
+          Row(
+            children: [
+              Text(
+                'Request: ',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[600],
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              Text(
+                request['category']!,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[600],
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Message Body
+          Text(
+            request['message']!,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: Colors.black87,
+              fontFamily: 'Poppins',
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: _buildOutlinedButton(request['leftButton']!),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildFilledButton(request['rightButton']!),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOutlinedButton(String label) {
+    return OutlinedButton(
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$label tapped')),
+        );
+      },
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(
+          color: Colors.grey[300]!,
+          width: 1,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.black,
+          fontFamily: 'Poppins',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilledButton(String label) {
+    return ElevatedButton(
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$label tapped')),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color.fromARGB(255, 87, 152, 198),
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          fontFamily: 'Poppins',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: Colors.white,
+      selectedItemColor: const Color(0xFF95B8D1),
+      unselectedItemColor: Colors.grey,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline),
+          label: 'Chats',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+}

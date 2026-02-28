@@ -1,0 +1,238 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+class BookAppoint extends StatefulWidget {
+  const BookAppoint({Key? key}) : super(key: key);
+
+  @override
+  State<BookAppoint> createState() => _BookAppointState();
+}
+
+class _BookAppointState extends State<BookAppoint> {
+  final List<Map<String, String>> appointments = [
+    {
+      'time': '09:00 AM',
+      'name': 'John Doe',
+      'service': 'Knee rehabilitation',
+    },
+    {
+      'time': '11:30 AM',
+      'name': 'Alice Smith',
+      'service': 'Wound check',
+    },
+    {
+      'time': '02:00 PM',
+      'name': 'Mark Lee',
+      'service': 'Shoulder therapy',
+    },
+    {
+      'time': '04:30 PM',
+      'name': 'Emma Brown',
+      'service': 'Progress review',
+    },
+  ];
+
+  String getFormattedDate() {
+    final now = DateTime.now();
+    return DateFormat('d MMM yyyy').format(now);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: _buildAppBar(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date Header
+                Text(
+                  'Today, ${getFormattedDate()}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Appointments List
+                ...appointments.map((appointment) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildAppointmentCard(appointment),
+                    )),
+
+                const SizedBox(height: 24),
+
+                // Book New Appointment Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Book appointment feature')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 87, 152, 198),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                    ),
+                    child: const Text(
+                      '+ Book New Appointment',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: const Color(0xFF95B8D1),
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () {
+          Navigator.pop(context);
+        },
+      ),
+      title: const Text(
+        'Appointments',
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Poppins',
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_none, color: Colors.black),
+          onPressed: () {},
+        ),
+        IconButton(
+          icon: const Icon(Icons.settings, color: Colors.black),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAppointmentCard(Map<String, String> appointment) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey[200]!,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          // Time Chip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 87, 152, 198),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              appointment['time']!,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Patient Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  appointment['name']!,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  appointment['service']!,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: Colors.white,
+      selectedItemColor: const Color(0xFF95B8D1),
+      unselectedItemColor: Colors.grey,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline),
+          label: 'Chats',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+}
