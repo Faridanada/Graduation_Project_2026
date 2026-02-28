@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rehabilitation_app/AddWound.dart';
 
 class ManageWounds extends StatefulWidget {
   const ManageWounds({Key? key}) : super(key: key);
@@ -92,9 +93,11 @@ class _ManageWoundsState extends State<ManageWounds> {
                 children: [
                   FloatingActionButton(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Add wound feature coming soon')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AddWound(),
+                        ),
                       );
                     },
                     backgroundColor: const Color.fromARGB(255, 87, 152, 198),

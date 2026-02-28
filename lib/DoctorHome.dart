@@ -4,6 +4,7 @@ import 'patientRequest.dart';
 import 'AiReports.dart';
 import 'ManageWounds.dart';
 import 'Appointments.dart';
+import 'Chats.dart';
 
 class DoctorHome extends StatefulWidget {
   const DoctorHome({Key? key}) : super(key: key);
@@ -759,6 +760,14 @@ class _DoctorHomeState extends State<DoctorHome> {
         ),
       ],
       onTap: (index) {
+        if (index == 1) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const Chats()),
+          );
+          return;
+        }
+
         setState(() {
           _selectedNavIndex = index;
         });
