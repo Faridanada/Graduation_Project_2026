@@ -16,6 +16,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
   bool obscurePassword = true;
 
+  void _onSocialTap(String provider) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$provider login coming soon')),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -354,6 +360,45 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Or Continue with',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _SocialAuthButton(
+                                onTap: () => _onSocialTap('Apple'),
+                                child: const Icon(
+                                  Icons.apple,
+                                  color: Colors.black,
+                                  size: 26,
+                                ),
+                              ),
+                              _SocialAuthButton(
+                                onTap: () => _onSocialTap('Google'),
+                                child: const _GoogleLogo(),
+                              ),
+                              _SocialAuthButton(
+                                onTap: () => _onSocialTap('Facebook'),
+                                child: const Text(
+                                  'f',
+                                  style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1877F2),
+                                    height: 0.95,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 20),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -394,6 +439,66 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SocialAuthButton extends StatelessWidget {
+  const _SocialAuthButton({
+    required this.child,
+    required this.onTap,
+  });
+
+  final Widget child;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Ink(
+        width: 72,
+        height: 56,
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Center(child: child),
+      ),
+    );
+  }
+}
+
+class _GoogleLogo extends StatelessWidget {
+  const _GoogleLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) {
+        return const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF4285F4),
+            Color(0xFFEA4335),
+            Color(0xFFFBBC05),
+            Color(0xFF34A853),
+            Color(0xFF4285F4),
+          ],
+          stops: [0.0, 0.3, 0.55, 0.8, 1.0],
+        ).createShader(bounds);
+      },
+      child: const Text(
+        'G',
+        style: TextStyle(
+          fontSize: 30,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
