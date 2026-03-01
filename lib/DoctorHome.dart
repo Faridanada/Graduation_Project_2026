@@ -5,6 +5,10 @@ import 'AiReports.dart';
 import 'ManageWounds.dart';
 import 'Appointments.dart';
 import 'Chats.dart';
+import 'SettingsPage.dart';
+import 'ActivePatientsPage.dart';
+import 'TodaysSessionsPage.dart';
+import 'AlertsPage.dart';
 
 class DoctorHome extends StatefulWidget {
   const DoctorHome({Key? key}) : super(key: key);
@@ -103,7 +107,12 @@ class _DoctorHomeState extends State<DoctorHome> {
         ),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsPage()),
+            );
+          },
         ),
       ],
     );
@@ -115,29 +124,53 @@ class _DoctorHomeState extends State<DoctorHome> {
       child: Row(
         children: [
           Expanded(
-            child: _buildStatusCard(
-              'Active Patients',
-              '24',
-              const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-              Icons.people_outline,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ActivePatientsPage()),
+                );
+              },
+              child: _buildStatusCard(
+                'Active Patients',
+                '24',
+                const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                Icons.people_outline,
+              ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _buildStatusCard(
-              'Today\'s Sessions',
-              '6',
-              const Color.fromRGBO(149, 184, 209, 1).withOpacity(0.6),
-              Icons.check_circle_outline,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TodaysSessionsPage()),
+                );
+              },
+              child: _buildStatusCard(
+                'Today\'s Sessions',
+                '6',
+                const Color.fromRGBO(149, 184, 209, 1).withOpacity(0.6),
+                Icons.check_circle_outline,
+              ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _buildStatusCard(
-              'Alerts',
-              '3',
-              const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
-              Icons.warning_outlined,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AlertsPage()),
+                );
+              },
+              child: _buildStatusCard(
+                'Alerts',
+                '3',
+                const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
+                Icons.warning_outlined,
+              ),
             ),
           ),
         ],
@@ -406,21 +439,19 @@ class _DoctorHomeState extends State<DoctorHome> {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 200,
+          height: 220,
           child: SingleChildScrollView(
-            controller: _patientsScrollController,
             scrollDirection: Axis.horizontal,
             physics: const AlwaysScrollableScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  ...patients.map((patient) => Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: _buildPatientCard(patient),
-                      )),
-                ],
-              ),
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                ...patients.map((patient) => Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: _buildPatientCard(patient),
+                    )),
+                const SizedBox(width: 16),
+              ],
             ),
           ),
         ),

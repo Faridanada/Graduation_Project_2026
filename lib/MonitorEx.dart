@@ -427,9 +427,7 @@ class _MonitorExState extends State<MonitorEx> {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Note added')),
-              );
+              _showAddNoteDialog();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromARGB(255, 87, 152, 198),
@@ -452,6 +450,70 @@ class _MonitorExState extends State<MonitorEx> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showAddNoteDialog() {
+    final TextEditingController noteController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'Add Note',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: TextField(
+            controller: noteController,
+            maxLines: 5,
+            decoration: const InputDecoration(
+              hintText: 'Write your note here...',
+              border: OutlineInputBorder(),
+              hintStyle: TextStyle(fontFamily: 'Poppins'),
+            ),
+            style: const TextStyle(fontFamily: 'Poppins'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (noteController.text.isNotEmpty) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Note saved successfully')),
+                  );
+                  // Here you can save the note: noteController.text
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 87, 152, 198),
+              ),
+              child: const Text(
+                'Save',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
