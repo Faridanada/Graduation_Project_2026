@@ -558,7 +558,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
       decoration: _inputDecoration(
         label: label,
@@ -919,7 +919,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          value: selectedGender,
+          initialValue: selectedGender,
           decoration: _inputDecoration(
             label: 'Gender',
             hint: 'Select gender',
@@ -1079,7 +1079,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ],
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          value: selectedPainLevel,
+          initialValue: selectedPainLevel,
           isExpanded: true,
           decoration: _inputDecoration(
             label: 'Current Pain Level',

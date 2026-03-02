@@ -46,10 +46,10 @@ class _ManageWoundsState extends State<ManageWounds> {
           children: [
             Column(
               children: [
-                Padding(
+                const Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: const Column(
+                      EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(

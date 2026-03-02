@@ -213,10 +213,10 @@ class _AddWoundState extends State<AddWound> {
               else
                 Column(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.cloud_upload_outlined,
                       size: 48,
-                      color: const Color.fromARGB(255, 87, 152, 198),
+                      color: Color.fromARGB(255, 87, 152, 198),
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -331,7 +331,7 @@ class _AddWoundState extends State<AddWound> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedInjuryType,
+          initialValue: _selectedInjuryType,
           decoration: InputDecoration(
             hintText: 'Select injury type',
             hintStyle: TextStyle(
@@ -424,9 +424,9 @@ class _AddWoundState extends State<AddWound> {
                     fontFamily: 'Poppins',
                   ),
                 ),
-                Icon(
+                const Icon(
                   Icons.calendar_today_outlined,
-                  color: const Color.fromARGB(255, 87, 152, 198),
+                  color: Color.fromARGB(255, 87, 152, 198),
                   size: 20,
                 ),
               ],

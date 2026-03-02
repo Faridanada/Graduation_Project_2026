@@ -99,10 +99,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.medical_information_outlined,
                       size: 120,
-                      color: const Color(0xFF6BA5CF),
+                      color: Color(0xFF6BA5CF),
                     ),
                     Positioned(
                       bottom: 0,
@@ -239,7 +239,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       right: 10,
                       child: Container(
                         padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Colors.green,
                           shape: BoxShape.circle,
                         ),
@@ -349,10 +349,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         shape: BoxShape.circle,
                       ),
                       padding: const EdgeInsets.all(24),
-                      child: Icon(
+                      child: const Icon(
                         Icons.psychology_outlined,
                         size: 80,
-                        color: const Color(0xFF6BA5CF),
+                        color: Color(0xFF6BA5CF),
                       ),
                     ),
                     Positioned(
@@ -470,11 +470,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               TextButton(
                 onPressed: _navigateToHome,
-                child: Text(
+                child: const Text(
                   'Skip',
                   style: TextStyle(
                     fontSize: 16,
-                    color: const Color(0xFF6BA5CF),
+                    color: Color(0xFF6BA5CF),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

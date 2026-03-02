@@ -161,9 +161,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
+                          const Text(
                             'Almost there!',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               color: Color.fromARGB(255, 0, 0, 0),
                             ),
@@ -338,8 +338,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                 });
               },
               activeColor: const Color.fromRGBO(128, 155, 206, 0.85),
-              fillColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              fillColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return const Color.fromRGBO(128, 155, 206, 1);
                 }
                 return Colors.grey[400];
@@ -350,7 +350,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           Expanded(
             child: Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 13,
                 color: Colors.black,
                 fontWeight: FontWeight.w500,

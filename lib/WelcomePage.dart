@@ -50,7 +50,7 @@ class _WelcomePageState extends State<WelcomePage>
         children: [
           // Background image
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               image: DecorationImage(
                 image: AssetImage('assets/images/logo1.png'),
                 fit: BoxFit.fill,

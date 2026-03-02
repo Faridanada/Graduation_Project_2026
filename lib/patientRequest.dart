@@ -317,20 +317,20 @@ class _PatientRequestState extends State<PatientRequest> {
           const SizedBox(height: 16),
           // Action Buttons or Completed Status
           if (isCompleted)
-            Row(
+            const Row(
               children: [
                 Icon(
                   Icons.check_circle,
-                  color: const Color.fromARGB(255, 99, 197, 150),
+                  color: Color.fromARGB(255, 99, 197, 150),
                   size: 20,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Completed',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: const Color.fromARGB(255, 99, 197, 150),
+                    color: Color.fromARGB(255, 99, 197, 150),
                     fontFamily: 'Poppins',
                   ),
                 ),
@@ -386,7 +386,7 @@ class _PatientRequestState extends State<PatientRequest> {
                     padding: const EdgeInsets.symmetric(
                         vertical: 12, horizontal: 20),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Dismiss',
                     style: TextStyle(
                       fontSize: 14,

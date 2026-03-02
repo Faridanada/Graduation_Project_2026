@@ -397,9 +397,9 @@ class _AiReportsState extends State<AiReports> {
         ),
         const SizedBox(height: 12),
         // Day labels
-        Row(
+        const Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: const [
+          children: [
             Text(
               'Tue',
               style: TextStyle(

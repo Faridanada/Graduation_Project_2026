@@ -301,7 +301,7 @@ class _AlertsPageState extends State<AlertsPage> {
                       Expanded(
                         child: Text(
                           alert['alertMessage'],
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
                             color: Colors.black87,
                             fontFamily: 'Poppins',
@@ -313,7 +313,7 @@ class _AlertsPageState extends State<AlertsPage> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.access_time, size: 14, color: Colors.grey),
+                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
                       const SizedBox(width: 8),
                       Text(
                         alert['timestamp'],

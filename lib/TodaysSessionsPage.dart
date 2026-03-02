@@ -166,15 +166,15 @@ class _TodaysSessionsPageState extends State<TodaysSessionsPage> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.access_time,
-                              size: 14, color: const Color(0xFF95B8D1)),
+                          const Icon(Icons.access_time,
+                              size: 14, color: Color(0xFF95B8D1)),
                           const SizedBox(width: 4),
                           Text(
                             session['time'],
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF95B8D1),
+                              color: Color(0xFF95B8D1),
                               fontFamily: 'Poppins',
                             ),
                           ),
