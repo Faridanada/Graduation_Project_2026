@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'DoctorHome.dart';
-import 'patientHome.dart';
 import 'OnboardingPage.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -274,36 +273,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return t.contains(word.toLowerCase());
   }
 
-  void _navigateByEmail(String rawEmail) {
-    final email = rawEmail.trim().toLowerCase();
-
-    debugPrint(
-      '[ROLE ROUTE] email="$email" '
-      'doctor? ${_containsWord(email, 'doctor')} '
-      'patient? ${_containsWord(email, 'patient')}',
-    );
-
-    if (_containsWord(email, 'doctor')) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DoctorHome()),
-      );
-      return;
-    }
-    if (_containsWord(email, 'patient')) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const PatientHomeScreen()),
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Please use an email that contains the word "doctor" or "patient".',
-        ),
-      ),
-    );
-  }
+  String get _normalizedEmail => emailController.text.trim().toLowerCase();
+  bool get _isDoctorSignup => _containsWord(_normalizedEmail, 'doctor');
+  bool get _isPatientSignup => _containsWord(_normalizedEmail, 'patient');
 
   bool _isPhoneValid(String phone) {
     final digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
@@ -351,6 +323,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please accept Terms of Use and Privacy Policy'),
+        ),
+      );
+      return false;
+    }
+
+    if (!_isDoctorSignup && !_isPatientSignup) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please use an email that contains the word "doctor" or "patient".',
+          ),
         ),
       );
       return false;
@@ -477,13 +460,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
+    if (_isDoctorSignup) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DoctorHome()),
+      );
+      return;
+    }
+
     setState(() {
       currentStep = 2;
     });
   }
 
   void handleSignUp() {
-    if (!_validateStepOne() || !_validateStepTwo() || !_validateStepThree()) {
+    if (!_validateStepOne() || !_validateStepTwo()) {
+      return;
+    }
+
+    if (_isDoctorSignup) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DoctorHome()),
+      );
+      return;
+    }
+
+    if (!_validateStepThree()) {
       return;
     }
 
@@ -985,9 +986,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text(
-                  'Continue',
-                  style: TextStyle(
+                child: Text(
+                  _isDoctorSignup ? 'Sign Up' : 'Continue',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
@@ -1423,9 +1424,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           const SizedBox(height: 10),
                           Text(
                             currentStep == 0
-                                ? 'Step 1 of 3 • Essential account details'
+                                ? (_isDoctorSignup
+                                    ? 'Step 1 of 2 • Essential account details'
+                                    : 'Step 1 of 3 • Essential account details')
                                 : currentStep == 1
-                                    ? 'Step 2 of 3 • Personal information'
+                                    ? (_isDoctorSignup
+                                        ? 'Step 2 of 2 • Personal information'
+                                        : 'Step 2 of 3 • Personal information')
                                     : 'Step 3 of 3 • Medical history',
                             style: TextStyle(
                               fontSize: 14,

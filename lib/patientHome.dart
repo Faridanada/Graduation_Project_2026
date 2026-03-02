@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'BookAppointments.dart';
+import 'ChatbotPage.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({Key? key}) : super(key: key);
@@ -241,6 +242,21 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ChatbotPage(),
+            ),
+          );
+        },
+        backgroundColor: const Color(0xFF6BA5CF),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Icon(Icons.smart_toy, color: Colors.white, size: 28),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: selectedIndex,

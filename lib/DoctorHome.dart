@@ -9,6 +9,8 @@ import 'SettingsPage.dart';
 import 'ActivePatientsPage.dart';
 import 'TodaysSessionsPage.dart';
 import 'AlertsPage.dart';
+import 'NotificationsPage.dart';
+import 'DoctorProfile.dart';
 
 class DoctorHome extends StatefulWidget {
   const DoctorHome({Key? key}) : super(key: key);
@@ -82,7 +84,14 @@ class _DoctorHomeState extends State<DoctorHome> {
           children: [
             IconButton(
               icon: const Icon(Icons.notifications_none, color: Colors.black),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsPage(),
+                  ),
+                );
+              },
             ),
             Positioned(
               right: 8,
@@ -795,6 +804,15 @@ class _DoctorHomeState extends State<DoctorHome> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const Chats()),
+          );
+          return;
+        }
+        if (index == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const DoctorProfile(source: 'home'),
+            ),
           );
           return;
         }
