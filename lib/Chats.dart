@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'ConversationScreen.dart';
+import 'DoctorProfile.dart';
 
 class Chats extends StatefulWidget {
   const Chats({Key? key}) : super(key: key);
@@ -261,6 +262,15 @@ class _ChatsState extends State<Chats> {
       onTap: (index) {
         if (index == 0) {
           Navigator.pop(context);
+          return;
+        }
+        if (index == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DoctorProfile(source: 'home'),
+            ),
+          );
           return;
         }
 

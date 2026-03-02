@@ -1,4 +1,13 @@
 import 'package:flutter/material.dart';
+import 'DoctorProfile.dart';
+import 'ChangePasswordPage.dart';
+import 'NotificationPreferencesPage.dart';
+import 'PrivacyPolicyPage.dart';
+import 'TwoFactorAuthPage.dart';
+import 'StoragePage.dart';
+import 'AboutPage.dart';
+import 'HelpSupportPage.dart';
+import 'LanguagePage.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -48,8 +57,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Profile',
                 subtitle: 'Edit your profile information',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Profile settings opened')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const DoctorProfile(source: 'settings')),
                   );
                 },
               ),
@@ -58,8 +70,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Change Password',
                 subtitle: 'Update your password',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Change password')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ChangePasswordPage()),
                   );
                 },
               ),
@@ -81,9 +95,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Notification Preferences',
                 subtitle: 'Customize your notifications',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Notification preferences opened')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const NotificationPreferencesPage()),
                   );
                 },
               ),
@@ -94,8 +109,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Privacy Policy',
                 subtitle: 'Read our privacy policy',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Privacy policy opened')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyPage()),
                   );
                 },
               ),
@@ -104,8 +121,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Two-Factor Authentication',
                 subtitle: 'Add extra security to your account',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('2FA settings opened')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const TwoFactorAuthPage()),
                   );
                 },
               ),
@@ -120,6 +139,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   setState(() {
                     _darkModeEnabled = value;
                   });
+                },
+              ),
+              _buildSettingsTile(
+                icon: Icons.language,
+                title: 'Language',
+                subtitle: 'Change app language',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LanguagePage()),
+                  );
                 },
               ),
               const SizedBox(height: 20),
@@ -140,8 +170,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Storage',
                 subtitle: 'Manage app storage and cache',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Storage settings opened')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StoragePage()),
                   );
                 },
               ),
@@ -152,8 +183,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'About FLEXIO',
                 subtitle: 'Version 1.0.0',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('About page opened')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AboutPage()),
                   );
                 },
               ),
@@ -162,8 +194,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Help & Support',
                 subtitle: 'Get help and contact support',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Help & Support opened')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HelpSupportPage()),
                   );
                 },
               ),

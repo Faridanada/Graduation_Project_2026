@@ -36,7 +36,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _onNextPressed() {
-    if (_currentPage < 2) {
+    if (_currentPage < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -65,6 +65,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   _buildPage1(),
                   _buildPage2(),
                   _buildPage3(),
+                  _buildPage4(),
+                  _buildPage5(),
                 ],
               ),
             ),
@@ -81,6 +83,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Text(
+            'Key Features • 1/5',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Track your healing journey from day one',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 24),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -203,6 +225,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Text(
+            'Key Features • 2/5',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Guide your daily rehab exercises safely',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 24),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -324,6 +366,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Text(
+            'Key Features • 3/5',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Keep you connected with your therapist',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 24),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -441,6 +503,241 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
+  Widget _buildPage4() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Key Features • 4/5',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'AI-powered insights and progress reports',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF6BA5CF).withValues(alpha: 0.2),
+                            const Color(0xFF6BA5CF).withValues(alpha: 0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome,
+                        size: 60,
+                        color: Color(0xFF6BA5CF),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.purple,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.psychology,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildAIFeature(Icons.assessment, 'Analysis', Colors.blue),
+                    _buildAIFeature(
+                        Icons.trending_up, 'Progress', Colors.green),
+                    _buildAIFeature(
+                        Icons.lightbulb_outline, 'Insights', Colors.orange),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Our AI analyzes your recovery data and generates personalized reports with actionable recommendations',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPage5() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Key Features • 5/5',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Instant answers to your health questions',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6BA5CF).withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.search,
+                    size: 80,
+                    color: Color(0xFF6BA5CF),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.chat_bubble_outline,
+                          color: Colors.grey[400], size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Ask me anything about your recovery...',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[500],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.send,
+                          color: const Color(0xFF6BA5CF), size: 20),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Get instant, reliable medical information and guidance from our AI assistant available 24/7',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAIFeature(IconData icon, String label, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildBottomSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
@@ -449,7 +746,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           // Page indicators
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(3, (index) {
+            children: List.generate(5, (index) {
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 width: _currentPage == index ? 32 : 10,
@@ -492,7 +789,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   elevation: 2,
                 ),
                 child: Text(
-                  _currentPage == 2 ? 'Get Started' : 'Next',
+                  _currentPage == 4 ? 'Get Started' : 'Next',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
