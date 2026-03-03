@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/core/theme/app_colors.dart';
 import '../widgets/appointment_card.dart';
 import '../widgets/action_card.dart';
@@ -183,3 +183,4 @@ class _HomeContent extends StatelessWidget {
     );
   }
 }
+*/
