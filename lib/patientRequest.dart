@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'SettingsPage.dart';
+import 'NotificationsPage.dart';
 
 class PatientRequest extends StatefulWidget {
   const PatientRequest({Key? key}) : super(key: key);
@@ -139,11 +141,22 @@ class _PatientRequestState extends State<PatientRequest> {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const NotificationsPage()),
+            );
+          },
         ),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          },
         ),
       ],
     );

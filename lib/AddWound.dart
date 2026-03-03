@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'SettingsPage.dart';
+import 'NotificationsPage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -171,11 +173,22 @@ class _AddWoundState extends State<AddWound> {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const NotificationsPage()),
+            );
+          },
         ),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          },
         ),
       ],
     );

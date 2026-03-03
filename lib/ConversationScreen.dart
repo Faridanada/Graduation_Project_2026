@@ -235,6 +235,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 14, 93, 146),
         elevation: 0,
@@ -273,11 +274,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
           // Messages list
           Expanded(
             child: ListView.builder(
-              reverse: true,
               padding: const EdgeInsets.all(16),
               itemCount: messages.length,
               itemBuilder: (context, index) {
-                final message = messages[messages.length - 1 - index];
+                final message = messages[index];
                 final isReceived = message['type'] == 'received';
 
                 return Padding(

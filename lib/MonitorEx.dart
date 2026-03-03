@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'SettingsPage.dart';
+import 'NotificationsPage.dart';
+import 'Exoskeleton.dart';
 
 class MonitorEx extends StatefulWidget {
   const MonitorEx({Key? key}) : super(key: key);
@@ -32,7 +35,7 @@ class _MonitorExState extends State<MonitorEx> {
 
                 // Start Monitoring Button
                 _buildStartMonitoringButton(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -65,11 +68,22 @@ class _MonitorExState extends State<MonitorEx> {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const NotificationsPage()),
+            );
+          },
         ),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          },
         ),
       ],
     );
@@ -361,6 +375,39 @@ class _MonitorExState extends State<MonitorEx> {
   Widget _buildStartMonitoringButton() {
     return Column(
       children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Emergency stop activated')),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 239, 68, 68),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+            label: const Text(
+              'Emergency Stop',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -371,8 +418,7 @@ class _MonitorExState extends State<MonitorEx> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      const Color.fromARGB(255, 87, 152, 198).withOpacity(0.8),
+                  backgroundColor: const Color(0xFFE8EFF5),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -380,13 +426,13 @@ class _MonitorExState extends State<MonitorEx> {
                   ),
                 ),
                 icon: const Icon(Icons.stop_circle,
-                    color: Colors.white, size: 20),
+                    color: Colors.black, size: 20),
                 label: const Text(
                   'End Session',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Colors.black,
                     fontFamily: 'Poppins',
                   ),
                 ),
@@ -441,25 +487,26 @@ class _MonitorExState extends State<MonitorEx> {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Emergency stop activated')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const Exoskeleton(),
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 239, 68, 68),
+              backgroundColor:
+                  const Color.fromARGB(255, 87, 152, 198).withOpacity(0.8),
               padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            icon: const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.white,
-              size: 22,
-            ),
+            icon: const Icon(Icons.accessibility_new,
+                color: Colors.white, size: 22),
             label: const Text(
-              'Emergency Stop',
+              'Assist Patient Exoskeleton',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -469,31 +516,48 @@ class _MonitorExState extends State<MonitorEx> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              _showAddNoteDialog();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 87, 152, 198),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+        const SizedBox(height: 32),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  _showAddNoteDialog();
+                },
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 87, 152, 198),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
               ),
-            ),
-            icon: const Icon(Icons.add, color: Colors.white, size: 22),
-            label: const Text(
-              'Add Note',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontFamily: 'Poppins',
+              const SizedBox(height: 8),
+              const Text(
+                'Add Note',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                  fontFamily: 'Poppins',
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ],

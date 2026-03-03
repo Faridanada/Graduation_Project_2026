@@ -11,6 +11,7 @@ import 'TodaysSessionsPage.dart';
 import 'AlertsPage.dart';
 import 'NotificationsPage.dart';
 import 'DoctorProfile.dart';
+import 'AddNewPatient.dart';
 
 /// Doctor home page - Main dashboard for healthcare professionals
 class DoctorHome extends StatefulWidget {
@@ -647,66 +648,19 @@ class _DoctorHomeState extends State<DoctorHome> {
                 color: Colors.blue[200],
                 route: const ManageWounds(),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 130,
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PatientRequest()),
-                );
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.purple[200]?.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.assignment,
-                        color: Colors.purple[300],
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Patient Requests',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: Colors.grey[400],
-                    ),
-                  ],
-                ),
+              _buildActivityTile(
+                label: 'Patient Request',
+                icon: Icons.assignment,
+                color: Colors.purple[200],
+                route: const PatientRequest(),
               ),
-            ),
+              _buildActivityTile(
+                label: 'Add New Patient',
+                icon: Icons.person_add,
+                color: Colors.green[200],
+                route: const AddNewPatient(),
+              ),
+            ],
           ),
         ],
       ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'SettingsPage.dart';
+import 'NotificationsPage.dart';
 import 'package:intl/intl.dart';
 
 class Appointments extends StatefulWidget {
@@ -250,11 +252,22 @@ class _AppointmentsState extends State<Appointments> {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const NotificationsPage()),
+            );
+          },
         ),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          },
         ),
       ],
     );

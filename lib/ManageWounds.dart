@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:rehabilitation_app/AddWound.dart';
+import 'SettingsPage.dart';
+import 'NotificationsPage.dart';
+import 'ConversationScreen.dart';
 
 class ManageWounds extends StatefulWidget {
   const ManageWounds({Key? key}) : super(key: key);
@@ -9,30 +11,34 @@ class ManageWounds extends StatefulWidget {
 }
 
 class _ManageWoundsState extends State<ManageWounds> {
-  final List<Map<String, String>> wounds = [
+  final List<Map<String, dynamic>> wounds = [
     {
       'image': 'assets/images/Wound1.jpg',
       'name': 'John Doe',
       'injury': 'Knee injury',
       'date': '12 Feb 2026',
+      'seen': false,
     },
     {
       'image': 'assets/images/Wound2.jpg',
       'name': 'Alice Smith',
       'injury': 'Ankle injury',
       'date': '10 Feb 2026',
+      'seen': false,
     },
     {
       'image': 'assets/images/Wound3.jpg',
       'name': 'Mark Lee',
       'injury': 'Shoulder injury',
       'date': '08 Feb 2026',
+      'seen': false,
     },
     {
       'image': 'assets/images/Wound4.jpg',
       'name': 'Emma Brown',
       'injury': 'Wrist injury',
       'date': '05 Feb 2026',
+      'seen': false,
     },
   ];
 
@@ -42,78 +48,41 @@ class _ManageWoundsState extends State<ManageWounds> {
       backgroundColor: Colors.white,
       appBar: _buildAppBar(),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Column(
-              children: [
-                const Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Patient Wound Reports',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.75,
-                      ),
-                      itemCount: wounds.length,
-                      itemBuilder: (context, index) {
-                        return _buildWoundCard(wounds[index]);
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            // Add Wound Button - Bottom Right
-            Positioned(
-              bottom: 20,
-              right: 16,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FloatingActionButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AddWound(),
-                        ),
-                      );
-                    },
-                    backgroundColor: const Color.fromARGB(255, 87, 152, 198),
-                    child: const Icon(Icons.add, color: Colors.white, size: 28),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '+ Add Wound',
+                  Text(
+                    'Patient Wound Reports',
                     style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color.fromARGB(255, 87, 152, 198),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                       fontFamily: 'Poppins',
                     ),
                   ),
+                  SizedBox(height: 16),
                 ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.62,
+                  ),
+                  itemCount: wounds.length,
+                  itemBuilder: (context, index) {
+                    return _buildWoundCard(wounds[index], index);
+                  },
+                ),
               ),
             ),
           ],
@@ -146,17 +115,28 @@ class _ManageWoundsState extends State<ManageWounds> {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const NotificationsPage()),
+            );
+          },
         ),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          },
         ),
       ],
     );
   }
 
-  Widget _buildWoundCard(Map<String, String> wound) {
+  Widget _buildWoundCard(Map<String, dynamic> wound, int index) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -179,10 +159,10 @@ class _ManageWoundsState extends State<ManageWounds> {
         children: [
           // Image Section
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Container(
               width: double.infinity,
-              color: Colors.grey[200],
+              color: Colors.white,
               child: Image.asset(
                 wound['image']!,
                 fit: BoxFit.cover,
@@ -218,12 +198,18 @@ class _ManageWoundsState extends State<ManageWounds> {
           ),
           // Text Section
           Expanded(
-            flex: 1,
-            child: Padding(
+            flex: 2,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Colors.grey[300]!, width: 1),
+                ),
+              ),
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     wound['name']!,
@@ -254,6 +240,108 @@ class _ManageWoundsState extends State<ManageWounds> {
                       fontWeight: FontWeight.w500,
                       color: Colors.black,
                       fontFamily: 'Poppins',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        top: BorderSide(color: Colors.grey[200]!),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                wounds[index]['seen'] = !wounds[index]['seen'];
+                              });
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    wound['seen']
+                                        ? Icons.check_circle
+                                        : Icons.check_circle_outline,
+                                    size: 16,
+                                    color: wound['seen']
+                                        ? const Color.fromARGB(
+                                            255, 99, 197, 150)
+                                        : Colors.grey[500],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Seen',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: wound['seen']
+                                          ? const Color.fromARGB(
+                                              255, 99, 197, 150)
+                                          : Colors.grey[600],
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 22,
+                          color: Colors.grey[200],
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              final names = wound['name']!.split(' ');
+                              final initials = names.length > 1
+                                  ? '${names[0][0]}${names[1][0]}'
+                                  : wound['name']![0];
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ConversationScreen(
+                                    name: wound['name']!,
+                                    initials: initials.toUpperCase(),
+                                    message: wound['injury']!,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 6),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble_outline,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Chat',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

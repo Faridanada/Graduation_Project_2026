@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'ConversationScreen.dart';
 import 'DoctorProfile.dart';
+import 'SettingsPage.dart';
+import 'NotificationsPage.dart';
 
 class Chats extends StatefulWidget {
   const Chats({Key? key}) : super(key: key);
@@ -55,65 +57,63 @@ class _ChatsState extends State<Chats> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Search bar with blue background
-            Container(
-              color: const Color(0xFF6BA5CF),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search patients...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 16,
-                  ),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+      body: Column(
+        children: [
+          // Search bar with blue background
+          Container(
+            color: const Color(0xFF6BA5CF),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search patients...',
+                hintStyle: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 16,
                 ),
+                prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
-            // Chat list with white background
-            Expanded(
-              child: Container(
-                color: Colors.white,
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: ListView.separated(
-                    itemCount: chatList.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final chat = chatList[index];
-                      return _buildChatTile(
-                        chat,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ConversationScreen(
-                                name: chat['name'],
-                                initials: chat['initials'],
-                                message: chat['message'],
-                              ),
+          ),
+          // Chat list with white background
+          Expanded(
+            child: Container(
+              color: Colors.white,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: ListView.separated(
+                  itemCount: chatList.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final chat = chatList[index];
+                    return _buildChatTile(
+                      chat,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ConversationScreen(
+                              name: chat['name'],
+                              initials: chat['initials'],
+                              message: chat['message'],
                             ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
@@ -136,11 +136,22 @@ class _ChatsState extends State<Chats> {
         IconButton(
           icon: const Icon(Icons.notifications_none,
               color: Colors.white, size: 24),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const NotificationsPage()),
+            );
+          },
         ),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.white, size: 24),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          },
         ),
       ],
     );

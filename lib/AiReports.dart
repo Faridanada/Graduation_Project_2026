@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'SettingsPage.dart';
+import 'NotificationsPage.dart';
 
 class AiReports extends StatefulWidget {
   const AiReports({Key? key}) : super(key: key);
@@ -132,11 +134,22 @@ class _AiReportsState extends State<AiReports> {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const NotificationsPage()),
+            );
+          },
         ),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          },
         ),
       ],
     );
@@ -384,6 +397,16 @@ class _AiReportsState extends State<AiReports> {
   }
 
   Widget _buildLineChart() {
+    // Extract percentage from recovery score
+    String recoveryScore =
+        selectedPatient != null && patientData.containsKey(selectedPatient)
+            ? patientData[selectedPatient]!['recoveryScore']
+            : '82%';
+    int percentage = int.parse(recoveryScore.replaceAll('%', ''));
+
+    // Get labels based on selected timeframe
+    List<String> labels = _getTimeframeLabels();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -391,54 +414,178 @@ class _AiReportsState extends State<AiReports> {
         SizedBox(
           height: 80,
           child: CustomPaint(
-            painter: LineChartPainter(),
+            painter: LineChartPainter(
+              percentage: percentage,
+              timeframe: selectedFilter,
+            ),
             size: const Size(double.infinity, 80),
           ),
         ),
         const SizedBox(height: 12),
-        // Day labels
-        const Row(
+        // Time labels based on selected filter
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Text(
-              'Tue',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-                fontFamily: 'Poppins',
+          children: labels
+              .map(
+                (label) => Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  List<String> _getTimeframeLabels() {
+    switch (selectedFilter) {
+      case 'Weekly':
+        return ['Mon', 'Wed', 'Fri', 'Sun'];
+      case 'Monthly':
+        return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+      case 'Custom':
+        return ['Jan', 'Feb', 'Mar', 'Apr'];
+      default:
+        return ['Mon', 'Wed', 'Fri', 'Sun'];
+    }
+  }
+
+  void _showClinicalNoteDialog() {
+    final TextEditingController noteController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Add Clinical Note',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Colors.black,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Patient info subtitle
+                if (selectedPatient != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Patient: $selectedPatient',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                // Note text field
+                TextField(
+                  controller: noteController,
+                  maxLines: 8,
+                  decoration: InputDecoration(
+                    hintText: 'Write your clinical note here...',
+                    hintStyle: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Colors.grey[400],
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF95B8D1),
+                        width: 2,
+                      ),
+                    ),
+                    fillColor: Colors.grey[50],
+                    filled: true,
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
               ),
             ),
-            Text(
-              'Wed',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-                fontFamily: 'Poppins',
+            ElevatedButton.icon(
+              onPressed: () {
+                if (noteController.text.isNotEmpty) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Clinical note saved successfully',
+                        style: TextStyle(fontFamily: 'Poppins'),
+                      ),
+                      backgroundColor: const Color.fromARGB(255, 99, 197, 150),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Please write a note before saving',
+                        style: TextStyle(fontFamily: 'Poppins'),
+                      ),
+                      backgroundColor: const Color.fromARGB(255, 239, 68, 68),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5798C6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-            ),
-            Text(
-              'Thu',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-                fontFamily: 'Poppins',
-              ),
-            ),
-            Text(
-              'Sun',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-                fontFamily: 'Poppins',
+              icon: const Icon(Icons.check, color: Colors.white, size: 18),
+              label: const Text(
+                'Save Note',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -624,9 +771,7 @@ class _AiReportsState extends State<AiReports> {
           height: 48,
           child: OutlinedButton.icon(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Add clinical note')),
-              );
+              _showClinicalNoteDialog();
             },
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: Colors.grey[300]!, width: 1),
@@ -676,6 +821,11 @@ class _AiReportsState extends State<AiReports> {
 
 // Custom painter for the line chart
 class LineChartPainter extends CustomPainter {
+  final int percentage;
+  final String timeframe;
+
+  LineChartPainter({this.percentage = 82, this.timeframe = 'Weekly'});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -687,13 +837,8 @@ class LineChartPainter extends CustomPainter {
       ..color = const Color(0xFF95B8D1)
       ..style = PaintingStyle.fill;
 
-    // Points along the line (simplified)
-    final points = [
-      Offset(0, size.height * 0.6),
-      Offset(size.width * 0.33, size.height * 0.45),
-      Offset(size.width * 0.66, size.height * 0.3),
-      Offset(size.width, size.height * 0.2),
-    ];
+    // Generate points based on percentage
+    final points = _generateChartPoints(size);
 
     // Draw line
     for (int i = 0; i < points.length - 1; i++) {
@@ -719,8 +864,159 @@ class LineChartPainter extends CustomPainter {
     path.close();
 
     canvas.drawPath(path, backgroundPaint);
+
+    // Draw trend indicator (arrow)
+    _drawTrendArrow(canvas, size, points);
+  }
+
+  List<Offset> _generateChartPoints(Size size) {
+    // Convert percentage to normalized value (0.0 to 1.0)
+    double normalizedScore = percentage / 100.0;
+
+    // Generate data points based on timeframe and percentage
+    final points = <Offset>[];
+
+    // Different patterns for different timeframes
+    if (timeframe == 'Monthly') {
+      // Monthly view - slower progression, more stable
+      if (percentage >= 80) {
+        points.add(Offset(0, size.height * 0.5));
+        points.add(Offset(size.width * 0.33, size.height * 0.4));
+        points.add(Offset(size.width * 0.66, size.height * 0.25));
+        points.add(Offset(size.width, size.height * 0.1));
+      } else if (percentage >= 60) {
+        points.add(Offset(0, size.height * 0.6));
+        points.add(Offset(size.width * 0.33, size.height * 0.5));
+        points.add(Offset(size.width * 0.66, size.height * 0.35));
+        points.add(Offset(size.width, size.height * 0.2));
+      } else if (percentage >= 40) {
+        points.add(Offset(0, size.height * 0.75));
+        points.add(Offset(size.width * 0.33, size.height * 0.6));
+        points.add(Offset(size.width * 0.66, size.height * 0.45));
+        points.add(Offset(size.width, size.height * 0.35));
+      } else {
+        points.add(Offset(0, size.height * 0.9));
+        points.add(Offset(size.width * 0.33, size.height * 0.7));
+        points.add(Offset(size.width * 0.66, size.height * 0.55));
+        points.add(Offset(size.width, size.height * 0.45));
+      }
+    } else if (timeframe == 'Custom') {
+      // Custom view - more volatile, shows ups and downs
+      if (percentage >= 80) {
+        points.add(Offset(0, size.height * 0.55));
+        points.add(Offset(size.width * 0.33, size.height * 0.35));
+        points.add(Offset(size.width * 0.66, size.height * 0.45));
+        points.add(Offset(size.width, size.height * 0.15));
+      } else if (percentage >= 60) {
+        points.add(Offset(0, size.height * 0.65));
+        points.add(Offset(size.width * 0.33, size.height * 0.45));
+        points.add(Offset(size.width * 0.66, size.height * 0.55));
+        points.add(Offset(size.width, size.height * 0.25));
+      } else if (percentage >= 40) {
+        points.add(Offset(0, size.height * 0.8));
+        points.add(Offset(size.width * 0.33, size.height * 0.55));
+        points.add(Offset(size.width * 0.66, size.height * 0.65));
+        points.add(Offset(size.width, size.height * 0.4));
+      } else {
+        points.add(Offset(0, size.height * 0.92));
+        points.add(Offset(size.width * 0.33, size.height * 0.65));
+        points.add(Offset(size.width * 0.66, size.height * 0.75));
+        points.add(Offset(size.width, size.height * 0.5));
+      }
+    } else {
+      // Weekly view - default (as before)
+      if (percentage >= 80) {
+        // High score - show strong upward trend
+        points.add(Offset(0, size.height * (1 - normalizedScore * 0.4)));
+        points.add(Offset(
+            size.width * 0.33, size.height * (1 - normalizedScore * 0.55)));
+        points.add(Offset(
+            size.width * 0.66, size.height * (1 - normalizedScore * 0.7)));
+        points.add(
+            Offset(size.width, size.height * (1 - normalizedScore * 0.85)));
+      } else if (percentage >= 60) {
+        // Medium-high score - moderate upward trend
+        points.add(Offset(0, size.height * (1 - normalizedScore * 0.3)));
+        points.add(Offset(
+            size.width * 0.33, size.height * (1 - normalizedScore * 0.45)));
+        points.add(Offset(
+            size.width * 0.66, size.height * (1 - normalizedScore * 0.6)));
+        points.add(
+            Offset(size.width, size.height * (1 - normalizedScore * 0.72)));
+      } else if (percentage >= 40) {
+        // Medium score - gradually improving
+        points.add(Offset(0, size.height * (1 - normalizedScore * 0.2)));
+        points.add(Offset(
+            size.width * 0.33, size.height * (1 - normalizedScore * 0.35)));
+        points.add(Offset(
+            size.width * 0.66, size.height * (1 - normalizedScore * 0.5)));
+        points
+            .add(Offset(size.width, size.height * (1 - normalizedScore * 0.6)));
+      } else {
+        // Low score - steep upward trend
+        points.add(Offset(0, size.height * 0.95));
+        points.add(Offset(
+            size.width * 0.33, size.height * (1 - normalizedScore * 0.25)));
+        points.add(Offset(
+            size.width * 0.66, size.height * (1 - normalizedScore * 0.4)));
+        points.add(
+            Offset(size.width, size.height * (1 - normalizedScore * 0.55)));
+      }
+    }
+
+    return points;
+  }
+
+  void _drawTrendArrow(Canvas canvas, Size size, List<Offset> points) {
+    if (points.length < 2) return;
+
+    final lastPoint = points.last;
+    final secondLastPoint = points[points.length - 2];
+
+    // Determine trend direction
+    bool isIncreasing = lastPoint.dy < secondLastPoint.dy;
+    bool isDecreasing = lastPoint.dy > secondLastPoint.dy;
+
+    // Arrow paint
+    final arrowPaint = Paint()
+      ..color = isIncreasing
+          ? const Color.fromARGB(255, 99, 197, 150)
+          : isDecreasing
+              ? const Color.fromARGB(255, 239, 68, 68)
+              : Colors.grey
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    // Draw trend icon near the last point
+    final arrowX = lastPoint.dx - 20;
+    final arrowY = lastPoint.dy - 15;
+
+    if (isIncreasing) {
+      // Draw upward arrow
+      canvas.drawLine(
+          Offset(arrowX, arrowY + 8), Offset(arrowX, arrowY - 8), arrowPaint);
+      canvas.drawLine(Offset(arrowX, arrowY - 8),
+          Offset(arrowX - 4, arrowY - 4), arrowPaint);
+      canvas.drawLine(Offset(arrowX, arrowY - 8),
+          Offset(arrowX + 4, arrowY - 4), arrowPaint);
+    } else if (isDecreasing) {
+      // Draw downward arrow
+      canvas.drawLine(
+          Offset(arrowX, arrowY - 8), Offset(arrowX, arrowY + 8), arrowPaint);
+      canvas.drawLine(Offset(arrowX, arrowY + 8),
+          Offset(arrowX - 4, arrowY + 4), arrowPaint);
+      canvas.drawLine(Offset(arrowX, arrowY + 8),
+          Offset(arrowX + 4, arrowY + 4), arrowPaint);
+    } else {
+      // Draw horizontal arrow (stable)
+      canvas.drawLine(
+          Offset(arrowX - 6, arrowY), Offset(arrowX + 6, arrowY), arrowPaint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(LineChartPainter oldDelegate) {
+    return oldDelegate.percentage != percentage ||
+        oldDelegate.timeframe != timeframe;
+  }
 }
