@@ -16,6 +16,7 @@ class _ManageWoundsState extends State<ManageWounds> {
       'image': 'assets/images/Wound1.jpg',
       'name': 'John Doe',
       'injury': 'Knee injury',
+      'description': 'Post-surgery recovery wound',
       'date': '12 Feb 2026',
       'seen': false,
     },
@@ -23,6 +24,7 @@ class _ManageWoundsState extends State<ManageWounds> {
       'image': 'assets/images/Wound2.jpg',
       'name': 'Alice Smith',
       'injury': 'Ankle injury',
+      'description': 'Sprain with minor abrasion',
       'date': '10 Feb 2026',
       'seen': false,
     },
@@ -30,6 +32,7 @@ class _ManageWoundsState extends State<ManageWounds> {
       'image': 'assets/images/Wound3.jpg',
       'name': 'Mark Lee',
       'injury': 'Shoulder injury',
+      'description': 'Dislocation treatment area',
       'date': '08 Feb 2026',
       'seen': false,
     },
@@ -37,6 +40,7 @@ class _ManageWoundsState extends State<ManageWounds> {
       'image': 'assets/images/Wound4.jpg',
       'name': 'Emma Brown',
       'injury': 'Wrist injury',
+      'description': 'Fracture healing wound',
       'date': '05 Feb 2026',
       'seen': false,
     },
@@ -208,143 +212,164 @@ class _ManageWoundsState extends State<ManageWounds> {
                 ),
               ),
               padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    wound['name']!,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      fontFamily: 'Poppins',
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      wound['name']!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        fontFamily: 'Poppins',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    wound['injury']!,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                      fontFamily: 'Poppins',
+                    Text(
+                      wound['injury']!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                        fontFamily: 'Poppins',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    wound['date']!,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                      fontFamily: 'Poppins',
+                    Text(
+                      wound['description']!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey[600],
+                        fontFamily: 'Poppins',
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                        top: BorderSide(color: Colors.grey[200]!),
+                    Text(
+                      wound['date']!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                        fontFamily: 'Poppins',
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                wounds[index]['seen'] = !wounds[index]['seen'];
-                              });
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    wound['seen']
-                                        ? Icons.check_circle
-                                        : Icons.check_circle_outline,
-                                    size: 16,
-                                    color: wound['seen']
-                                        ? const Color.fromARGB(
-                                            255, 99, 197, 150)
-                                        : Colors.grey[500],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Seen',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
+                    const SizedBox(height: 4),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border(
+                          top: BorderSide(color: Colors.grey[200]!),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  wounds[index]['seen'] =
+                                      !wounds[index]['seen'];
+                                });
+                              },
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 6),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      wound['seen']
+                                          ? Icons.check_circle
+                                          : Icons.check_circle_outline,
+                                      size: 14,
                                       color: wound['seen']
                                           ? const Color.fromARGB(
                                               255, 99, 197, 150)
-                                          : Colors.grey[600],
-                                      fontFamily: 'Poppins',
+                                          : Colors.grey[500],
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 22,
-                          color: Colors.grey[200],
-                        ),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () {
-                              final names = wound['name']!.split(' ');
-                              final initials = names.length > 1
-                                  ? '${names[0][0]}${names[1][0]}'
-                                  : wound['name']![0];
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ConversationScreen(
-                                    name: wound['name']!,
-                                    initials: initials.toUpperCase(),
-                                    message: wound['injury']!,
-                                  ),
+                                    const SizedBox(width: 3),
+                                    Flexible(
+                                      child: Text(
+                                        'Seen',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: wound['seen']
+                                              ? const Color.fromARGB(
+                                                  255, 99, 197, 150)
+                                              : Colors.grey[600],
+                                          fontFamily: 'Poppins',
+                                        ),
+                                        overflow: TextOverflow.visible,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              );
-                            },
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 6),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.chat_bubble_outline,
-                                    size: 16,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Chat',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                          Container(
+                            width: 1,
+                            height: 22,
+                            color: Colors.grey[200],
+                          ),
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                final names = wound['name']!.split(' ');
+                                final initials = names.length > 1
+                                    ? '${names[0][0]}${names[1][0]}'
+                                    : wound['name']![0];
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ConversationScreen(
+                                      name: wound['name']!,
+                                      initials: initials.toUpperCase(),
+                                      message: wound['injury']!,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 6),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.chat_bubble_outline,
+                                      size: 14,
+                                      color: Colors.grey,
+                                    ),
+                                    SizedBox(width: 3),
+                                    Flexible(
+                                      child: Text(
+                                        'Chat',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey,
+                                          fontFamily: 'Poppins',
+                                        ),
+                                        overflow: TextOverflow.visible,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

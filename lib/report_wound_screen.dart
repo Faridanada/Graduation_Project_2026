@@ -25,7 +25,12 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
               /// ================= HEADER =================
               Row(
                 children: [
-                  const Icon(Icons.arrow_back_ios, size: 18),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Icon(Icons.arrow_back_ios, size: 18),
+                  ),
                   const Spacer(),
                   const Text(
                     "Report Wound",

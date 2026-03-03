@@ -146,37 +146,27 @@ class _HomeContent extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Stack(
-                alignment: Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: const [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Icon(Icons.warning_amber_rounded,
-                        color: Colors.white, size: 28),
-                  ),
-                  Column(
+                  Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.phone, color: Colors.white, size: 22),
-                          SizedBox(width: 8),
-                          Text(
-                            "Emergency Call",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 3),
+                      Icon(Icons.phone, color: Colors.white, size: 22),
+                      SizedBox(width: 8),
                       Text(
-                        "Contact emergency support",
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                        "Emergency Call",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800),
                       ),
                     ],
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    "Contact emergency support",
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
@@ -352,34 +342,37 @@ class _HomeContent extends StatelessWidget {
                         bottom: Radius.circular(24),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        const Text(
-                          "How are you feeling today?",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF1C1F2E),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          const Text(
+                            "How are you feeling today?",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1C1F2E),
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        _FeelingChip(
-                          label: "Low",
-                          emoji: "🙂",
-                          color: Color(0xFFE7F5EC),
-                        ),
-                        const SizedBox(width: 8),
-                        _FeelingChip(
-                          label: "Moderate",
-                          emoji: "😊",
-                          color: Color(0xFFFFF3E0),
-                        ),
-                        const SizedBox(width: 8),
-                        _FeelingChip(
-                          label: "High",
-                          emoji: "😣",
-                          color: Color(0xFFFDEAEA),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          _FeelingChip(
+                            label: "Low",
+                            emoji: "🙂",
+                            color: Color(0xFFE7F5EC),
+                          ),
+                          const SizedBox(width: 8),
+                          _FeelingChip(
+                            label: "Moderate",
+                            emoji: "😊",
+                            color: Color(0xFFFFF3E0),
+                          ),
+                          const SizedBox(width: 8),
+                          _FeelingChip(
+                            label: "High",
+                            emoji: "😣",
+                            color: Color(0xFFFDEAEA),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -549,86 +542,116 @@ class _HomeContent extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(18),
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE0EBFA),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.calendar_today_rounded,
-                            color: Color(0xFF4A90E2),
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    "Wed, April 29, 11:30 AM",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF1C1F2E),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE8F1FF),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Text(
-                                      "Next Appointement",
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF4A90E2),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE0EBFA),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(
+                                          Icons.calendar_today_rounded,
+                                          color: Color(0xFF4A90E2),
+                                          size: 18,
+                                        ),
                                       ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              "Wed, April 29,",
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFF1C1F2E),
+                                              ),
+                                            ),
+                                            const Text(
+                                              "11:30 AM",
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF7A8194),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE8F1FF),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child: const Text(
+                                          "Next Appointement",
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF4A90E2),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Text(
+                                    "Physiotherapy with Dr. Smith",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF7A8194),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                "Physiotherapy with Dr. Smith",
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 18, vertical: 9),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF6FA8F6),
+                                    Color(0xFF4A90E2)
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                              child: const Text(
+                                "View Details",
                                 style: TextStyle(
+                                  color: Colors.white,
                                   fontSize: 13,
-                                  color: Color(0xFF7A8194),
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 9),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF6FA8F6), Color(0xFF4A90E2)],
                             ),
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: const Text(
-                            "View Details",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
