@@ -8,6 +8,8 @@ class MonitorEx extends StatefulWidget {
 }
 
 class _MonitorExState extends State<MonitorEx> {
+  bool _isPaused = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -394,8 +396,15 @@ class _MonitorExState extends State<MonitorEx> {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () {
+                  setState(() {
+                    _isPaused = !_isPaused;
+                  });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Session paused')),
+                    SnackBar(
+                      content: Text(
+                        _isPaused ? 'Session paused' : 'Session resumed',
+                      ),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -407,11 +416,16 @@ class _MonitorExState extends State<MonitorEx> {
                     borderRadius: BorderRadius.circular(13),
                   ),
                 ),
-                icon: const Icon(Icons.pause_circle_filled,
-                    color: Colors.white, size: 20),
-                label: const Text(
-                  'Pause',
-                  style: TextStyle(
+                icon: Icon(
+                  _isPaused
+                      ? Icons.play_circle_filled
+                      : Icons.pause_circle_filled,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                label: Text(
+                  _isPaused ? 'Resume' : 'Pause',
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -421,6 +435,39 @@ class _MonitorExState extends State<MonitorEx> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Emergency stop activated')),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 239, 68, 68),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+            label: const Text(
+              'Emergency Stop',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 16),
         SizedBox(

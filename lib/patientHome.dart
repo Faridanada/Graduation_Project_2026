@@ -1,429 +1,183 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'BookAppointments.dart';
-import 'ChatbotPage.dart';
+import 'package:rehabilitation_app/core/theme/app_colors.dart';
+import 'features/presentation/patient/presentation/widgets/appointment_card.dart';
+import 'features/presentation/patient/presentation/widgets/action_card.dart';
+import 'features/presentation/patient/presentation/screens/chats_screen.dart';
+import 'features/presentation/patient/presentation/screens/profile_screen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
-  const PatientHomeScreen({Key? key}) : super(key: key);
+  const PatientHomeScreen({super.key});
 
   @override
   State<PatientHomeScreen> createState() => _PatientHomeScreenState();
 }
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
-  int selectedIndex = 0;
-  Map<String, bool> reminderCompletionStatus = {
-    'Exercise': false,
-    'Appointment @ 14:00': false,
-    'Review wound': false,
-  };
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = const [
+    _HomeContent(),
+    ChatsScreen(),
+    ProfileScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          'FLEXIO',
-          style: GoogleFonts.poppins(
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined,
-                color: Colors.black, size: 24),
-            onPressed: () {
-              // TODO: Navigate to notifications
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: Colors.black, size: 24),
-            onPressed: () {
-              // TODO: Navigate to settings
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Contact Emergency Section
-              contactEmergencySection(),
-              const SizedBox(height: 32),
-
-              // Tasks & Progress Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Tasks & Progress',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      // TODO: See all tasks
-                    },
-                    child: const Text(
-                      'See All >',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color.fromRGBO(128, 155, 206, 1),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 25),
-
-              // Reminders and Progress Row
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Reminders Column
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.all(25),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.grey[200]!,
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Reminders',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          reminderItem('Exercise'),
-                          const SizedBox(height: 0),
-                          reminderItem('Appointment @ 14:00'),
-                          const SizedBox(height: 0),
-                          reminderItem('Review wound'),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-
-                  // Track Progress Column
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.all(25),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.grey[200]!,
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Track Progress',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 9),
-                          const Text(
-                            '85%',
-                            style: TextStyle(
-                              fontSize: 28,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Almost there!',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color.fromARGB(255, 0, 0, 0),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: LinearProgressIndicator(
-                              value: 0.85,
-                              minHeight: 15,
-                              backgroundColor: Colors.grey[300],
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Color.fromRGBO(128, 155, 206, 0.85),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // Activities Section
-              const Text(
-                'Activities',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Activities Grid
-              Column(
-                children: [
-                  // Row 1: Monitor Exercise, Manage Wound, Manage Appointment
-                  Row(
-                    children: [
-                      Expanded(
-                        child: activityTile('Start\nExercise'),
-                      ),
-                      const SizedBox(width: 40),
-                      Expanded(
-                        child: activityTile('Manage\nWound'),
-                      ),
-                      const SizedBox(width: 40),
-                      Expanded(
-                        child: activityTile('Book\nAppoint.'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Row 2: View AI Reports, View History (centered)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: (MediaQuery.of(context).size.width - 56) / 3,
-                        child: activityTile('View Real\nTime Data'),
-                      ),
-                      const SizedBox(width: 40),
-                      SizedBox(
-                        width: (MediaQuery.of(context).size.width - 56) / 3,
-                        child: activityTile('View\nHistory'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 80),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ChatbotPage(),
-            ),
-          );
-        },
-        backgroundColor: const Color(0xFF6BA5CF),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Icon(Icons.smart_toy, color: Colors.white, size: 28),
-      ),
+      body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedIndex,
+        currentIndex: _currentIndex,
+        selectedItemColor: AppColors.primaryBlue,
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        elevation: 8,
         onTap: (index) {
           setState(() {
-            selectedIndex = index;
+            _currentIndex = index;
           });
-          // TODO: Navigate to different screens based on index
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chat_outlined),
+            icon: Icon(Icons.chat_bubble_outline_rounded),
             label: 'Chats',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
+            icon: Icon(Icons.person_outline_rounded),
             label: 'Profile',
           ),
         ],
       ),
     );
   }
+}
 
-  Widget contactEmergencySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Contact Emergency',
-          style: TextStyle(
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              // TODO: Implement call hotline functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Calling hotline...')),
-              );
-            },
-            icon: const Icon(Icons.phone, size: 20),
-            label: const Text(
-              'Call Hotline',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 238, 238, 238),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(7),
-              ),
-              elevation: 0,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+class _HomeContent extends StatelessWidget {
+  const _HomeContent();
 
-  Widget reminderItem(String title) {
-    bool isCompleted = reminderCompletionStatus[title] ?? false;
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 30),
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          reminderCompletionStatus[title] = !isCompleted;
-        });
-      },
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: Radio<bool>(
-              value: true,
-              groupValue: isCompleted,
-              onChanged: (value) {
-                setState(() {
-                  reminderCompletionStatus[title] =
-                      !reminderCompletionStatus[title]!;
-                });
-              },
-              activeColor: const Color.fromRGBO(128, 155, 206, 0.85),
-              fillColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return const Color.fromRGBO(128, 155, 206, 1);
-                }
-                return Colors.grey[400];
-              }),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
+              /// Top Bar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'FLEXIO',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const Row(
+                    children: [
+                      Icon(Icons.notifications_none_rounded),
+                      SizedBox(width: 20),
+                      Icon(Icons.settings_outlined),
+                    ],
+                  )
+                ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget activityTile(String label) {
-    return GestureDetector(
-      onTap: () {
-        if (label.contains('Book')) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const BookAppoint()),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$label tapped')),
-          );
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.grey[100]!,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-                height: 1.4,
+              const SizedBox(height: 30),
+
+              /// Greeting
+              Text(
+                'Good Morning, John 👋',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                "Let's get ready for your recovery!",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              const AppointmentCard(),
+
+              const SizedBox(height: 25),
+
+              /// Start Exercise Button
+              Container(
+                height: 55,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF5C9DED),
+                      Color(0xFF4A90E2),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x334A90E2),
+                      blurRadius: 25,
+                      offset: Offset(0, 12),
+                    )
+                  ],
+                ),
+                child: const Center(
+                  child: Text(
+                    'Start Exercise',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 25),
+
+              const ActionCard(
+                title: "Report Wound",
+                icon: Icons.medical_services_outlined,
+                iconBg: AppColors.lightBlue,
+              ),
+
+              const SizedBox(height: 20),
+
+              const ActionCard(
+                title: "Progress",
+                icon: Icons.bar_chart_rounded,
+                iconBg: AppColors.lightBlue,
+              ),
+
+              const SizedBox(height: 20),
+
+              const ActionCard(
+                title: "Emergency Call",
+                icon: Icons.phone_rounded,
+                iconBg: Colors.redAccent,
+                isEmergency: true,
+              ),
+
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
