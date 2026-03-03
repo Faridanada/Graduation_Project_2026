@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'features/presentation/patient/presentation/screens/chats_screen.dart';
 import 'features/presentation/patient/presentation/screens/profile_screen.dart';
 
+import 'report_wound_screen.dart';
+
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({super.key});
 
@@ -562,20 +564,44 @@ class _HomeContent extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                "Wed, April 29, 11:30 AM",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1C1F2E),
-                                ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    "Wed, April 29, 11:30 AM",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF1C1F2E),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE8F1FF),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Text(
+                                      "Next Appointement",
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF4A90E2),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              SizedBox(height: 4),
-                              Text(
+                              const SizedBox(height: 6),
+                              const Text(
                                 "Physiotherapy with Dr. Smith",
                                 style: TextStyle(
                                   fontSize: 13,
@@ -671,75 +697,72 @@ class _HomeContent extends StatelessWidget {
             const SizedBox(height: 24),
 
             /// ================= REPORT WOUND =================
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFFF2F2),
-                    Color(0xFFFDEAEA),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Color(0xFFE53935),
-                  width: 1.2,
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x1AE53935),
-                    blurRadius: 16,
-                    offset: Offset(0, 6),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ReportWoundScreen(),
                   ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFE5E5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt_rounded,
-                      color: Color(0xFFE53935),
-                      size: 20,
-                    ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFFFF2F2),
+                      Color(0xFFFDEAEA),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Report Wound",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFFE53935),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "Track healing & symptoms",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF7A8194),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_ios,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
                     color: Color(0xFFE53935),
-                    size: 16,
+                    width: 1.2,
                   ),
-                ],
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1AE53935),
+                      blurRadius: 16,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.camera_alt_rounded, color: Color(0xFFE53935)),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Report Wound",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFE53935),
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "Track healing & symptoms",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF7A8194),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios,
+                        color: Color(0xFFE53935), size: 16),
+                  ],
+                ),
               ),
             ),
 
