@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/app_colors.dart';
 import '../widgets/appointment_card.dart';
 import '../widgets/action_card.dart';
 import 'chats_screen.dart';
