@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'DoctorHome.dart';
 import 'OnboardingPage.dart';
 
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
 
