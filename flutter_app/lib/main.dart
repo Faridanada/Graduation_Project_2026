@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:rehabilitation_app/WelcomePage.dart';
-import 'package:rehabilitation_app/login.dart';
-import 'package:rehabilitation_app/signup.dart';
+import 'package:rehabilitation_app/ui/WelcomePage.dart';
+import 'package:rehabilitation_app/ui/login.dart';
+import 'package:rehabilitation_app/ui/signup.dart';
 
 void main() {
   runApp(const MyApp());

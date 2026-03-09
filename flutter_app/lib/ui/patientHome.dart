@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'features/presentation/patient/presentation/screens/chats_screen.dart';
-import 'features/presentation/patient/presentation/screens/profile_screen.dart';
+import 'package:rehabilitation_app/features/presentation/patient/presentation/screens/chats_screen.dart';
+import 'package:rehabilitation_app/features/presentation/patient/presentation/screens/profile_screen.dart';
 
 import 'report_wound_screen.dart';
 
