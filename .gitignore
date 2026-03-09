@@ -1,5 +1,25 @@
+# Backend
 backend/node_modules/
+backend/.env
 node_modules/
 .env
-.env
-backend/.env
+
+# Flutter build artifacts (should only be in flutter_app/)
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+android/
+.metadata
+
+# IDE
+.idea/
+.vscode/
+*.iws
+*.ipr
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
