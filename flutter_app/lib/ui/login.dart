@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 import 'DoctorHome.dart';
 import 'patientHome.dart';
 import 'signup.dart';
@@ -75,19 +77,44 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void handleLogin() {
-    final email = emailController.text;
+  Future<void> handleLogin() async {
+    final email = emailController.text.trim();
     final password = passwordController.text;
 
-    if (email.trim().isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter email and password')),
       );
       return;
     }
 
-    // After your real auth (if any), route by email:
-    _navigateByEmail(email);
+    try {
+      final response = await AuthService.login(email, password);
+
+      if (response['statusCode'] == 200) {
+        // Save the token
+        final String token = response['data']['token'] ?? '';
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('jwt_token', token);
+        
+        // After real auth, routing by email convention as before
+        _navigateByEmail(email);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['data']['message'] ?? 'Login failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Network error: Could not connect to the server.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

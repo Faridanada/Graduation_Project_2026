@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import '../services/auth_service.dart';
 import 'DoctorHome.dart';
 import 'OnboardingPage.dart';
 
@@ -473,27 +474,85 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
   }
 
-  void handleSignUp() {
+  Future<void> handleSignUp() async {
     if (!_validateStepOne() || !_validateStepTwo()) {
       return;
     }
 
-    if (_isDoctorSignup) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DoctorHome()),
+    if (!_isDoctorSignup && !_validateStepThree()) {
+      return;
+    }
+
+    // Prepare Name
+    final fullName = '${firstNameController.text.trim()} ${lastNameController.text.trim()}';
+
+    // Prepare Profile Data Map
+    final Map<String, dynamic> profileData = {
+      "phone": phoneController.text.trim(),
+      "role": _isDoctorSignup ? "doctor" : "patient",
+      // Step 2 details
+      "gender": selectedGender,
+      "dateOfBirth": dateOfBirthController.text.trim(),
+      "age": int.tryParse(ageController.text.trim()),
+      "location": locationController.text.trim(),
+    };
+
+    // If it's a patient, add Step 3 Medical History details
+    if (!_isDoctorSignup) {
+      profileData.addAll({
+        "diagnosis": selectedDiagnosis == 'Other' ? otherDiagnosisController.text.trim() : selectedDiagnosis,
+        "affectedArea": selectedAffectedArea == 'Other' ? otherAffectedAreaController.text.trim() : selectedAffectedArea,
+        "currentPainLevel": selectedPainLevel,
+        "mobilityLimitations": selectedMobilityLevel == 'Other' ? otherMobilityLevelController.text.trim() : selectedMobilityLevel,
+        "assistiveDevices": selectedAssistiveDevice == 'Other' ? otherAssistiveDeviceController.text.trim() : selectedAssistiveDevice,
+        "currentMedicationUse": selectedMedicationStatus == 'Other' ? otherMedicationStatusController.text.trim() : selectedMedicationStatus,
+        "allergies": selectedAllergyStatus == 'Other' ? otherAllergyController.text.trim() : selectedAllergyStatus,
+        "injuryDate": injuryDateController.text.trim(),
+        "rehabilitationGoal": selectedRehabGoal == 'Other' ? otherRehabGoalController.text.trim() : selectedRehabGoal,
+      });
+    }
+
+    try {
+      final response = await AuthService.register(
+        name: fullName,
+        email: emailController.text.trim(),
+        password: passwordController.text,
+        profileData: profileData,
       );
-      return;
-    }
 
-    if (!_validateStepThree()) {
-      return;
-    }
+      if (response['statusCode'] == 201) {
+        // Success: Registration complete!
+        // You could theoretically also call login here to get a token instantly,
+        // but for now, let's just proceed to Onboarding/Home.
+        
+        if (_isDoctorSignup) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const DoctorHome()),
+          );
+          return;
+        }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => OnboardingPage(userEmail: emailController.text),
-      ),
-    );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => OnboardingPage(userEmail: emailController.text),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['data']['message'] ?? 'Sign Up failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Network error: Could not connect to the server.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   InputDecoration _inputDecoration({

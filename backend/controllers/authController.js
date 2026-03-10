@@ -5,7 +5,7 @@ const dbService = require("../services/dbService");
 // ================= REGISTER =================
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, profileData } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -22,11 +22,12 @@ exports.registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user using our DB abstraction
+    // Create user using our DB abstraction, passing profileData
     const newUser = await dbService.createUser({
       name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      profileData: profileData || {} // Default to empty object if not provided
     });
 
     res.status(201).json({
@@ -34,7 +35,8 @@ exports.registerUser = async (req, res) => {
       user: {
         id: newUser.id,
         name: newUser.name,
-        email: newUser.email
+        email: newUser.email,
+        profileData: newUser.profileData
       }
     });
 
