@@ -38,45 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// Whole-word (ish) check. For simple prototypes, `.contains` is fine.
-  bool _containsWord(String text, String word) {
-    final t = text.toLowerCase();
-    // Use simple contains to avoid HTML entity issues:
-    return t.contains(word.toLowerCase());
-    // If you insist on boundaries, use this (ensure NO HTML entities in your file):
-    // return RegExp(r'(?<![a-z])' + RegExp.escape(word) + r'(?![a-z])').hasMatch(t);
-  }
-
-  void _navigateByEmail(String rawEmail) {
-    final email = rawEmail.trim().toLowerCase();
-
-    // Debug to console
-    debugPrint('[ROLE ROUTE][login] email="$email" '
-        'doctor? ${_containsWord(email, 'doctor')} '
-        'patient? ${_containsWord(email, 'patient')}');
-
-    // Priority: doctor first, then patient
-    if (_containsWord(email, 'doctor')) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DoctorHome()),
-      );
-      return;
-    }
-    if (_containsWord(email, 'patient')) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const PatientHomeScreen()),
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content:
-            Text('Please use an email that contains "doctor" or "patient".'),
-      ),
-    );
-  }
-
   Future<void> handleLogin() async {
     final email = emailController.text.trim();
     final password = passwordController.text;
@@ -97,8 +58,20 @@ class _LoginScreenState extends State<LoginScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt_token', token);
         
-        // After real auth, routing by email convention as before
-        _navigateByEmail(email);
+        // Extract real role from the database response
+        final role = response['data']['user']['role'];
+
+        if (role == 'doctor') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const DoctorHome()),
+          );
+        } else {
+          // Default all other users to Patient Home
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const PatientHomeScreen()),
+          );
+        }
+
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -270,14 +270,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _hasSpecialChar(String password) =>
       RegExp(r'[^A-Za-z0-9]').hasMatch(password);
 
-  bool _containsWord(String text, String word) {
-    final t = text.toLowerCase();
-    return t.contains(word.toLowerCase());
-  }
-
   String get _normalizedEmail => emailController.text.trim().toLowerCase();
-  bool get _isDoctorSignup => _containsWord(_normalizedEmail, 'doctor');
-  bool get _isPatientSignup => _containsWord(_normalizedEmail, 'patient');
+
+  // Explicit Role tracking variable
+  String? selectedRole;
 
   bool _isPhoneValid(String phone) {
     final digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
@@ -330,12 +326,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return false;
     }
 
-    if (!_isDoctorSignup && !_isPatientSignup) {
+    if (selectedRole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Please use an email that contains the word "doctor" or "patient".',
-          ),
+          content: Text('Please select whether you are a Doctor or Patient.'),
         ),
       );
       return false;
@@ -462,7 +456,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    if (_isDoctorSignup) {
+    if (selectedRole == 'doctor') {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const DoctorHome()),
       );
@@ -479,7 +473,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    if (!_isDoctorSignup && !_validateStepThree()) {
+    if (selectedRole != 'doctor' && !_validateStepThree()) {
       return;
     }
 
@@ -489,7 +483,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // Prepare Profile Data Map
     final Map<String, dynamic> profileData = {
       "phone": phoneController.text.trim(),
-      "role": _isDoctorSignup ? "doctor" : "patient",
+      "role": selectedRole,
       // Step 2 details
       "gender": selectedGender,
       "dateOfBirth": dateOfBirthController.text.trim(),
@@ -498,7 +492,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     };
 
     // If it's a patient, add Step 3 Medical History details
-    if (!_isDoctorSignup) {
+    if (selectedRole != 'doctor') {
       profileData.addAll({
         "diagnosis": selectedDiagnosis == 'Other' ? otherDiagnosisController.text.trim() : selectedDiagnosis,
         "affectedArea": selectedAffectedArea == 'Other' ? otherAffectedAreaController.text.trim() : selectedAffectedArea,
@@ -525,7 +519,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // You could theoretically also call login here to get a token instantly,
         // but for now, let's just proceed to Onboarding/Home.
         
-        if (_isDoctorSignup) {
+        if (selectedRole == 'doctor') {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const DoctorHome()),
           );
@@ -643,6 +637,109 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget _buildStepOneContent() {
     return Column(
       children: [
+        // ROLE SELECTION UI
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedRole = 'patient';
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: selectedRole == 'patient'
+                        ? const Color(0xFF2196F3).withValues(alpha: 0.1)
+                        : Colors.white,
+                    border: Border.all(
+                      color: selectedRole == 'patient'
+                          ? const Color(0xFF2196F3)
+                          : Colors.grey.shade300,
+                      width: selectedRole == 'patient' ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.accessible_forward,
+                        size: 32,
+                        color: selectedRole == 'patient'
+                            ? const Color(0xFF2196F3)
+                            : Colors.grey.shade500,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Patient',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: selectedRole == 'patient'
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: selectedRole == 'patient'
+                              ? const Color(0xFF2196F3)
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedRole = 'doctor';
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: selectedRole == 'doctor'
+                        ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
+                        : Colors.white,
+                    border: Border.all(
+                      color: selectedRole == 'doctor'
+                          ? const Color(0xFF4CAF50)
+                          : Colors.grey.shade300,
+                      width: selectedRole == 'doctor' ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.local_hospital,
+                        size: 32,
+                        color: selectedRole == 'doctor'
+                            ? const Color(0xFF4CAF50)
+                            : Colors.grey.shade500,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Doctor',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: selectedRole == 'doctor'
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: selectedRole == 'doctor'
+                              ? const Color(0xFF4CAF50)
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
         Row(
           children: [
             Expanded(
@@ -1047,7 +1144,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
                 child: Text(
-                  _isDoctorSignup ? 'Sign Up' : 'Continue',
+                  selectedRole == 'doctor' ? 'Sign Up' : 'Continue',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -1484,11 +1581,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           const SizedBox(height: 10),
                           Text(
                             currentStep == 0
-                                ? (_isDoctorSignup
+                                ? (selectedRole == 'doctor'
                                     ? 'Step 1 of 2 • Essential account details'
                                     : 'Step 1 of 3 • Essential account details')
                                 : currentStep == 1
-                                    ? (_isDoctorSignup
+                                    ? (selectedRole == 'doctor'
                                         ? 'Step 2 of 2 • Personal information'
                                         : 'Step 2 of 3 • Personal information')
                                     : 'Step 3 of 3 • Medical history',
