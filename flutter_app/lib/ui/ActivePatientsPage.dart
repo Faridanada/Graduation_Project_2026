@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class ActivePatientsPage extends StatefulWidget {
   const ActivePatientsPage({Key? key}) : super(key: key);
@@ -8,152 +9,28 @@ class ActivePatientsPage extends StatefulWidget {
 }
 
 class _ActivePatientsPageState extends State<ActivePatientsPage> {
-  final List<Map<String, dynamic>> activePatients = [
-    {
-      'name': 'John Doe',
-      'age': '21',
-      'phone': '555-0101',
-      'injuryType': 'Knee Fracture',
-    },
-    {
-      'name': 'Harry Black',
-      'age': '25',
-      'phone': '555-0102',
-      'injuryType': 'Shoulder Dislocation',
-    },
-    {
-      'name': 'Jack Doe',
-      'age': '43',
-      'phone': '555-0103',
-      'injuryType': 'Back Strain',
-    },
-    {
-      'name': 'Alice Smith',
-      'age': '31',
-      'phone': '555-0104',
-      'injuryType': 'Ankle Sprain',
-    },
-    {
-      'name': 'Emma Jones',
-      'age': '28',
-      'phone': '555-0105',
-      'injuryType': 'Wrist Fracture',
-    },
-    {
-      'name': 'Michael Brown',
-      'age': '35',
-      'phone': '555-0106',
-      'injuryType': 'Hip Replacement',
-    },
-    {
-      'name': 'Sarah Wilson',
-      'age': '42',
-      'phone': '555-0107',
-      'injuryType': 'Knee Ligament Tear',
-    },
-    {
-      'name': 'David Lee',
-      'age': '29',
-      'phone': '555-0108',
-      'injuryType': 'Elbow Fracture',
-    },
-    {
-      'name': 'Jessica Martinez',
-      'age': '26',
-      'phone': '555-0109',
-      'injuryType': 'Rotator Cuff Tear',
-    },
-    {
-      'name': 'Chris Anderson',
-      'age': '38',
-      'phone': '555-0110',
-      'injuryType': 'Lower Back Pain',
-    },
-    {
-      'name': 'Lauren Taylor',
-      'age': '32',
-      'phone': '555-0111',
-      'injuryType': 'Knee Meniscus Tear',
-    },
-    {
-      'name': 'James White',
-      'age': '45',
-      'phone': '555-0112',
-      'injuryType': 'Spinal Cord Injury',
-    },
-    {
-      'name': 'Megan Harris',
-      'age': '24',
-      'phone': '555-0113',
-      'injuryType': 'Ankle Fracture',
-    },
-    {
-      'name': 'Ryan Davis',
-      'age': '39',
-      'phone': '555-0114',
-      'injuryType': 'Shoulder Strain',
-    },
-    {
-      'name': 'Sophie Clark',
-      'age': '27',
-      'phone': '555-0115',
-      'injuryType': 'Knee Arthritis',
-    },
-    {
-      'name': 'Daniel Miller',
-      'age': '44',
-      'phone': '555-0116',
-      'injuryType': 'Hip Strain',
-    },
-    {
-      'name': 'Olivia Rodriguez',
-      'age': '30',
-      'phone': '555-0117',
-      'injuryType': 'Wrist Tendonitis',
-    },
-    {
-      'name': 'Tyler Jackson',
-      'age': '25',
-      'phone': '555-0118',
-      'injuryType': 'Foot Fracture',
-    },
-    {
-      'name': 'Ava Martinez',
-      'age': '33',
-      'phone': '555-0119',
-      'injuryType': 'Knee Bursitis',
-    },
-    {
-      'name': 'Nathan Garcia',
-      'age': '41',
-      'phone': '555-0120',
-      'injuryType': 'Back Disc Herniation',
-    },
-    {
-      'name': 'Isabella Lopez',
-      'age': '28',
-      'phone': '555-0121',
-      'injuryType': 'Ankle Instability',
-    },
-    {
-      'name': 'Mason Thomas',
-      'age': '36',
-      'phone': '555-0122',
-      'injuryType': 'Shoulder Impingement',
-    },
-    {
-      'name': 'Charlotte Lee',
-      'age': '29',
-      'phone': '555-0123',
-      'injuryType': 'Knee Ligament Sprain',
-    },
-    {
-      'name': 'Ethan Walker',
-      'age': '40',
-      'phone': '555-0124',
-      'injuryType': 'Lumbar Strain',
-    },
-  ];
+  List<Map<String, dynamic>> activePatients = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPatients();
+  }
+
+  Future<void> _loadPatients() async {
+    setState(() => isLoading = true);
+    final fetched = await ApiService.getDoctorPatients();
+    setState(() {
+      activePatients = fetched.map((p) => {
+        'name': p['name'] ?? 'Unknown',
+        'age': p['age']?.toString() ?? 'N/A',
+        'phone': p['phone'] ?? 'N/A',
+        'injuryType': p['injuryType'] ?? 'Unknown', // Fallback
+      }).toList();
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -196,13 +73,17 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
               ),
             ),
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: activePatients.length,
-                itemBuilder: (context, index) {
-                  return _buildPatientCard(activePatients[index]);
-                },
-              ),
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : activePatients.isEmpty
+                      ? const Center(child: Text('No active patients found'))
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: activePatients.length,
+                          itemBuilder: (context, index) {
+                            return _buildPatientCard(activePatients[index]);
+                          },
+                        ),
             ),
           ],
         ),
