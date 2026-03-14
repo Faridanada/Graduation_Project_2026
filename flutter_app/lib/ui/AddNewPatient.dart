@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class AddNewPatient extends StatefulWidget {
   const AddNewPatient({Key? key}) : super(key: key);
@@ -190,16 +191,46 @@ class _AddNewPatientState extends State<AddNewPatient> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      // Save patient logic here
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Patient added successfully!'),
-                          backgroundColor: Colors.green,
-                        ),
+                      // Show loading indicator
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(child: CircularProgressIndicator()),
                       );
-                      Navigator.pop(context);
+
+                      final patientData = {
+                        'name': _nameController.text.trim(),
+                        'age': _ageController.text.trim(),
+                        'gender': _selectedGender,
+                        'phone': _phoneController.text.trim(),
+                        'email': _emailController.text.trim(),
+                        'medicalHistory': _medicalHistoryController.text.trim(),
+                        'treatmentPlans': _selectedTreatmentPlans,
+                      };
+
+                      bool success = await ApiService.addDoctorPatient(patientData);
+
+                      // Hide loading indicator
+                      if (context.mounted) Navigator.pop(context);
+
+                      if (success && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Patient added successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        Navigator.pop(context); // Go back to previous screen
+                      } else if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Failed to add patient. Check connection.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(

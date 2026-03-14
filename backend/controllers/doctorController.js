@@ -36,6 +36,68 @@ const doctorController = {
             console.error('Error fetching today appointments:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error fetching appointments' });
         }
+    },
+
+    // POST /api/doctor/patients/add
+    async addPatient(req, res) {
+        try {
+            const doctorId = req.user.id || 'doctor_1';
+            const patientData = req.body;
+
+            // Basic validation
+            if (!patientData.name || !patientData.phone) {
+                return res.status(400).json({ statusCode: 400, message: 'Name and phone are required' });
+            }
+
+            const newPatient = await dbService.addPatientForDoctor(doctorId, patientData);
+            res.status(201).json({ statusCode: 201, data: newPatient, message: 'Patient added successfully' });
+        } catch (error) {
+            console.error('Error adding patient:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error adding patient' });
+        }
+    },
+
+    // GET /api/doctor/requests
+    async getRequests(req, res) {
+        try {
+            const doctorId = req.user.id || 'doctor_1';
+            const requests = await dbService.getRequests(doctorId);
+            res.json({ statusCode: 200, data: requests });
+        } catch (error) {
+            console.error('Error fetching requests:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error fetching requests' });
+        }
+    },
+
+    // PUT /api/doctor/requests/:id/accept
+    async acceptRequest(req, res) {
+        try {
+            const requestId = req.params.id;
+            const updatedRequest = await dbService.updateRequestStatus(requestId, 'completed');
+            res.json({ statusCode: 200, data: updatedRequest, message: 'Request accepted' });
+        } catch (error) {
+            console.error('Error accepting request:', error);
+            if (error.message === 'Request not found') {
+                return res.status(404).json({ statusCode: 404, message: 'Request not found' });
+            }
+            res.status(500).json({ statusCode: 500, message: 'Server error accepting request' });
+        }
+    },
+
+    // PUT /api/doctor/requests/:id/reject
+    async rejectRequest(req, res) {
+        try {
+            const requestId = req.params.id;
+            // Depending on logic, maybe 'rejected' instead of 'completed'
+            const updatedRequest = await dbService.updateRequestStatus(requestId, 'rejected');
+            res.json({ statusCode: 200, data: updatedRequest, message: 'Request rejected' });
+        } catch (error) {
+            console.error('Error rejecting request:', error);
+            if (error.message === 'Request not found') {
+                return res.status(404).json({ statusCode: 404, message: 'Request not found' });
+            }
+            res.status(500).json({ statusCode: 500, message: 'Server error rejecting request' });
+        }
     }
 };
 

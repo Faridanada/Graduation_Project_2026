@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'SettingsPage.dart';
 import 'NotificationsPage.dart';
+import '../services/api_service.dart';
 
 class PatientRequest extends StatefulWidget {
   const PatientRequest({Key? key}) : super(key: key);
@@ -12,69 +13,55 @@ class PatientRequest extends StatefulWidget {
 class _PatientRequestState extends State<PatientRequest> {
   String selectedFilter = 'All';
 
-  final List<Map<String, dynamic>> requests = [
-    {
-      'name': 'John Doe',
-      'type': 'Appointment Request',
-      'message': 'Requesting appointment for next Tuesday at 2 PM',
-      'timestamp': '10 mins ago',
-      'status': 'pending',
-    },
-    {
-      'name': 'Alice Smith',
-      'type': 'Exercise Question',
-      'message':
-          'Is it normal to feel slight discomfort during the knee exercises?',
-      'timestamp': '2 hours ago',
-      'status': 'pending',
-    },
-    {
-      'name': 'Mark Lee',
-      'type': 'Prescription Refill',
-      'message': 'Need prescription refill for pain medication',
-      'timestamp': '1 day ago',
-      'status': 'completed',
-    },
-    {
-      'name': 'Emma Brown',
-      'type': 'Wound Check',
-      'message': 'I uploaded new wound photos for review.',
-      'timestamp': '3 hours ago',
-      'status': 'pending',
-    },
-    {
-      'name': 'Michael Johnson',
-      'type': 'Extra Exercise Session',
-      'message':
-          'Can we add another session this week? Feeling good with progress.',
-      'timestamp': '5 hours ago',
-      'status': 'pending',
-    },
-    {
-      'name': 'Sarah Williams',
-      'type': 'Change Appointment Time',
-      'message':
-          'Can we move tomorrow\'s session to afternoon instead of morning?',
-      'timestamp': '12 hours ago',
-      'status': 'completed',
-    },
-    {
-      'name': 'David Khan',
-      'type': 'Appointment Request',
-      'message':
-          'Would like to schedule an appointment for next Friday at 10 AM',
-      'timestamp': '30 mins ago',
-      'status': 'pending',
-    },
-    {
-      'name': 'Jennifer Lee',
-      'type': 'Exercise Question',
-      'message':
-          'Is it safe to continue with the current intensity or should I reduce it?',
-      'timestamp': '45 mins ago',
-      'status': 'pending',
-    },
-  ];
+  List<Map<String, dynamic>> requests = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRequests();
+  }
+
+  Future<void> _loadRequests() async {
+    setState(() => isLoading = true);
+    final fetched = await ApiService.getDoctorRequests();
+    setState(() {
+      requests = List<Map<String, dynamic>>.from(fetched);
+      isLoading = false;
+    });
+  }
+
+  Future<void> _handleResponse(String requestId, bool accept, String doctorName) async {
+    // Optimistic UI update or loading spinner can go here
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final success = await ApiService.respondToDoctorRequest(requestId, accept);
+    
+    if (context.mounted) Navigator.pop(context); // hide loading
+
+    if (success) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(accept ? 'Responded to $doctorName' : 'Dismissed $doctorName\'s request'),
+            backgroundColor: accept ? Colors.green : Colors.grey,
+          ),
+        );
+      }
+      _loadRequests(); // Refresh the list
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update request status.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   List<Map<String, dynamic>> get filteredRequests {
     if (selectedFilter == 'All') {
@@ -99,17 +86,20 @@ class _PatientRequestState extends State<PatientRequest> {
           children: [
             _buildFilterTabs(),
             Expanded(
-              child: ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: filteredRequests.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _buildRequestCard(filteredRequests[index]),
-                  );
-                },
-              ),
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : requests.isEmpty
+                      ? const Center(child: Text("No requests found"))
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          itemCount: filteredRequests.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _buildRequestCard(filteredRequests[index]),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

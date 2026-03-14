@@ -64,6 +64,50 @@ class ApiService {
     return [];
   }
 
+  // --- PATIENT & REQUEST ENDPOINTS (NEW) ---
+  
+  static Future<bool> addDoctorPatient(Map<String, dynamic> patientData) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/doctor/patients/add"),
+      headers: _headers(token),
+      body: jsonEncode(patientData),
+    );
+
+    return response.statusCode == 201 || response.statusCode == 200;
+  }
+
+  static Future<List<dynamic>> getDoctorRequests() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/doctor/requests"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  static Future<bool> respondToDoctorRequest(String requestId, bool accept) async {
+    final token = await _getToken();
+    if (token == null) return false;
+    
+    final endpoint = accept ? "accept" : "reject";
+
+    final response = await http.put(
+      Uri.parse("$baseUrl/doctor/requests/$requestId/$endpoint"),
+      headers: _headers(token),
+    );
+
+    return response.statusCode == 200;
+  }
+
   // --- PATIENT ENDPOINTS ---
 
   static Future<List<dynamic>> getPatientTodayExercises() async {

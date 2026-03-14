@@ -9,6 +9,10 @@ router.use(authMiddleware);
 // Routes
 router.get('/stats', doctorController.getStats);
 router.get('/patients', doctorController.getPatients);
+router.post('/patients/add', doctorController.addPatient);
 router.get('/appointments/today', doctorController.getTodayAppointments);
+router.get('/requests', doctorController.getRequests);
+router.put('/requests/:id/accept', doctorController.acceptRequest);
+router.put('/requests/:id/reject', doctorController.rejectRequest);
 
 module.exports = router;

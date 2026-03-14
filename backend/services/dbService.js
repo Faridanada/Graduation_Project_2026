@@ -1,6 +1,7 @@
 const usersData = require("../data/users");
 const appointmentsData = require("../data/appointments");
 const exercisesData = require("../data/exercises");
+const { requestsList } = require("../data/requests");
 // ==========================================
 // DB Simulation (Before DynamoDB Access)
 // ==========================================
@@ -137,6 +138,54 @@ const dbService = {
           { id: 3, text: "Drink plenty of water", type: "general" }
         ]);
       }, 100);
+    });
+  },
+
+  /**
+   * Fetch all requests for a specific doctor
+   */
+  async getRequests(doctorId) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const docRequests = requestsList.filter(r => r.doctorId === doctorId);
+        resolve(docRequests);
+      }, 100);
+    });
+  },
+
+  /**
+   * Update the status of a request
+   */
+  async updateRequestStatus(requestId, status) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const reqIndex = requestsList.findIndex(r => r.id === requestId);
+        if (reqIndex !== -1) {
+          requestsList[reqIndex].status = status;
+          resolve(requestsList[reqIndex]);
+        } else {
+          reject(new Error("Request not found"));
+        }
+      }, 100);
+    });
+  },
+
+  /**
+   * Add a new patient manually for a doctor
+   */
+  async addPatientForDoctor(doctorId, patientData) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newPatient = {
+          id: `patient_${Date.now()}`,
+          role: 'patient',
+          assignedDoctorId: doctorId,
+          ...patientData,
+          createdAt: new Date().toISOString()
+        };
+        usersData.push(newPatient);
+        resolve(newPatient);
+      }, 150);
     });
   }
 };
