@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'MonitorEx.dart';
 import 'patientRequest.dart';
 import 'AiReports.dart';
@@ -27,6 +28,40 @@ class _DoctorHomeState extends State<DoctorHome> {
   final Set<String> selectedExercises = {};
   int _selectedNavIndex = 0;
   final ScrollController _patientsScrollController = ScrollController();
+
+  Map<String, dynamic> doctorStats = {};
+  List<dynamic> patientsList = [];
+  List<dynamic> todayAppointments = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    try {
+      final stats = await ApiService.getDoctorStats();
+      final patients = await ApiService.getDoctorPatients();
+      final appointments = await ApiService.getDoctorTodayAppointments();
+      
+      if (mounted) {
+        setState(() {
+          doctorStats = stats;
+          patientsList = patients;
+          todayAppointments = appointments;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -137,7 +172,7 @@ class _DoctorHomeState extends State<DoctorHome> {
               },
               child: _buildStatusCard(
                 'Active Patients',
-                '24',
+                isLoading ? '-' : '${doctorStats['activePatients'] ?? 0}',
                 const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
                 Icons.people_outline,
               ),
@@ -154,7 +189,7 @@ class _DoctorHomeState extends State<DoctorHome> {
               },
               child: _buildStatusCard(
                 'Today\'s Sessions',
-                '6',
+                isLoading ? '-' : '${doctorStats['todaySessions'] ?? 0}',
                 const Color.fromRGBO(149, 184, 209, 1).withOpacity(0.6),
                 Icons.check_circle_outline,
               ),
@@ -171,7 +206,7 @@ class _DoctorHomeState extends State<DoctorHome> {
               },
               child: _buildStatusCard(
                 'Alerts',
-                '3',
+                isLoading ? '-' : '${doctorStats['alerts'] ?? 0}',
                 const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
                 Icons.warning_outlined,
               ),
@@ -289,9 +324,18 @@ class _DoctorHomeState extends State<DoctorHome> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _buildReminderItem('11:00 · John Doe', 'apt1', false),
-                      _buildReminderItem('12:00 · Harry Black', 'apt2', false),
-                      _buildReminderItem('13:00 · Jack Doe', 'apt3', false),
+                      // Loop through real appointments
+                      if (todayAppointments.isNotEmpty)
+                        ...todayAppointments.map((apt) {
+                          final timeTitle = '${apt['time'] ?? '??:??'} · ${apt['patientName'] ?? 'Unknown'}';
+                          return _buildReminderItem(timeTitle, apt['id'] ?? 'apt_unknown', false);
+                        })
+                      else
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 6),
+                          child: Text('No appointments today.',
+                              style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        ),
                     ],
                   ),
                 ),
@@ -301,7 +345,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Exercises:',
+                        'Exercises to Review:',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -309,9 +353,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _buildReminderItem('Fred Nerk', 'ex1', false),
-                      _buildReminderItem('Alice Smith', 'ex2', false),
-                      _buildReminderItem('Jane Doe', 'ex3', false),
+                      _buildReminderItem('Pending Reviews: ${doctorStats['pendingReviews'] ?? 0}', 'ex_reviews', false),
                     ],
                   ),
                 ),
@@ -394,29 +436,47 @@ class _DoctorHomeState extends State<DoctorHome> {
   }
 
   Widget _buildPatientsSection() {
-    final patients = [
-      {
-        'name': 'John Doe',
-        'age': '21',
-        'progress': '65',
-        'status': 'On Track',
-        'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-      },
-      {
-        'name': 'Harry Black',
-        'age': '25',
-        'progress': '80',
-        'status': 'On Track',
-        'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-      },
-      {
-        'name': 'Jack Doe',
-        'age': '43',
-        'progress': '30',
-        'status': 'Needs Attention',
-        'statusColor': const Color.fromRGBO(149, 184, 209, 1),
-      },
-    ];
+    if (isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (patientsList.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Patients',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Text(
+                'No active patients right now.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -464,10 +524,20 @@ class _DoctorHomeState extends State<DoctorHome> {
             child: Row(
               children: [
                 const SizedBox(width: 16),
-                ...patients.map((patient) => Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: _buildPatientCard(patient),
-                    )),
+                ...patientsList.map((patient) {
+                  // Map backend data format to local format
+                  final mappedPatient = {
+                    'name': patient['name'] ?? 'Unknown',
+                    'age': patient['profileData']?['age']?.toString() ?? 'N/A',
+                    'progress': '0', // Not yet tracked in backend
+                    'status': 'New',
+                    'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                  };
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: _buildPatientCard(mappedPatient),
+                  );
+                }),
                 const SizedBox(width: 16),
               ],
             ),
