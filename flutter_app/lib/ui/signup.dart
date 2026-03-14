@@ -270,7 +270,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _hasSpecialChar(String password) =>
       RegExp(r'[^A-Za-z0-9]').hasMatch(password);
 
-  String get _normalizedEmail => emailController.text.trim().toLowerCase();
+
 
   // Explicit Role tracking variable
   String? selectedRole;
@@ -457,9 +457,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     if (selectedRole == 'doctor') {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DoctorHome()),
-      );
+      // Direct doctor to final sign up action instead of skipping it
+      await handleSignUp();
       return;
     }
 
@@ -469,6 +468,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> handleSignUp() async {
+    // Steps 1 & 2 are already validated before reaching this point.
+    // However, if the user bypasses step 3 (Doctor), we should ensure they are valid:
     if (!_validateStepOne() || !_validateStepTwo()) {
       return;
     }
@@ -512,23 +513,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: emailController.text.trim(),
         password: passwordController.text,
         profileData: profileData,
+        imageFile: selectedProfileImage,
       );
 
       if (response['statusCode'] == 201) {
         // Success: Registration complete!
-        // You could theoretically also call login here to get a token instantly,
-        // but for now, let's just proceed to Onboarding/Home.
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_name', fullName.split(' ').first);
+        await prefs.setString('user_role', selectedRole ?? 'patient');
+        await prefs.setString('jwt_token', response['data']['token'] ?? '');
         
-        if (selectedRole == 'doctor') {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const DoctorHome()),
-          );
-          return;
-        }
+        if (!mounted) return;
 
+        // Take Patient directly to Onboarding
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => OnboardingPage(userEmail: emailController.text),
+            builder: (_) => OnboardingPage(
+              userEmail: emailController.text.trim(),
+            ),
           ),
         );
       } else {
@@ -1528,8 +1530,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 children: [
                   if (currentStep == 0)
                     const SizedBox(height: 5)
-                  else if (currentStep == 1)
-                    const SizedBox(height: 20)
                   else
                     const SizedBox(height: 20),
                   Container(

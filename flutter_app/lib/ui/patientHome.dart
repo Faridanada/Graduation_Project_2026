@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rehabilitation_app/features/presentation/patient/presentation/screens/chats_screen.dart';
 import 'package:rehabilitation_app/features/presentation/patient/presentation/screens/profile_screen.dart';
 
@@ -58,8 +59,33 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 }
 
-class _HomeContent extends StatelessWidget {
+class _HomeContent extends StatefulWidget {
   const _HomeContent();
+
+  @override
+  State<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
+  String userName = "Patient";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    // Attempt to load the user's name from backend login storage
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('user_name');
+    if (name != null && name.isNotEmpty) {
+      setState(() {
+        // Extract just the first name for the greeting
+        userName = name.split(' ')[0];
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,8 +128,8 @@ class _HomeContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
                     Text(
-                      "Good Morning, John 👋",
-                      style: TextStyle(
+                      "Good Morning, $userName 👋",
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF1C1F2E),

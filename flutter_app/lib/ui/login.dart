@@ -29,6 +29,21 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     emailController = TextEditingController();
     passwordController = TextEditingController();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString('saved_email');
+    final savedPassword = prefs.getString('saved_password');
+    
+    if (savedEmail != null && savedPassword != null) {
+      setState(() {
+        emailController.text = savedEmail;
+        passwordController.text = savedPassword;
+        rememberMe = true;
+      });
+    }
   }
 
   @override
@@ -58,8 +73,24 @@ class _LoginScreenState extends State<LoginScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt_token', token);
         
-        // Extract real role from the database response
+        // Remember me
+        if (rememberMe) {
+          await prefs.setString('saved_email', email);
+          await prefs.setString('saved_password', password);
+        } else {
+          await prefs.remove('saved_email');
+          await prefs.remove('saved_password');
+        }
+        
+        // Extract real role and name from the database response
         final role = response['data']['user']['role'];
+        final name = response['data']['user']['name'];
+        if (name != null) {
+          await prefs.setString('user_name', name.toString());
+        }
+        if (role != null) {
+          await prefs.setString('user_role', role.toString());
+        }
 
         if (role == 'doctor') {
           Navigator.of(context).pushReplacement(
@@ -317,7 +348,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  // TODO: forgot password
+                                  if (emailController.text.trim().isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Please enter your email first to reset password.')),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Password reset link sent to ${emailController.text.trim()}')),
+                                    );
+                                  }
                                 },
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,

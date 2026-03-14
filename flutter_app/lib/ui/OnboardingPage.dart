@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'DoctorHome.dart';
 import 'patientHome.dart';
 
@@ -21,14 +22,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
     super.dispose();
   }
 
-  void _navigateToHome() {
-    final email = widget.userEmail.trim().toLowerCase();
+  Future<void> _navigateToHome() async {
+    final prefs = await SharedPreferences.getInstance();
+    final role = prefs.getString('user_role') ?? 'patient';
 
-    if (email.contains('doctor')) {
+    if (!mounted) return;
+
+    if (role == 'doctor') {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const DoctorHome()),
       );
-    } else if (email.contains('patient')) {
+    } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const PatientHomeScreen()),
       );
