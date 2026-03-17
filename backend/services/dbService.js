@@ -1,105 +1,116 @@
-const usersData = require("../data/users");
+const { 
+  DynamoDBDocumentClient, 
+  GetCommand, 
+  PutCommand, 
+  ScanCommand, 
+  UpdateCommand 
+} = require("@aws-sdk/lib-dynamodb");
+
+// Re-importing mock data for tables that aren't created yet
 const appointmentsData = require("../data/appointments");
 const exercisesData = require("../data/exercises");
 const { requestsList } = require("../data/requests");
+
+// Initialize DynamoDB Client
+// The SDK automatically falls back to EC2 IAM roles if access keys are missing from .env
+const clientParams = { region: process.env.AWS_REGION || 'us-east-1' };
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  clientParams.credentials = {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  };
+}
+
+const client = new DynamoDBClient(clientParams);
+const ddbDocClient = DynamoDBDocumentClient.from(client);
+
 // ==========================================
-// DB Simulation (Before DynamoDB Access)
+// DB Simulation -> DYNAMODB IMPLEMENTATION
 // ==========================================
-// This file acts as an abstraction layer for the database.
-// When DynamoDB is ready:
-// 1. Install AWS SDK (already in package.json)
-// 2. Configure DynamoDB Client
-// 3. Update the functions below to use `dynamodb.put()` and `dynamodb.scan()`.
-// 
-// No changes will be needed in the Controllers or Routes, 
-// as long as these functions return the expected Promises.
 
 const dbService = {
 
-  /**
-   * Find a user by their email
-   * @param {string} email 
-   * @returns {Promise<Object|null>} The user object if found, null otherwise
-   */
   async getUserByEmail(email) {
-    return new Promise((resolve) => {
-      // Simulate network delay
-      setTimeout(() => {
-        const user = usersData.find(u => u.email === email);
-        resolve(user || null);
-      }, 100);
-    });
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Users",
+        FilterExpression: "email = :email",
+        ExpressionAttributeValues: { ":email": email }
+      }));
+      return data.Items && data.Items.length > 0 ? data.Items[0] : null;
+    } catch (error) {
+      console.error("DynamoDB error (getUserByEmail):", error);
+      throw error;
+    }
   },
 
-  /**
-   * Find a user by their ID
-   * @param {string} id 
-   * @returns {Promise<Object|null>} The user object if found, null otherwise
-   */
   async getUserById(id) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const user = usersData.find(u => u.id === id);
-        resolve(user || null);
-      }, 100);
-    });
+    try {
+      const data = await ddbDocClient.send(new GetCommand({
+        TableName: "Users",
+        Key: { id }
+      }));
+      return data.Item || null;
+    } catch (error) {
+      console.error("DynamoDB error (getUserById):", error);
+      throw error;
+    }
   },
 
-  /**
-   * Create a new user
-   * @param {Object} userData 
-   * @returns {Promise<Object>} The created user object
-   */
   async createUser(userData) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newUser = {
-          id: Date.now().toString(),
-          ...userData,
-          createdAt: new Date().toISOString()
-        };
-        usersData.push(newUser);
-        resolve(newUser);
-      }, 150);
-    });
+    try {
+      const newUser = {
+        id: Date.now().toString(),
+        ...userData,
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Users",
+        Item: newUser
+      }));
+      return newUser;
+    } catch (error) {
+      console.error("DynamoDB error (createUser):", error);
+      throw error;
+    }
   },
 
-  /**
-   * Fetch all patients assigned to a specific doctor
-   */
   async getPatientsForDoctor(doctorId) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Find users who have role='patient' (we could match doctorId if the dataset had it, 
-        // but for now let's just return all patients)
-        const patients = usersData.filter(u => u.role === 'patient');
-        resolve(patients);
-      }, 100);
-    });
+    try {
+      // Scanning the Users table for patients
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Users",
+        FilterExpression: "#userRole = :role",
+        ExpressionAttributeNames: { "#userRole": "role" },
+        ExpressionAttributeValues: { ":role": "patient" }
+      }));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getPatientsForDoctor):", error);
+      throw error;
+    }
   },
 
-  /**
-   * Fetch dashboard stats for a doctor
-   */
   async getDashboardStats(doctorId) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const patients = usersData.filter(u => u.role === 'patient');
-        const appointmentsToday = appointmentsData.filter(a => a.doctorId === doctorId && a.date === new Date().toISOString().split('T')[0]);
+    try {
+      const patients = await this.getPatientsForDoctor(doctorId);
+      
+      const today = new Date().toISOString().split('T')[0];
+      // Reverted to mock array until Appointments table is created
+      const appointmentsToday = appointmentsData.filter(a => a.doctorId === doctorId && a.date === today);
 
-        resolve({
-          activePatients: patients.length,
-          todaySessions: appointmentsToday.length,
-          alerts: 3, // Mock alert count
-          pendingReviews: 2,
-        });
-      }, 100);
-    });
+      return {
+        activePatients: patients.length,
+        todaySessions: appointmentsToday.length,
+        alerts: 3, // Mock alert count
+        pendingReviews: 2,
+      };
+    } catch (error) {
+      console.error("Error in getDashboardStats:", error);
+      throw error;
+    }
   },
 
-  /**
-   * Fetch today's appointments for either a patient or doctor
-   */
   async getTodayAppointments(userId, role) {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -113,9 +124,6 @@ const dbService = {
     });
   },
 
-  /**
-   * Fetch today's exercises for a patient
-   */
   async getTodayExercises(patientId) {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -126,9 +134,6 @@ const dbService = {
     });
   },
 
-  /**
-   * Fetch generic reminders for a patient
-   */
   async getReminders(patientId) {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -141,9 +146,6 @@ const dbService = {
     });
   },
 
-  /**
-   * Fetch all requests for a specific doctor
-   */
   async getRequests(doctorId) {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -153,9 +155,6 @@ const dbService = {
     });
   },
 
-  /**
-   * Update the status of a request
-   */
   async updateRequestStatus(requestId, status) {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -170,23 +169,24 @@ const dbService = {
     });
   },
 
-  /**
-   * Add a new patient manually for a doctor
-   */
   async addPatientForDoctor(doctorId, patientData) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newPatient = {
-          id: `patient_${Date.now()}`,
-          role: 'patient',
-          assignedDoctorId: doctorId,
-          ...patientData,
-          createdAt: new Date().toISOString()
-        };
-        usersData.push(newPatient);
-        resolve(newPatient);
-      }, 150);
-    });
+    try {
+      const newPatient = {
+        id: `patient_${Date.now()}`,
+        role: 'patient',
+        assignedDoctorId: doctorId,
+        ...patientData,
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Users",
+        Item: newPatient
+      }));
+      return newPatient;
+    } catch (error) {
+      console.error("DynamoDB error (addPatientForDoctor):", error);
+      throw error;
+    }
   }
 };
 
