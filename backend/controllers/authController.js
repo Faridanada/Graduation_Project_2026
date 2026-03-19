@@ -7,7 +7,7 @@ exports.registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     let profileData = req.body.profileData;
-    
+
     // Parse profileData if it was sent as a JSON string via multipart/form-data
     if (typeof profileData === 'string') {
       try {
