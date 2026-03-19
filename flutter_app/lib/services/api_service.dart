@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static const String baseUrl = "http://10.0.2.2:5000/api";
+  
+  static String? currentToken;
 
   static Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('jwt_token');
+    return currentToken;
   }
 
   static Map<String, String> _headers(String token) {
@@ -15,6 +15,26 @@ class ApiService {
       "Content-Type": "application/json",
       "Authorization": "Bearer $token",
     };
+  }
+
+  // --- USER ENDPOINTS ---
+  
+  static Future<Map<String, dynamic>?> getUserProfile() async {
+    final token = await _getToken();
+    if (token == null) return null;
+
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/profile"),
+        headers: _headers(token),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['user'];
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
   }
 
   // --- DOCTOR ENDPOINTS ---
@@ -55,6 +75,21 @@ class ApiService {
 
     final response = await http.get(
       Uri.parse("$baseUrl/doctor/appointments/today"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  static Future<List<dynamic>> getAllAppointments() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/appointments"),
       headers: _headers(token),
     );
 

@@ -5,7 +5,17 @@ const dbService = require("../services/dbService");
 // ================= REGISTER =================
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, profileData } = req.body;
+    const { name, email, password } = req.body;
+    let profileData = req.body.profileData;
+    
+    // Parse profileData if it was sent as a JSON string via multipart/form-data
+    if (typeof profileData === 'string') {
+      try {
+        profileData = JSON.parse(profileData);
+      } catch (e) {
+        console.error("Failed to parse profileData string:", e);
+      }
+    }
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -22,20 +32,33 @@ exports.registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Define role from profileData (set by Flutter UI), default to 'patient'
+    const userRole = (profileData && profileData.role) ? profileData.role : 'patient';
+
     // Create user using our DB abstraction, passing profileData
     const newUser = await dbService.createUser({
       name,
       email,
       password: hashedPassword,
+      role: userRole,
       profileData: profileData || {} // Default to empty object if not provided
     });
 
+    const secret = process.env.JWT_SECRET || "supersecretkey";
+    const token = jwt.sign(
+      { id: newUser.id },
+      secret,
+      { expiresIn: "1d" }
+    );
+
     res.status(201).json({
       message: "User registered ✅",
+      token,
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
+        role: newUser.role,
         profileData: newUser.profileData
       }
     });
@@ -82,7 +105,8 @@ exports.loginUser = async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
 
@@ -108,6 +132,7 @@ exports.getUserProfile = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
         createdAt: user.createdAt
       }
     });

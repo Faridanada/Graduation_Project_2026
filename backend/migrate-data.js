@@ -29,7 +29,26 @@ async function migrateData() {
     }
     console.log(`Migrated ${usersData.length} Users.`);
 
-    console.log("Migration complete for Users table!");
+    for (const appt of appointmentsData) {
+      await ddbDocClient.send(new PutCommand({ TableName: "Appointments", Item: appt }));
+    }
+    console.log(`Migrated ${appointmentsData.length} Appointments.`);
+
+    for (const exer of exercisesData) {
+      // DynamoDB needs string ID, ensure it's added if missing
+      const item = { ...exer, id: exer.id ? exer.id.toString() : Date.now().toString() };
+      await ddbDocClient.send(new PutCommand({ TableName: "Exercises", Item: item }));
+    }
+    console.log(`Migrated ${exercisesData.length} Exercises.`);
+
+    for (const req of requestsList) {
+      // Requests needs ID
+      const item = { ...req, id: req.id ? req.id.toString() : Date.now().toString() };
+      await ddbDocClient.send(new PutCommand({ TableName: "Requests", Item: item }));
+    }
+    console.log(`Migrated ${requestsList.length} Requests.`);
+
+    console.log("Migration complete for all tables!");
   } catch (error) {
     console.error("Migration failed:", error);
   }

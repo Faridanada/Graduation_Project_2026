@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'SettingsPage.dart';
 import 'NotificationsPage.dart';
 import 'package:intl/intl.dart';
+import '../services/api_service.dart';
 
 class Appointments extends StatefulWidget {
   const Appointments({Key? key}) : super(key: key);
@@ -13,95 +14,43 @@ class Appointments extends StatefulWidget {
 class _AppointmentsState extends State<Appointments> {
   String selectedFilter = 'Today';
 
-  final List<Map<String, dynamic>> allAppointments = [
-    // Today's appointments (28 Feb 2026)
-    {
-      'time': '09:00 AM',
-      'name': 'John Doe',
-      'service': 'Knee rehabilitation',
-      'date': DateTime(2026, 2, 28),
-      'status': 'Confirmed',
-    },
-    {
-      'time': '11:00 AM',
-      'name': 'Harry Black',
-      'service': 'Physiotherapy session',
-      'date': DateTime(2026, 2, 28),
-      'status': 'Confirmed',
-    },
-    {
-      'time': '01:00 PM',
-      'name': 'Jack Doe',
-      'service': 'Follow-up check',
-      'date': DateTime(2026, 2, 28),
-      'status': 'Pending',
-    },
-    {
-      'time': '02:00 PM',
-      'name': 'Alice Smith',
-      'service': 'Wound check',
-      'date': DateTime(2026, 2, 28),
-      'status': 'Confirmed',
-    },
-    {
-      'time': '04:00 PM',
-      'name': 'Mark Lee',
-      'service': 'Shoulder therapy',
-      'date': DateTime(2026, 2, 28),
-      'status': 'Confirmed',
-    },
-    // Upcoming this week
-    {
-      'time': '10:00 AM',
-      'name': 'Emma Brown',
-      'service': 'Progress review',
-      'date': DateTime(2026, 3, 1),
-      'status': 'Confirmed',
-    },
-    {
-      'time': '03:00 PM',
-      'name': 'Michael Johnson',
-      'service': 'Physical therapy',
-      'date': DateTime(2026, 3, 1),
-      'status': 'Confirmed',
-    },
-    {
-      'time': '09:30 AM',
-      'name': 'Sarah Williams',
-      'service': 'Consultation',
-      'date': DateTime(2026, 3, 2),
-      'status': 'Pending',
-    },
-    {
-      'time': '01:00 PM',
-      'name': 'David Khan',
-      'service': 'Recovery assessment',
-      'date': DateTime(2026, 3, 2),
-      'status': 'Confirmed',
-    },
-    {
-      'time': '11:00 AM',
-      'name': 'Jennifer Lee',
-      'service': 'Stretching session',
-      'date': DateTime(2026, 3, 3),
-      'status': 'Confirmed',
-    },
-    // Calendar view (future appointments)
-    {
-      'time': '09:00 AM',
-      'name': 'Robert Brown',
-      'service': 'Strength training',
-      'date': DateTime(2026, 3, 8),
-      'status': 'Confirmed',
-    },
-    {
-      'time': '02:00 PM',
-      'name': 'Lisa Anderson',
-      'service': 'Follow-up check',
-      'date': DateTime(2026, 3, 10),
-      'status': 'Pending',
-    },
-  ];
+  List<Map<String, dynamic>> allAppointments = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppointments();
+  }
+
+  Future<void> _loadAppointments() async {
+    try {
+      final data = await ApiService.getAllAppointments();
+      if (mounted) {
+        setState(() {
+          allAppointments = data.map((apt) {
+            String statusValue = apt['status'] ?? 'pending';
+            String uiStatus = (statusValue == 'completed' || statusValue == 'upcoming' || statusValue == 'Confirmed') ? 'Confirmed' : 'Pending';
+            
+            return {
+              'time': apt['time'] ?? '12:00 PM',
+              'name': apt['patientName'] ?? apt['doctorName'] ?? 'Unknown',
+              'service': apt['type'] ?? 'Consultation',
+              'date': DateTime.tryParse(apt['date'] ?? '') ?? DateTime.now(),
+              'status': uiStatus,
+            };
+          }).toList();
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
 
   List<Map<String, dynamic>> get filteredAppointments {
     final now = DateTime(2026, 2, 28);
@@ -181,7 +130,9 @@ class _AppointmentsState extends State<Appointments> {
 
               // Appointments list
               Expanded(
-                child: ListView.builder(
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
                   itemCount: filteredAppointments.length,
                   itemBuilder: (context, index) {
                     final appointment = filteredAppointments[index];

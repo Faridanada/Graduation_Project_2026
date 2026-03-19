@@ -1293,92 +1293,34 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'All';
 
-  final List<Map<String, dynamic>> _patients = [
-    {
-      'name': 'John Doe',
-      'age': 21,
-      'progress': 65,
-      'status': 'On Track',
-      'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-    },
-    {
-      'name': 'Harry Black',
-      'age': 25,
-      'progress': 80,
-      'status': 'On Track',
-      'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-    },
-    {
-      'name': 'Jack Doe',
-      'age': 43,
-      'progress': 30,
-      'status': 'Needs Attention',
-      'statusColor': const Color.fromRGBO(149, 184, 209, 1),
-    },
-    {
-      'name': 'Alice Smith',
-      'age': 19,
-      'progress': 55,
-      'status': 'On Track',
-      'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-    },
-    {
-      'name': 'Fred Nerk',
-      'age': 31,
-      'progress': 42,
-      'status': 'Needs Attention',
-      'statusColor': const Color.fromRGBO(149, 184, 209, 1),
-    },
-    {
-      'name': 'Maya Green',
-      'age': 28,
-      'progress': 74,
-      'status': 'On Track',
-      'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-    },
-    {
-      'name': 'Noah Brown',
-      'age': 37,
-      'progress': 61,
-      'status': 'On Track',
-      'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-    },
-    {
-      'name': 'Lina White',
-      'age': 46,
-      'progress': 27,
-      'status': 'Needs Attention',
-      'statusColor': const Color.fromRGBO(149, 184, 209, 1),
-    },
-    {
-      'name': 'Omar Ali',
-      'age': 52,
-      'progress': 49,
-      'status': 'Needs Attention',
-      'statusColor': const Color.fromRGBO(149, 184, 209, 1),
-    },
-    {
-      'name': 'Emma Cole',
-      'age': 34,
-      'progress': 88,
-      'status': 'On Track',
-      'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-    },
-    {
-      'name': 'Sam Reed',
-      'age': 24,
-      'progress': 69,
-      'status': 'On Track',
-      'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-    },
-    {
-      'name': 'Nina Ford',
-      'age': 40,
-      'progress': 35,
-      'status': 'Needs Attention',
-      'statusColor': const Color.fromRGBO(149, 184, 209, 1),
-    },
-  ];
+  List<Map<String, dynamic>> _patients = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPatients();
+  }
+
+  Future<void> _loadPatients() async {
+    try {
+      final fetched = await ApiService.getDoctorPatients();
+      if (mounted) {
+        setState(() {
+          _patients = fetched.map((p) => {
+            'name': p['name'] ?? 'Unknown',
+            'age': p['age'] ?? 0,
+            'progress': 0, // Mock for now
+            'status': 'On Track',
+            'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+          }).toList();
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -1454,7 +1396,9 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
             ),
           ),
           Expanded(
-            child: patients.isEmpty
+            child: isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : patients.isEmpty
                 ? const Center(
                     child: Text(
                       'No patients found',

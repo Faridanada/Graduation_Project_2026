@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class TodaysSessionsPage extends StatefulWidget {
   const TodaysSessionsPage({Key? key}) : super(key: key);
@@ -8,56 +9,35 @@ class TodaysSessionsPage extends StatefulWidget {
 }
 
 class _TodaysSessionsPageState extends State<TodaysSessionsPage> {
-  final List<Map<String, dynamic>> todaysSessions = [
-    {
-      'name': 'John Doe',
-      'age': '21',
-      'phone': '555-0101',
-      'injuryType': 'Knee Fracture',
-      'time': '09:00 AM',
-      'status': 'Completed',
-    },
-    {
-      'name': 'Harry Black',
-      'age': '25',
-      'phone': '555-0102',
-      'injuryType': 'Shoulder Dislocation',
-      'time': '10:00 AM',
-      'status': 'In Progress',
-    },
-    {
-      'name': 'Jack Doe',
-      'age': '43',
-      'phone': '555-0103',
-      'injuryType': 'Back Strain',
-      'time': '11:00 AM',
-      'status': 'Scheduled',
-    },
-    {
-      'name': 'Alice Smith',
-      'age': '31',
-      'phone': '555-0104',
-      'injuryType': 'Ankle Sprain',
-      'time': '02:00 PM',
-      'status': 'Scheduled',
-    },
-    {
-      'name': 'Emma Jones',
-      'age': '28',
-      'phone': '555-0105',
-      'injuryType': 'Wrist Fracture',
-      'time': '03:00 PM',
-      'status': 'Scheduled',
-    },
-    {
-      'name': 'Michael Brown',
-      'age': '35',
-      'phone': '555-0106',
-      'injuryType': 'Hip Replacement',
-      'time': '04:00 PM',
-      'status': 'Scheduled',
-    },
-  ];
+  List<Map<String, dynamic>> todaysSessions = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSessions();
+  }
+
+  Future<void> _loadSessions() async {
+    try {
+      final fetched = await ApiService.getDoctorTodayAppointments();
+      if (mounted) {
+        setState(() {
+          todaysSessions = fetched.map((s) => {
+            'name': s['patientName'] ?? s['doctorName'] ?? 'Unknown',
+            'age': s['age']?.toString() ?? 'N/A',
+            'phone': s['phone'] ?? 'N/A',
+            'injuryType': s['type'] ?? 'Consultation',
+            'time': s['time'] ?? '12:00 PM',
+            'status': s['status'] == 'completed' ? 'Completed' : (s['status'] == 'in_progress' ? 'In Progress' : 'Scheduled'),
+          }).toList();
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +80,9 @@ class _TodaysSessionsPageState extends State<TodaysSessionsPage> {
               ),
             ),
             Expanded(
-              child: ListView.builder(
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: todaysSessions.length,
                 itemBuilder: (context, index) {

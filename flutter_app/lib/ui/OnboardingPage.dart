@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
 import 'DoctorHome.dart';
 import 'patientHome.dart';
 
@@ -23,8 +23,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _navigateToHome() async {
-    final prefs = await SharedPreferences.getInstance();
-    final role = prefs.getString('user_role') ?? 'patient';
+    final profile = await ApiService.getUserProfile();
+    final role = profile?['role'] ?? 'patient';
 
     if (!mounted) return;
 

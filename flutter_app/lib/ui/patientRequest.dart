@@ -345,10 +345,7 @@ class _PatientRequestState extends State<PatientRequest> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('Responded to ${request['name']}')),
-                      );
+                      _handleResponse(request['id'] ?? 'req_1', true, request['name'] ?? 'Unknown');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF5798C6),
@@ -372,11 +369,7 @@ class _PatientRequestState extends State<PatientRequest> {
                 const SizedBox(width: 12),
                 OutlinedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('Dismissed ${request['name']}\'s request')),
-                    );
+                    _handleResponse(request['id'] ?? 'req_1', false, request['name'] ?? 'Unknown');
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(

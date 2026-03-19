@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
+import '../services/api_service.dart';
 import 'DoctorHome.dart';
 import 'patientHome.dart';
 import 'signup.dart';
@@ -29,21 +29,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     emailController = TextEditingController();
     passwordController = TextEditingController();
-    _loadSavedCredentials();
-  }
-
-  Future<void> _loadSavedCredentials() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedEmail = prefs.getString('saved_email');
-    final savedPassword = prefs.getString('saved_password');
-    
-    if (savedEmail != null && savedPassword != null) {
-      setState(() {
-        emailController.text = savedEmail;
-        passwordController.text = savedPassword;
-        rememberMe = true;
-      });
-    }
   }
 
   @override
@@ -68,29 +53,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await AuthService.login(email, password);
 
       if (response['statusCode'] == 200) {
-        // Save the token
+        // Save the token in memory
         final String token = response['data']['token'] ?? '';
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('jwt_token', token);
-        
-        // Remember me
-        if (rememberMe) {
-          await prefs.setString('saved_email', email);
-          await prefs.setString('saved_password', password);
-        } else {
-          await prefs.remove('saved_email');
-          await prefs.remove('saved_password');
-        }
+        ApiService.currentToken = token;
         
         // Extract real role and name from the database response
         final role = response['data']['user']['role'];
-        final name = response['data']['user']['name'];
-        if (name != null) {
-          await prefs.setString('user_name', name.toString());
-        }
-        if (role != null) {
-          await prefs.setString('user_role', role.toString());
-        }
 
         if (role == 'doctor') {
           Navigator.of(context).pushReplacement(

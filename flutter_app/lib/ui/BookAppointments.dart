@@ -3,6 +3,7 @@ import 'SettingsPage.dart';
 import 'NotificationsPage.dart';
 import 'package:intl/intl.dart';
 import 'newAppointment.dart';
+import '../services/api_service.dart';
 
 class BookAppoint extends StatefulWidget {
   const BookAppoint({Key? key}) : super(key: key);
@@ -14,107 +15,39 @@ class BookAppoint extends StatefulWidget {
 class _BookAppointState extends State<BookAppoint> {
   String selectedFilter = 'Today';
 
-  final List<Map<String, dynamic>> allAppointments = [
-    // Today's appointments (12 Feb 2026)
-    {
-      'time': '09:00 AM',
-      'name': 'John Doe',
-      'service': 'Knee rehabilitation',
-      'date': DateTime(2026, 2, 12),
-    },
-    {
-      'time': '11:30 AM',
-      'name': 'Alice Smith',
-      'service': 'Wound check',
-      'date': DateTime(2026, 2, 12),
-    },
-    {
-      'time': '02:00 PM',
-      'name': 'Mark Lee',
-      'service': 'Shoulder therapy',
-      'date': DateTime(2026, 2, 12),
-    },
-    {
-      'time': '04:30 PM',
-      'name': 'Emma Brown',
-      'service': 'Progress review',
-      'date': DateTime(2026, 2, 12),
-    },
-    // Week appointments (additional days)
-    {
-      'time': '10:00 AM',
-      'name': 'Michael Johnson',
-      'service': 'Physical therapy',
-      'date': DateTime(2026, 2, 13),
-    },
-    {
-      'time': '03:00 PM',
-      'name': 'Sarah Williams',
-      'service': 'Consultation',
-      'date': DateTime(2026, 2, 13),
-    },
-    {
-      'time': '09:30 AM',
-      'name': 'David Khan',
-      'service': 'Recovery assessment',
-      'date': DateTime(2026, 2, 14),
-    },
-    {
-      'time': '01:00 PM',
-      'name': 'Jennifer Lee',
-      'service': 'Stretching session',
-      'date': DateTime(2026, 2, 14),
-    },
-    {
-      'time': '11:00 AM',
-      'name': 'Robert Brown',
-      'service': 'Strength training',
-      'date': DateTime(2026, 2, 15),
-    },
-    {
-      'time': '02:30 PM',
-      'name': 'Lisa Anderson',
-      'service': 'Follow-up check',
-      'date': DateTime(2026, 2, 15),
-    },
-    {
-      'time': '10:30 AM',
-      'name': 'James Wilson',
-      'service': 'Initial assessment',
-      'date': DateTime(2026, 2, 16),
-    },
-    {
-      'time': '04:00 PM',
-      'name': 'Maria Garcia',
-      'service': 'Treatment plan',
-      'date': DateTime(2026, 2, 16),
-    },
-    // Calendar view (future appointments)
-    {
-      'time': '09:00 AM',
-      'name': 'Thomas Martin',
-      'service': 'Rehabilitation program',
-      'date': DateTime(2026, 2, 19),
-    },
-    {
-      'time': '02:00 PM',
-      'name': 'Patricia Taylor',
-      'service': 'Wellness check',
-      'date': DateTime(2026, 2, 20),
-    },
-    {
-      'time': '11:00 AM',
-      'name': 'Christopher Lee',
-      'service': 'Pain management',
-      'date': DateTime(2026, 2, 21),
-    },
-    {
-      'time': '03:30 PM',
-      'name': 'Nancy White',
-      'service': 'Progress review',
-      'date': DateTime(2026, 2, 22),
-    },
-  ];
+  List<Map<String, dynamic>> allAppointments = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppointments();
+  }
+
+  Future<void> _loadAppointments() async {
+    try {
+      final data = await ApiService.getAllAppointments();
+      if (mounted) {
+        setState(() {
+          allAppointments = data.map((apt) {
+            String statusValue = apt['status'] ?? 'pending';
+            String uiStatus = (statusValue == 'completed' || statusValue == 'upcoming' || statusValue == 'Confirmed') ? 'Confirmed' : 'Pending';
+            
+            return {
+              'time': apt['time'] ?? '12:00 PM',
+              'name': apt['patientName'] ?? apt['doctorName'] ?? 'Unknown',
+              'service': apt['type'] ?? 'Consultation',
+              'date': DateTime.tryParse(apt['date'] ?? '') ?? DateTime.now(),
+              'status': uiStatus,
+            };
+          }).toList();
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   List<Map<String, dynamic>> get filteredAppointments {
     final now = DateTime(2026, 2, 12);
@@ -187,10 +120,15 @@ class _BookAppointState extends State<BookAppoint> {
                 const SizedBox(height: 20),
 
                 // Appointments List
-                ...filteredAppointments.map((appointment) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildAppointmentCard(appointment),
-                    )),
+                if (isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else if (filteredAppointments.isEmpty)
+                  const Center(child: Text("No appointments found", style: TextStyle(color: Colors.grey)))
+                else
+                  ...filteredAppointments.map((appointment) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildAppointmentCard(appointment),
+                      )),
 
                 const SizedBox(height: 24),
 

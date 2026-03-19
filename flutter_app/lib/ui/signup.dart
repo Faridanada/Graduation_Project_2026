@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
-import 'DoctorHome.dart';
+import '../services/api_service.dart';
+import 'login.dart';
 import 'OnboardingPage.dart';
 
 
@@ -451,7 +452,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
   }
 
-  void _goToMedicalHistory() {
+  Future<void> _goToMedicalHistory() async {
     if (!_validateStepTwo()) {
       return;
     }
@@ -518,10 +519,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (response['statusCode'] == 201) {
         // Success: Registration complete!
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_name', fullName.split(' ').first);
-        await prefs.setString('user_role', selectedRole ?? 'patient');
-        await prefs.setString('jwt_token', response['data']['token'] ?? '');
+        ApiService.currentToken = response['data']['token'] ?? '';
         
         if (!mounted) return;
 
