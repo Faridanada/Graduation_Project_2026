@@ -12,4 +12,7 @@ router.get('/', appointmentController.getAppointments);
 // POST /api/appointments
 router.post('/', appointmentController.createAppointment);
 
+// PUT /api/appointments/:id/status
+router.put('/:id/status', appointmentController.updateStatus);
+
 module.exports = router;

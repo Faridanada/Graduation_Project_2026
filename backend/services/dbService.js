@@ -78,16 +78,62 @@ const dbService = {
 
   async getPatientsForDoctor(doctorId) {
     try {
-      // Scanning the Users table for patients
+      // Scanning the Users table for patients assigned to THIS doctor
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Users",
-        FilterExpression: "#userRole = :role",
+        FilterExpression: "#userRole = :role AND assignedDoctorId = :doctorId",
         ExpressionAttributeNames: { "#userRole": "role" },
-        ExpressionAttributeValues: { ":role": "patient" }
+        ExpressionAttributeValues: { 
+          ":role": "patient",
+          ":doctorId": doctorId 
+        }
       }));
       return data.Items || [];
     } catch (error) {
       console.error("DynamoDB error (getPatientsForDoctor):", error);
+      throw error;
+    }
+  },
+
+  async getPatientDetailsAndHistory(patientId) {
+    try {
+      // 1. Get the patient user profile
+      const userResult = await ddbDocClient.send(new GetCommand({
+        TableName: "Users",
+        Key: { id: patientId }
+      }));
+      const user = userResult.Item;
+      if (!user) return null;
+
+      // 2. Get the patient's appointments
+      const appointmentsData = await ddbDocClient.send(new ScanCommand({
+        TableName: "Appointments",
+        FilterExpression: "patientId = :patientId",
+        ExpressionAttributeValues: { ":patientId": patientId }
+      }));
+      
+      // 3. Get the patient's exercises
+      const exercisesData = await ddbDocClient.send(new ScanCommand({
+        TableName: "Exercises",
+        FilterExpression: "patientId = :patientId",
+        ExpressionAttributeValues: { ":patientId": patientId }
+      }));
+      
+      // 4. Get the patient's reminders
+      const remindersData = await ddbDocClient.send(new ScanCommand({
+        TableName: "Reminders",
+        FilterExpression: "patientId = :patientId",
+        ExpressionAttributeValues: { ":patientId": patientId }
+      }));
+
+      return {
+        profile: user,
+        appointments: appointmentsData.Items || [],
+        exercises: exercisesData.Items || [],
+        reminders: remindersData.Items || []
+      };
+    } catch (error) {
+      console.error("DynamoDB error (getPatientDetailsAndHistory):", error);
       throw error;
     }
   },
@@ -247,6 +293,172 @@ const dbService = {
       return newAppt;
     } catch (error) {
       console.error("DynamoDB error (createAppointment):", error);
+      throw error;
+    }
+  },
+
+  async updateAppointmentStatus(appointmentId, status) {
+    try {
+      const data = await ddbDocClient.send(new UpdateCommand({
+        TableName: "Appointments",
+        Key: { id: appointmentId },
+        UpdateExpression: "set #statusAttr = :status",
+        ExpressionAttributeNames: { "#statusAttr": "status" },
+        ExpressionAttributeValues: { ":status": status },
+        ReturnValues: "ALL_NEW"
+      }));
+      return data.Attributes;
+    } catch (error) {
+      console.error("DynamoDB error (updateAppointmentStatus):", error);
+      throw error;
+    }
+  },
+
+  // --- NEW NOTIFICATIONS & CHAT METHODS ---
+
+  async createNotification(userId, title, message) {
+    try {
+      const newNotification = {
+        id: `notif_${Date.now()}`,
+        userId,
+        title,
+        message,
+        isRead: false,
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Notifications",
+        Item: newNotification
+      }));
+      return newNotification;
+    } catch (error) {
+      console.error("DynamoDB error (createNotification):", error);
+      throw error;
+    }
+  },
+
+  async sendMessage(senderId, receiverId, messageText) {
+    try {
+      const newMessage = {
+        id: `msg_${Date.now()}`,
+        senderId,
+        receiverId,
+        // Create a unique composite key representing the conversation room
+        conversationId: [senderId, receiverId].sort().join('_'),
+        messageText,
+        createdAt: new Date().toISOString()
+      };
+
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Messages",
+        Item: newMessage
+      }));
+
+      // Trigger automatic notification for the receiver
+      await this.createNotification(
+        receiverId, 
+        "New Message", 
+        "You have received a new message."
+      );
+
+      return newMessage;
+    } catch (error) {
+      console.error("DynamoDB error (sendMessage):", error);
+      throw error;
+    }
+  },
+
+  async getChatHistory(user1Id, user2Id) {
+    try {
+      const conversationId = [user1Id, user2Id].sort().join('_');
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Messages",
+        FilterExpression: "conversationId = :conversationId",
+        ExpressionAttributeValues: { ":conversationId": conversationId }
+      }));
+      
+      // Sort chronologically
+      const messages = data.Items || [];
+      return messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    } catch (error) {
+      console.error("DynamoDB error (getChatHistory):", error);
+      throw error;
+    }
+  },
+
+  // --- NEW WOUND MANAGEMENT METHODS ---
+
+  async createWoundRecord(patientId, doctorId, imagePath, notes) {
+    try {
+      const newWound = {
+        id: `wound_${Date.now()}`,
+        patientId,
+        doctorId,
+        imagePath,
+        notes,
+        status: 'pending review', // 'pending review', 'reviewed', 'healed'
+        createdAt: new Date().toISOString()
+      };
+
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Wounds",
+        Item: newWound
+      }));
+
+      // Notify the doctor that a patient uploaded a new wound record
+      await this.createNotification(
+        doctorId,
+        "New Wound Record",
+        `Patient ${patientId} has uploaded a new wound image for review.`
+      );
+
+      return newWound;
+    } catch (error) {
+      console.error("DynamoDB error (createWoundRecord):", error);
+      throw error;
+    }
+  },
+
+  async getPatientWounds(patientId) {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Wounds",
+        FilterExpression: "patientId = :patientId",
+        ExpressionAttributeValues: { ":patientId": patientId }
+      }));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getPatientWounds):", error);
+      throw error;
+    }
+  },
+
+  async updateWoundStatus(woundId, status, doctorId, patientId) {
+    try {
+      const data = await ddbDocClient.send(new UpdateCommand({
+        TableName: "Wounds",
+        Key: { id: woundId },
+        UpdateExpression: "set #statusAttr = :status, reviewedAt = :reviewedAt",
+        ExpressionAttributeNames: { "#statusAttr": "status" },
+        ExpressionAttributeValues: { 
+          ":status": status,
+          ":reviewedAt": new Date().toISOString()
+        },
+        ReturnValues: "ALL_NEW"
+      }));
+
+      // Notify the patient that their wound was reviewed
+      if (patientId) {
+        await this.createNotification(
+          patientId,
+          "Wound Record Reviewed",
+          `Your recent wound record has been marked as ${status} by your doctor.`
+        );
+      }
+
+      return data.Attributes;
+    } catch (error) {
+      console.error("DynamoDB error (updateWoundStatus):", error);
       throw error;
     }
   },

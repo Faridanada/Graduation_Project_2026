@@ -15,4 +15,7 @@ router.get('/requests', doctorController.getRequests);
 router.put('/requests/:id/accept', doctorController.acceptRequest);
 router.put('/requests/:id/reject', doctorController.rejectRequest);
 
+// Specific patient detail profile (Keep this below other /patients specific routes to avoid routing conflicts)
+router.get('/patients/:id', doctorController.getPatientProfile);
+
 module.exports = router;

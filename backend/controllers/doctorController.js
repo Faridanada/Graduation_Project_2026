@@ -26,6 +26,24 @@ const doctorController = {
         }
     },
 
+    // GET /api/doctor/patients/:id
+    async getPatientProfile(req, res) {
+        try {
+            // Check if patient belongs to doctor (skipped advanced check for now)
+            const patientId = req.params.id;
+            
+            const detailedProfile = await dbService.getPatientDetailsAndHistory(patientId);
+            if (!detailedProfile) {
+                return res.status(404).json({ statusCode: 404, message: 'Patient not found' });
+            }
+
+            res.json({ statusCode: 200, data: detailedProfile });
+        } catch (error) {
+            console.error('Error fetching patient profile:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error fetching patient profile' });
+        }
+    },
+
     // GET /api/doctor/appointments/today
     async getTodayAppointments(req, res) {
         try {
