@@ -2,10 +2,10 @@ require('dotenv').config();
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
 
-const usersData = require("./data/users");
-const appointmentsData = require("./data/appointments");
-const exercisesData = require("./data/exercises");
-const { requestsList } = require("./data/requests");
+const usersData = require("../data/users");
+const appointmentsData = require("../data/appointments");
+const exercisesData = require("../data/exercises");
+const { requestsList } = require("../data/requests");
 
 const clientParams = { region: process.env.AWS_REGION || 'us-east-1' };
 if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {

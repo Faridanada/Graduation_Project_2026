@@ -33,6 +33,24 @@ const appointmentController = {
             console.error('Error creating appointment:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error creating appointment' });
         }
+    },
+
+    // PUT /api/appointments/:id/status
+    async updateStatus(req, res) {
+        try {
+            const appointmentId = req.params.id;
+            const { status } = req.body;
+            
+            if (!status) {
+                return res.status(400).json({ statusCode: 400, message: 'Status is required' });
+            }
+
+            const updatedAppointment = await dbService.updateAppointmentStatus(appointmentId, status);
+            res.json({ statusCode: 200, data: updatedAppointment, message: `Appointment status updated to ${status}` });
+        } catch (error) {
+            console.error('Error updating appointment status:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error updating appointment status' });
+        }
     }
 };
 
