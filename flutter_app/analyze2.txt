@@ -1,0 +1,10 @@
+Analyzing patientHome.dart...
+
+  error - patientHome.dart:152:39 - Invalid constant value. - invalid_constant
+  error - patientHome.dart:152:39 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - patientHome.dart:420:5 - Expected an identifier. - missing_identifier
+  error - patientHome.dart:420:5 - Expected to find ']'. - expected_token
+warning - patientHome.dart:5:8 - Unused import: 'report_wound_screen.dart'. Try removing the import directive. - unused_import
+warning - patientHome.dart:843:10 - The declaration '_whiteCard' isn't referenced. Try removing the declaration of '_whiteCard'. - unused_element
+
+6 issues found.

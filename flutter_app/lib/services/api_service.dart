@@ -1,10 +1,32 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static const String baseUrl = "http://10.0.2.2:5000/api";
+  static const String _tokenKey = 'jwt_token';
   
   static String? currentToken;
+
+  /// Call this once at app startup (e.g., in main.dart) to restore the token.
+  static Future<void> loadToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    currentToken = prefs.getString(_tokenKey);
+  }
+
+  /// Saves the token both in memory and to disk.
+  static Future<void> setToken(String token) async {
+    currentToken = token;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
+  }
+
+  /// Clears the token from memory and disk (logout).
+  static Future<void> clearToken() async {
+    currentToken = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+  }
 
   static Future<String?> _getToken() async {
     return currentToken;
@@ -144,6 +166,34 @@ class ApiService {
   }
 
   // --- PATIENT ENDPOINTS ---
+
+  static Future<List<dynamic>> getAllDoctors() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/patient/doctors"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  static Future<bool> sendPatientRequest(String doctorId) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/patient/request"),
+      headers: _headers(token),
+      body: jsonEncode({"doctorId": doctorId}),
+    );
+
+    return response.statusCode == 201;
+  }
 
   static Future<List<dynamic>> getPatientTodayExercises() async {
     final token = await _getToken();

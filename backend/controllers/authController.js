@@ -46,7 +46,7 @@ exports.registerUser = async (req, res) => {
 
     const secret = process.env.JWT_SECRET || "supersecretkey";
     const token = jwt.sign(
-      { id: newUser.id },
+      { id: newUser.id, role: userRole },
       secret,
       { expiresIn: "1d" }
     );
@@ -94,7 +94,7 @@ exports.loginUser = async (req, res) => {
     const secret = process.env.JWT_SECRET || "supersecretkey";
 
     const token = jwt.sign(
-      { id: user.id },
+      { id: user.id, role: user.role },
       secret,
       { expiresIn: "1d" }
     );
@@ -106,7 +106,8 @@ exports.loginUser = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        profileData: user.profileData || {}
       }
     });
 
@@ -133,7 +134,8 @@ exports.getUserProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        profileData: user.profileData || {}
       }
     });
   } catch (error) {

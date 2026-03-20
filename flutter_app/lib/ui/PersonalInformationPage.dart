@@ -1,7 +1,40 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
-class PersonalInformationPage extends StatelessWidget {
+class PersonalInformationPage extends StatefulWidget {
   const PersonalInformationPage({Key? key}) : super(key: key);
+
+  @override
+  State<PersonalInformationPage> createState() => _PersonalInformationPageState();
+}
+
+class _PersonalInformationPageState extends State<PersonalInformationPage> {
+  bool isLoading = true;
+  Map<String, dynamic> userProfile = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final profile = await ApiService.getUserProfile() ?? {};
+      if (mounted) {
+        setState(() {
+          userProfile = profile;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,13 +63,16 @@ class PersonalInformationPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoCard('Full Name', 'Dr. Sarah Johnson'),
-                _buildInfoCard('Email', 'sarah.johnson@flexio.com'),
-                _buildInfoCard('Phone', '+1 (555) 234-5678'),
-                _buildInfoCard(
-                    'Address', '123 Medical Center Drive, New York, NY 10001'),
-                _buildInfoCard('Date of Birth', 'March 15, 1985'),
-                _buildInfoCard('Gender', 'Female'),
+                if (isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else ...[
+                  _buildInfoCard('Full Name', userProfile['name'] ?? 'Not set'),
+                  _buildInfoCard('Email', userProfile['email'] ?? 'Not set'),
+                  _buildInfoCard('Phone', userProfile['profileData']?['phone'] ?? 'Not set'),
+                  _buildInfoCard('Address', userProfile['profileData']?['location'] ?? 'Not set'),
+                  _buildInfoCard('Date of Birth', userProfile['profileData']?['dateOfBirth'] ?? 'Not set'),
+                  _buildInfoCard('Gender', userProfile['profileData']?['gender'] ?? 'Not set'),
+                ],
                 const SizedBox(height: 30),
                 SizedBox(
                   width: double.infinity,

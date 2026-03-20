@@ -11,4 +11,7 @@ router.get('/exercises/today', patientController.getTodayExercises);
 router.get('/appointments/next', patientController.getNextAppointment);
 router.get('/reminders', patientController.getReminders);
 
+router.get('/doctors', patientController.getAllDoctors);
+router.post('/request', patientController.sendRequest);
+
 module.exports = router;

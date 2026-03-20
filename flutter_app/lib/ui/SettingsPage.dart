@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'DoctorProfile.dart';
+import 'PersonalInformationPage.dart';
 import 'ChangePasswordPage.dart';
 import 'NotificationPreferencesPage.dart';
 import 'PrivacyPolicyPage.dart';
@@ -20,6 +22,26 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
   bool _darkModeEnabled = false;
   bool _dataBackupEnabled = true;
+  String _userRole = 'patient';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRole();
+  }
+
+  Future<void> _loadRole() async {
+    try {
+      final profile = await ApiService.getUserProfile();
+      if (profile != null && mounted) {
+        setState(() {
+          _userRole = profile['role']?.toString().toLowerCase() ?? 'patient';
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,12 +79,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Profile',
                 subtitle: 'Edit your profile information',
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            const DoctorProfile(source: 'settings')),
-                  );
+                  if (_userRole == 'doctor') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const DoctorProfile(source: 'settings')),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const PersonalInformationPage()),
+                    );
+                  }
                 },
               ),
               _buildSettingsTile(

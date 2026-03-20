@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'login.dart';
 import 'PersonalInformationPage.dart';
 import 'MedicalLicensePage.dart';
@@ -6,10 +7,46 @@ import 'SpecializationPage.dart';
 import 'AvailabilityPage.dart';
 import 'ChangePasswordPage.dart';
 
-class DoctorProfile extends StatelessWidget {
+class DoctorProfile extends StatefulWidget {
   final String source; // 'home' or 'settings'
 
   const DoctorProfile({Key? key, this.source = 'home'}) : super(key: key);
+
+  @override
+  State<DoctorProfile> createState() => _DoctorProfileState();
+}
+
+class _DoctorProfileState extends State<DoctorProfile> {
+  bool isLoading = true;
+  Map<String, dynamic> userProfile = {};
+  Map<String, dynamic> doctorStats = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    try {
+      final profile = await ApiService.getUserProfile() ?? {};
+      final stats = await ApiService.getDoctorStats();
+      
+      if (mounted) {
+        setState(() {
+          userProfile = profile;
+          doctorStats = stats;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +87,7 @@ class DoctorProfile extends StatelessWidget {
                               size: 28,
                             ),
                             onPressed: () {
-                              if (source == 'settings') {
+                              if (widget.source == 'settings') {
                                 Navigator.pop(context);
                               } else {
                                 Navigator.pop(context);
@@ -98,9 +135,9 @@ class DoctorProfile extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Dr. Sarah Johnson',
-                                  style: TextStyle(
+                                Text(
+                                  userProfile['name'] ?? 'Loading...',
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -108,7 +145,7 @@ class DoctorProfile extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Physical Therapist',
+                                  (userProfile['role'] ?? '').toString().toUpperCase(),
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.9),
                                     fontSize: 14,
@@ -116,7 +153,7 @@ class DoctorProfile extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'sarah.johnson@flexio.com',
+                                  userProfile['email'] ?? '',
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.8),
                                     fontSize: 13,
@@ -225,11 +262,15 @@ class DoctorProfile extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _buildStatCard('24', 'Active Patients'),
+                      child: isLoading 
+                          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                          : _buildStatCard('${doctorStats['activePatients'] ?? 0}', 'Active Patients'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildStatCard('156', 'Total Sessions'),
+                      child: isLoading 
+                          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                          : _buildStatCard('${doctorStats['todaySessions'] ?? 0}', 'Total Sessions'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

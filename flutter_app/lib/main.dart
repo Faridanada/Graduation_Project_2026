@@ -4,8 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:rehabilitation_app/ui/WelcomePage.dart';
 import 'package:rehabilitation_app/ui/login.dart';
 import 'package:rehabilitation_app/ui/signup.dart';
+import 'services/api_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.loadToken(); // Restore JWT from disk
   runApp(const MyApp());
 }
 

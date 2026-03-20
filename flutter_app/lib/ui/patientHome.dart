@@ -3,6 +3,7 @@ import 'Chats.dart';
 import 'SettingsPage.dart';
 
 import 'report_wound_screen.dart';
+import 'FindDoctorScreen.dart';
 import '../services/api_service.dart';
 
 class PatientHomeScreen extends StatefulWidget {
@@ -166,10 +167,17 @@ class _HomeContentState extends State<_HomeContent> {
                     ),
                   ],
                 ),
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 28,
-                  backgroundImage: NetworkImage(
-                      'https://randomuser.me/api/portraits/men/32.jpg'),
+                  backgroundColor: const Color(0xFF4A90E2).withOpacity(0.1),
+                  child: Text(
+                    userName.isNotEmpty ? userName[0].toUpperCase() : 'P',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4A90E2),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -759,6 +767,51 @@ class _HomeContentState extends State<_HomeContent> {
     Icon(Icons.arrow_forward_ios, size: 16),
     ],
     ),
+    ),
+
+    const SizedBox(height: 24),
+
+    /// ================= FIND DOCTOR =================
+    GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const FindDoctorScreen(),
+          ),
+        );
+      },
+      child: _whiteCard(
+        child: Row(
+          children: const [
+            Icon(Icons.search_rounded, color: Color(0xFF4A90E2)),
+            SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Find Your Doctor",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    "Search and connect with your physical therapist",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF7A8194),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16),
+          ],
+        ),
+      ),
     ),
 
     const SizedBox(height: 24),

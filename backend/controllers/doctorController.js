@@ -91,7 +91,15 @@ const doctorController = {
     async acceptRequest(req, res) {
         try {
             const requestId = req.params.id;
-            const updatedRequest = await dbService.updateRequestStatus(requestId, 'completed');
+            const updatedRequest = await dbService.updateRequestStatus(requestId, 'accepted');
+            
+            if (updatedRequest && updatedRequest.patientId && updatedRequest.doctorId) {
+                // Link the patient to the doctor in the Users table
+                await dbService.linkPatientToDoctor(updatedRequest.patientId, updatedRequest.doctorId);
+                // Hard delete the request from DynamoDB so it is completely removed
+                await dbService.deleteRequest(requestId);
+            }
+
             res.json({ statusCode: 200, data: updatedRequest, message: 'Request accepted' });
         } catch (error) {
             console.error('Error accepting request:', error);
@@ -106,8 +114,9 @@ const doctorController = {
     async rejectRequest(req, res) {
         try {
             const requestId = req.params.id;
-            // Depending on logic, maybe 'rejected' instead of 'completed'
             const updatedRequest = await dbService.updateRequestStatus(requestId, 'rejected');
+            // Hard delete the request from DynamoDB so it is completely removed
+            await dbService.deleteRequest(requestId);
             res.json({ statusCode: 200, data: updatedRequest, message: 'Request rejected' });
         } catch (error) {
             console.error('Error rejecting request:', error);

@@ -749,7 +749,9 @@ class _DoctorHomeState extends State<DoctorHome> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => route),
-          );
+          ).then((_) {
+            _loadDashboardData();
+          });
         }
       },
       child: Container(

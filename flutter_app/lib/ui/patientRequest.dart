@@ -11,8 +11,6 @@ class PatientRequest extends StatefulWidget {
 }
 
 class _PatientRequestState extends State<PatientRequest> {
-  String selectedFilter = 'All';
-
   List<Map<String, dynamic>> requests = [];
   bool isLoading = true;
 
@@ -64,17 +62,8 @@ class _PatientRequestState extends State<PatientRequest> {
   }
 
   List<Map<String, dynamic>> get filteredRequests {
-    if (selectedFilter == 'All') {
-      return requests;
-    } else if (selectedFilter == 'Pending') {
-      return requests.where((req) => req['status'] == 'pending').toList();
-    } else {
-      return requests.where((req) => req['status'] == 'completed').toList();
-    }
+    return requests;
   }
-
-  int get pendingCount =>
-      requests.where((req) => req['status'] == 'pending').length;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +73,7 @@ class _PatientRequestState extends State<PatientRequest> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildFilterTabs(),
+            const SizedBox(height: 16),
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -152,77 +141,7 @@ class _PatientRequestState extends State<PatientRequest> {
     );
   }
 
-  Widget _buildFilterTabs() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          _buildFilterButton('All', selectedFilter == 'All'),
-          const SizedBox(width: 12),
-          _buildFilterButton('Pending', selectedFilter == 'Pending',
-              badge: pendingCount),
-          const SizedBox(width: 12),
-          _buildFilterButton('Completed', selectedFilter == 'Completed'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterButton(String label, bool isSelected, {int? badge}) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedFilter = label;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF5798C6) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? Colors.transparent : Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.black87,
-                fontFamily: 'Poppins',
-              ),
-            ),
-            if (badge != null && badge > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 255, 152, 0),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$badge',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildRequestCard(Map<String, dynamic> request) {
-    final isCompleted = request['status'] == 'completed';
 
     return Container(
       decoration: BoxDecoration(
@@ -258,7 +177,7 @@ class _PatientRequestState extends State<PatientRequest> {
                 ),
                 child: Center(
                   child: Text(
-                    request['name'][0].toUpperCase(),
+                    (request['patientName'] ?? 'U')[0].toUpperCase(),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -274,7 +193,7 @@ class _PatientRequestState extends State<PatientRequest> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      request['name'],
+                      request['patientName'] ?? 'Unknown Patient',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -283,9 +202,9 @@ class _PatientRequestState extends State<PatientRequest> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      request['type'],
-                      style: const TextStyle(
+                    const Text(
+                      'Connection Request',
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF5798C6),
@@ -296,7 +215,7 @@ class _PatientRequestState extends State<PatientRequest> {
                 ),
               ),
               Text(
-                request['timestamp'],
+                (request['createdAt'] ?? '').split('T')[0],
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -308,9 +227,9 @@ class _PatientRequestState extends State<PatientRequest> {
           ),
           const SizedBox(height: 12),
           // Message
-          Text(
-            request['message'],
-            style: const TextStyle(
+          const Text(
+            'Patient is requesting to connect with you.',
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w400,
               color: Colors.black87,
@@ -318,82 +237,61 @@ class _PatientRequestState extends State<PatientRequest> {
             ),
           ),
           const SizedBox(height: 16),
-          // Action Buttons or Completed Status
-          if (isCompleted)
-            const Row(
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Color.fromARGB(255, 99, 197, 150),
-                  size: 20,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Completed',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color.fromARGB(255, 99, 197, 150),
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ],
-            )
-          else
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _handleResponse(request['id'] ?? 'req_1', true, request['name'] ?? 'Unknown');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF5798C6),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: const Text(
-                      'Respond',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton(
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
                   onPressed: () {
-                    _handleResponse(request['id'] ?? 'req_1', false, request['name'] ?? 'Unknown');
+                    _handleResponse(request['id'] ?? 'req_1', true, request['patientName'] ?? 'Unknown');
                   },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: Colors.grey[300]!,
-                      width: 1,
-                    ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF5798C6),
+                    elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: const Text(
-                    'Dismiss',
+                    'Respond',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Colors.white,
                       fontFamily: 'Poppins',
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: () {
+                  _handleResponse(request['id'] ?? 'req_1', false, request['patientName'] ?? 'Unknown');
+                },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: Colors.grey[300]!,
+                    width: 1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 12, horizontal: 20),
+                ),
+                child: const Text(
+                  'Dismiss',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

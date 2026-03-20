@@ -4,7 +4,8 @@ const {
   GetCommand, 
   PutCommand, 
   ScanCommand, 
-  UpdateCommand 
+  UpdateCommand,
+  DeleteCommand
 } = require("@aws-sdk/lib-dynamodb");
 
 // Mock data imports commented out after DynamoDB migration
@@ -237,6 +238,77 @@ const dbService = {
       return data.Attributes;
     } catch (error) {
       console.error("DynamoDB error (updateRequestStatus):", error);
+      throw error;
+    }
+  },
+
+  async deleteRequest(requestId) {
+    try {
+      await ddbDocClient.send(new DeleteCommand({
+        TableName: "Requests",
+        Key: { id: requestId }
+      }));
+      return true;
+    } catch (error) {
+      console.error("DynamoDB error (deleteRequest):", error);
+      throw error;
+    }
+  },
+
+  async getAllDoctors() {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Users",
+        FilterExpression: "#roleAttr = :role",
+        ExpressionAttributeNames: { 
+          "#roleAttr": "role",
+          "#nameAttr": "name"
+        },
+        ExpressionAttributeValues: { ":role": "doctor" },
+        ProjectionExpression: "id, #nameAttr, email, profileData"
+      }));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getAllDoctors):", error);
+      throw error;
+    }
+  },
+
+  async createRequest(patientId, doctorId, patientName, patientEmail) {
+    try {
+      const newRequest = {
+        id: `req_${Date.now()}`,
+        patientId,
+        doctorId,
+        patientName,
+        patientEmail,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Requests",
+        Item: newRequest
+      }));
+      return newRequest;
+    } catch (error) {
+      console.error("DynamoDB error (createRequest):", error);
+      throw error;
+    }
+  },
+
+  async linkPatientToDoctor(patientId, doctorId) {
+    try {
+      // Updates the user table to set assignedDoctorId
+      const data = await ddbDocClient.send(new UpdateCommand({
+        TableName: "Users",
+        Key: { id: patientId },
+        UpdateExpression: "set assignedDoctorId = :doctorId",
+        ExpressionAttributeValues: { ":doctorId": doctorId },
+        ReturnValues: "ALL_NEW"
+      }));
+      return data.Attributes;
+    } catch (error) {
+      console.error("DynamoDB error (linkPatientToDoctor):", error);
       throw error;
     }
   },

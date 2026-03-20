@@ -4,10 +4,11 @@ const appointmentController = {
     // GET /api/appointments
     async getAppointments(req, res) {
         try {
-            // Determine user role and ID (Mocking it for now if req.user is undefined)
-            // Assumes middleware sets req.user = { id: '...', role: '...' }
-            const userId = req.user ? req.user.id : 'doctor_1';
-            const role = req.user ? req.user.role : 'doctor';
+            if (!req.user) {
+                return res.status(401).json({ message: 'Unauthorized' });
+            }
+            const userId = req.user.id;
+            const role = req.user.role;
 
             const appointments = await dbService.getAppointmentsForUser(userId, role);
             res.json({ statusCode: 200, data: appointments });

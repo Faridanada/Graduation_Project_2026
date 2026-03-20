@@ -53,9 +53,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await AuthService.login(email, password);
 
       if (response['statusCode'] == 200) {
-        // Save the token in memory
+        // Save the token in memory AND to disk
         final String token = response['data']['token'] ?? '';
-        ApiService.currentToken = token;
+        await ApiService.setToken(token);
         
         // Extract real role and name from the database response
         final role = response['data']['user']['role'];

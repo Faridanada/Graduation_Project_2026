@@ -519,7 +519,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (response['statusCode'] == 201) {
         // Success: Registration complete!
-        ApiService.currentToken = response['data']['token'] ?? '';
+        await ApiService.setToken(response['data']['token'] ?? '');
         
         if (!mounted) return;
 
