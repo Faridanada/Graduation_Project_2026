@@ -9,15 +9,19 @@ const userRoutes = require("./routes/userRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const patientRoutes = require("./routes/patientRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
-const chatRoutes = require("./routes/chatRoutes");
 const woundRoutes = require("./routes/woundRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 app.use("/api", userRoutes);
 app.use("/api/doctor", doctorRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/appointments", appointmentRoutes);
-app.use("/api/chat", chatRoutes);
 app.use("/api/wounds", woundRoutes);
+app.use("/api/chat", chatRoutes);
+
+// Serve uploaded wound images as static files
+// On EC2: http://<EC2-IP>:5000/uploads/wounds/<filename>
+app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => {
   res.send("Backend running ✅");

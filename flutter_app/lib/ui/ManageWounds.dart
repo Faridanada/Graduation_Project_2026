@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'SettingsPage.dart';
-import 'NotificationsPage.dart';
+import '../services/api_service.dart';
+import 'WoundDetailScreen.dart';
 import 'ConversationScreen.dart';
 
 class ManageWounds extends StatefulWidget {
@@ -11,393 +11,386 @@ class ManageWounds extends StatefulWidget {
 }
 
 class _ManageWoundsState extends State<ManageWounds> {
-  final List<Map<String, dynamic>> wounds = [
-    {
-      'image': 'assets/images/Wound1.jpg',
-      'name': 'John Doe',
-      'injury': 'Knee injury',
-      'description': 'Post-surgery recovery wound',
-      'date': '12 Feb 2026',
-      'seen': false,
-    },
-    {
-      'image': 'assets/images/Wound2.jpg',
-      'name': 'Alice Smith',
-      'injury': 'Ankle injury',
-      'description': 'Sprain with minor abrasion',
-      'date': '10 Feb 2026',
-      'seen': false,
-    },
-    {
-      'image': 'assets/images/Wound3.jpg',
-      'name': 'Mark Lee',
-      'injury': 'Shoulder injury',
-      'description': 'Dislocation treatment area',
-      'date': '08 Feb 2026',
-      'seen': false,
-    },
-    {
-      'image': 'assets/images/Wound4.jpg',
-      'name': 'Emma Brown',
-      'injury': 'Wrist injury',
-      'description': 'Fracture healing wound',
-      'date': '05 Feb 2026',
-      'seen': false,
-    },
-  ];
+  List<dynamic> _wounds = [];
+  bool _isLoading = true;
+  String? _error;
+  String _filter = 'all'; // 'all' | 'pending' | 'reviewed'
+
+  int get _unreadCount =>
+      _wounds.where((w) => w['status'] == 'pending review').length;
+
+  List<dynamic> get _filtered {
+    if (_filter == 'pending')
+      return _wounds.where((w) => w['status'] == 'pending review').toList();
+    if (_filter == 'reviewed')
+      return _wounds
+          .where((w) => w['status'] == 'reviewed' || w['status'] == 'healed')
+          .toList();
+    return _wounds;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWounds();
+  }
+
+  Future<void> _loadWounds() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final wounds = await ApiService.getDoctorWounds();
+      if (mounted) setState(() {
+        _wounds = wounds;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) setState(() {
+        _error = 'Failed to load wound reports.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _openWoundDetail(Map<dynamic, dynamic> wound) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WoundDetailScreen(
+          wound: wound,
+          onStatusChanged: _loadWounds,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
-      body: SafeArea(
-        child: Column(
+      backgroundColor: const Color(0xFFF2F5FB),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF95B8D1),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Row(
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Patient Wound Reports',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      fontFamily: 'Poppins',
-                    ),
+            const Text(
+              'Manage Wounds',
+              style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 10),
+            if (_unreadCount > 0)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE53935),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$_unreadCount new',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+          ],
+        ),
+        centerTitle: false,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(_error!,
+                          style: const TextStyle(color: Colors.red)),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                          onPressed: _loadWounds,
+                          child: const Text('Retry')),
+                    ],
                   ),
-                  SizedBox(height: 16),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadWounds,
+                  child: Column(
+                    children: [
+                      // ── FILTER CHIPS ──────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 2),
+                        child: Row(
+                          children: [
+                            _filterChip('All', 'all'),
+                            const SizedBox(width: 8),
+                            _filterChip('Pending', 'pending'),
+                            const SizedBox(width: 8),
+                            _filterChip('Reviewed', 'reviewed'),
+                          ],
+                        ),
+                      ),
+
+                      // ── GRID ─────────────────────────────────────────
+                      Expanded(
+                        child: _filtered.isEmpty
+                            ? const Center(
+                                child: Text('No wounds in this category.',
+                                    style: TextStyle(color: Colors.grey)))
+                            : GridView.builder(
+                                padding: const EdgeInsets.all(16),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 0.60,
+                                ),
+                                itemCount: _filtered.length,
+                                itemBuilder: (context, index) =>
+                                    _buildWoundCard(_filtered[index]),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _filterChip(String label, String value) {
+    final selected = _filter == value;
+    return GestureDetector(
+      onTap: () => setState(() => _filter = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF4A90E2) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            if (!selected)
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 4)
+          ],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.grey.shade600,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWoundCard(Map<dynamic, dynamic> wound) {
+    final isNew = wound['status'] == 'pending review';
+    final isReviewed =
+        wound['status'] == 'reviewed' || wound['status'] == 'healed';
+    final imagePath = wound['imagePath'] as String?;
+    final patientName = wound['patientName'] ?? 'Patient';
+    final woundArea =
+        wound['notes']?['woundArea'] ?? wound['woundArea'] ?? 'Unknown area';
+    final painLevel =
+        wound['notes']?['painLevel'] ?? wound['painLevel'] ?? '-';
+    final createdAt = wound['createdAt'] as String? ?? '';
+    final dateStr =
+        createdAt.length >= 10 ? createdAt.substring(0, 10) : createdAt;
+
+    return GestureDetector(
+      onTap: () => _openWoundDetail(wound),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isNew
+                ? const Color(0xFFE53935)
+                : Colors.grey.shade200,
+            width: isNew ? 1.8 : 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 3))
+          ],
+          color: Colors.white,
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── IMAGE SECTION ────────────────────────────
+            Expanded(
+              flex: 3,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  imagePath != null
+                      ? Image.network(
+                          'http://10.0.2.2:5000$imagePath',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _noImageBox(woundArea),
+                        )
+                      : _noImageBox(woundArea),
+
+                  // NEW badge
+                  if (isNew)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE53935),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text('NEW',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
                 ],
               ),
             ),
+
+            // ── INFO SECTION ─────────────────────────────
             Expanded(
+              flex: 2,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.62,
-                  ),
-                  itemCount: wounds.length,
-                  itemBuilder: (context, index) {
-                    return _buildWoundCard(wounds[index], index);
-                  },
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(patientName,
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    Text(woundArea,
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    Text('Pain: $painLevel',
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade600)),
+                    Text(dateStr,
+                        style: const TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.w500)),
+                    const Spacer(),
+
+                    // ── QUICK ACTION ROW ──────────────────
+                    Row(
+                      children: [
+                        // Chat shortcut
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              final names = patientName.split(' ');
+                              final initials = names.length > 1
+                                  ? '${names[0][0]}${names[1][0]}'
+                                  : patientName[0];
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ConversationScreen(
+                                    name: patientName,
+                                    initials: initials.toUpperCase(),
+                                    message: woundArea,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.chat_bubble_outline,
+                                    size: 14, color: Color(0xFF4A90E2)),
+                                SizedBox(width: 3),
+                                Text('Chat',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF4A90E2),
+                                        fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Container(
+                            width: 1, height: 18, color: Colors.grey.shade200),
+                        // Status indicator
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isReviewed
+                                    ? Icons.check_circle
+                                    : Icons.access_time_rounded,
+                                size: 14,
+                                color: isReviewed
+                                    ? const Color(0xFF4CAF50)
+                                    : Colors.orange,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                isReviewed ? 'Done' : 'Pending',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: isReviewed
+                                        ? const Color(0xFF4CAF50)
+                                        : Colors.orange),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: const Color(0xFF95B8D1),
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black),
-        onPressed: () {
-          Navigator.pop(context);
-        },
-      ),
-      title: const Text(
-        'Manage Wounds',
-        style: TextStyle(
-          color: Colors.black,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Poppins',
-        ),
-      ),
-      centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const NotificationsPage()),
-            );
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SettingsPage()),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWoundCard(Map<String, dynamic> wound, int index) {
+  Widget _noImageBox(String label) {
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey[200]!,
-          width: 1,
+      color: Colors.grey.shade100,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.healing_rounded,
+                color: Colors.grey.shade400, size: 36),
+            const SizedBox(height: 4),
+            Text(label,
+                textAlign: TextAlign.center,
+                style:
+                    TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        color: Colors.white,
       ),
-      clipBehavior: Clip.hardEdge,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image Section
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              color: Colors.white,
-              child: Image.asset(
-                wound['image']!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.image_not_supported,
-                            color: Colors.grey[600],
-                            size: 40,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            wound['injury']!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          // Text Section
-          Expanded(
-            flex: 2,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: Colors.grey[300]!, width: 1),
-                ),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      wound['name']!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                        fontFamily: 'Poppins',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      wound['injury']!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                        fontFamily: 'Poppins',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      wound['description']!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.grey[600],
-                        fontFamily: 'Poppins',
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      wound['date']!,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border(
-                          top: BorderSide(color: Colors.grey[200]!),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  wounds[index]['seen'] =
-                                      !wounds[index]['seen'];
-                                });
-                              },
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 6),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      wound['seen']
-                                          ? Icons.check_circle
-                                          : Icons.check_circle_outline,
-                                      size: 14,
-                                      color: wound['seen']
-                                          ? const Color.fromARGB(
-                                              255, 99, 197, 150)
-                                          : Colors.grey[500],
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Flexible(
-                                      child: Text(
-                                        'Seen',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: wound['seen']
-                                              ? const Color.fromARGB(
-                                                  255, 99, 197, 150)
-                                              : Colors.grey[600],
-                                          fontFamily: 'Poppins',
-                                        ),
-                                        overflow: TextOverflow.visible,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 22,
-                            color: Colors.grey[200],
-                          ),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () {
-                                final names = wound['name']!.split(' ');
-                                final initials = names.length > 1
-                                    ? '${names[0][0]}${names[1][0]}'
-                                    : wound['name']![0];
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ConversationScreen(
-                                      name: wound['name']!,
-                                      initials: initials.toUpperCase(),
-                                      message: wound['injury']!,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 6),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.chat_bubble_outline,
-                                      size: 14,
-                                      color: Colors.grey,
-                                    ),
-                                    SizedBox(width: 3),
-                                    Flexible(
-                                      child: Text(
-                                        'Chat',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.grey,
-                                          fontFamily: 'Poppins',
-                                        ),
-                                        overflow: TextOverflow.visible,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      selectedItemColor: const Color(0xFF95B8D1),
-      unselectedItemColor: Colors.grey,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          label: 'Chats',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          label: 'Profile',
-        ),
-      ],
     );
   }
 }

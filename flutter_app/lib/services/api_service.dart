@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -238,5 +239,91 @@ class ApiService {
       return jsonDecode(response.body)['data'] ?? [];
     }
     return [];
+  }
+
+  // --- WOUND ENDPOINTS ---
+
+  /// Patient submits a wound report. [imageFile] is optional.
+  static Future<bool> submitWoundReport({
+    required String woundArea,
+    required String painLevel,
+    String description = '',
+    String notes = '',
+    io.File? imageFile,
+  }) async {
+    final token = await _getToken();
+    if (token == null) {
+      print('[WoundSubmit] ERROR: No token found — user may not be logged in');
+      return false;
+    }
+
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/wounds'),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields['woundArea'] = woundArea;
+      request.fields['painLevel'] = painLevel;
+      request.fields['description'] = description;
+      request.fields['notes'] = notes;
+
+      if (imageFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('woundImage', imageFile.path),
+        );
+      }
+
+      final streamed = await request.send();
+      final responseBody = await streamed.stream.bytesToString();
+      print('[WoundSubmit] Status: ${streamed.statusCode}, Body: $responseBody');
+      return streamed.statusCode == 201;
+    } catch (e) {
+      print('[WoundSubmit] Exception: $e');
+      return false;
+    }
+  }
+
+  /// Patient gets their own wound history.
+  static Future<List<dynamic>> getMyWounds() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/wounds'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  /// Doctor gets all wounds from their patients.
+  static Future<List<dynamic>> getDoctorWounds() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/doctor/wounds'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  /// Doctor marks a wound as reviewed or healed.
+  static Future<bool> updateWoundStatus(String woundId, String status, String patientId) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/wounds/$woundId/status'),
+      headers: _headers(token),
+      body: jsonEncode({'status': status, 'patientId': patientId}),
+    );
+    return response.statusCode == 200;
   }
 }

@@ -389,7 +389,9 @@ const dbService = {
   // --- NEW NOTIFICATIONS & CHAT METHODS ---
 
   async createNotification(userId, title, message) {
+    // Non-fatal: notification failure should never crash the main operation
     try {
+      if (!userId) return null; // skip if no recipient
       const newNotification = {
         id: `notif_${Date.now()}`,
         userId,
@@ -404,8 +406,38 @@ const dbService = {
       }));
       return newNotification;
     } catch (error) {
-      console.error("DynamoDB error (createNotification):", error);
-      throw error;
+      // Log but don't throw — Notifications table may not exist yet
+      console.warn("[Notification skipped]:", error.message || error);
+      return null;
+    }
+  },
+
+  async getNotificationsForUser(userId) {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Notifications",
+        FilterExpression: "userId = :uid",
+        ExpressionAttributeValues: { ":uid": userId }
+      }));
+      const items = data.Items || [];
+      items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      return items;
+    } catch (error) {
+      console.warn("[getNotifications skipped]:", error.message || error);
+      return [];
+    }
+  },
+
+  async markNotificationRead(notifId) {
+    try {
+      await ddbDocClient.send(new UpdateCommand({
+        TableName: "Notifications",
+        Key: { id: notifId },
+        UpdateExpression: "SET isRead = :t",
+        ExpressionAttributeValues: { ":t": true }
+      }));
+    } catch (error) {
+      console.warn("[markNotificationRead skipped]:", error.message || error);
     }
   },
 
@@ -465,10 +497,10 @@ const dbService = {
       const newWound = {
         id: `wound_${Date.now()}`,
         patientId,
-        doctorId,
-        imagePath,
+        doctorId: doctorId || null,
+        imagePath: imagePath || null,
         notes,
-        status: 'pending review', // 'pending review', 'reviewed', 'healed'
+        status: 'pending review',
         createdAt: new Date().toISOString()
       };
 
@@ -477,12 +509,14 @@ const dbService = {
         Item: newWound
       }));
 
-      // Notify the doctor that a patient uploaded a new wound record
-      await this.createNotification(
-        doctorId,
-        "New Wound Record",
-        `Patient ${patientId} has uploaded a new wound image for review.`
-      );
+      // Only notify the doctor if the patient has one assigned
+      if (doctorId) {
+        await this.createNotification(
+          doctorId,
+          "New Wound Record",
+          `Patient ${patientId} has uploaded a new wound image for review.`
+        );
+      }
 
       return newWound;
     } catch (error) {
@@ -501,6 +535,20 @@ const dbService = {
       return data.Items || [];
     } catch (error) {
       console.error("DynamoDB error (getPatientWounds):", error);
+      throw error;
+    }
+  },
+
+  async getWoundsForDoctor(doctorId) {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Wounds",
+        FilterExpression: "doctorId = :doctorId",
+        ExpressionAttributeValues: { ":doctorId": doctorId }
+      }));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getWoundsForDoctor):", error);
       throw error;
     }
   },

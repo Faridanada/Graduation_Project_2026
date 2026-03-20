@@ -1,59 +1,108 @@
 const dbService = require('../services/dbService');
 
 const woundController = {
-    // POST /api/wounds
-    // Patients upload a new wound image and notes
-    async createWoundRecord(req, res) {
-        try {
-            const patientId = req.user.id;
-            const { doctorId, notes } = req.body;
-            // The file path comes from multer via req.file (if image was provided)
-            const imagePath = req.file ? req.file.path : null;
 
-            if (!doctorId) {
-                return res.status(400).json({ statusCode: 400, message: 'doctorId is required to assign review.' });
-            }
+  // POST /api/wounds
+  // Patient submits a wound report with optional image
+  async createWoundRecord(req, res) {
+    try {
+      if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
-            const newWound = await dbService.createWoundRecord(patientId, doctorId, imagePath, notes);
-            res.status(201).json({ statusCode: 201, data: newWound, message: 'Wound record submitted and doctor notified' });
-        } catch (error) {
-            console.error('Error creating wound record:', error);
-            res.status(500).json({ statusCode: 500, message: 'Server error creating wound record' });
-        }
-    },
+      const patientId = req.user.id;
+      const { woundArea, painLevel, description, notes } = req.body;
 
-    // GET /api/wounds/patient/:patientId
-    // Doctors and Patients can fetch wound history for a specific patient
-    async getPatientWounds(req, res) {
-        try {
-            const requestedPatientId = req.params.patientId;
-            const records = await dbService.getPatientWounds(requestedPatientId);
-            res.json({ statusCode: 200, data: records });
-        } catch (error) {
-            console.error('Error fetching wound records:', error);
-            res.status(500).json({ statusCode: 500, message: 'Server error fetching wound records' });
-        }
-    },
+      if (!woundArea || !painLevel) {
+        return res.status(400).json({ message: 'Wound area and pain level are required' });
+      }
 
-    // PUT /api/wounds/:id/status
-    // Doctors review the wound and update status
-    async updateWoundStatus(req, res) {
-        try {
-            const woundId = req.params.id;
-            const { status, patientId } = req.body; // patientId needed for notification
-            const doctorId = req.user.id;
+      // On EC2, req.file.path will be the local server filepath served at /uploads/
+      const imagePath = req.file ? req.file.path : null;
 
-            if (!status || !patientId) {
-                return res.status(400).json({ statusCode: 400, message: 'status and patientId are required' });
-            }
+      // Lookup patient's assigned doctor from their profile
+      const patient = await dbService.getUserById(patientId);
+      const doctorId = patient ? patient.assignedDoctorId : null;
 
-            const updatedWound = await dbService.updateWoundStatus(woundId, status, doctorId, patientId);
-            res.json({ statusCode: 200, data: updatedWound, message: `Wound marked as ${status} and patient notified` });
-        } catch (error) {
-            console.error('Error updating wound status:', error);
-            res.status(500).json({ statusCode: 500, message: 'Server error updating wound status' });
-        }
+      const metadata = {
+        woundArea,
+        painLevel,
+        description: description || '',
+        notes: notes || ''
+      };
+
+      const newWound = await dbService.createWoundRecord(patientId, doctorId, imagePath, metadata);
+      res.status(201).json({ message: 'Wound report submitted \u2705', data: newWound });
+    } catch (error) {
+      console.error('Error creating wound record:', error);
+      res.status(500).json({ message: 'Server error creating wound record' });
     }
+  },
+
+  // GET /api/wounds
+  // Patient views their own wound history
+  async getMyWounds(req, res) {
+    try {
+      if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+      const wounds = await dbService.getPatientWounds(req.user.id);
+      wounds.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      res.json({ data: wounds });
+    } catch (error) {
+      console.error('Error fetching wounds:', error);
+      res.status(500).json({ message: 'Server error fetching wounds' });
+    }
+  },
+
+  // GET /api/wounds/patient/:patientId
+  // Doctor views a specific patient's wound history
+  async getPatientWounds(req, res) {
+    try {
+      const records = await dbService.getPatientWounds(req.params.patientId);
+      records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      res.json({ data: records });
+    } catch (error) {
+      console.error('Error fetching wound records:', error);
+      res.status(500).json({ message: 'Server error fetching wound records' });
+    }
+  },
+
+  // GET /api/doctor/wounds
+  // Doctor views all wounds from their patients, enriched with patient names
+  async getDoctorWounds(req, res) {
+    try {
+      if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+      const wounds = await dbService.getWoundsForDoctor(req.user.id);
+      const enriched = await Promise.all(
+        wounds.map(async (w) => {
+          const patient = await dbService.getUserById(w.patientId);
+          return { ...w, patientName: patient ? patient.name : 'Unknown Patient' };
+        })
+      );
+      enriched.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      res.json({ data: enriched });
+    } catch (error) {
+      console.error('Error fetching doctor wounds:', error);
+      res.status(500).json({ message: 'Server error fetching doctor wounds' });
+    }
+  },
+
+  // PUT /api/wounds/:id/status
+  // Doctor marks wound as reviewed or healed
+  async updateWoundStatus(req, res) {
+    try {
+      if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+      const { id } = req.params;
+      const { status, patientId } = req.body;
+
+      if (!status) return res.status(400).json({ message: 'status is required' });
+
+      const updated = await dbService.updateWoundStatus(id, status, req.user.id, patientId || null);
+      res.json({ message: `Wound marked as ${status}`, data: updated });
+    } catch (error) {
+      console.error('Error updating wound status:', error);
+      res.status(500).json({ message: 'Server error updating wound status' });
+    }
+  },
 };
 
 module.exports = woundController;

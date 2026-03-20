@@ -1,0 +1,6 @@
+Analyzing report_wound_screen.dart, ManageWounds.dart...
+
+  error - lib\ui\report_wound_screen.dart:81:43 - Undefined name 'io'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+   info - lib\ui\report_wound_screen.dart:316:39 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+
+2 issues found.
