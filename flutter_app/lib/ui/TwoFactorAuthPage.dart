@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class TwoFactorAuthPage extends StatefulWidget {
   const TwoFactorAuthPage({Key? key}) : super(key: key);
@@ -9,6 +10,31 @@ class TwoFactorAuthPage extends StatefulWidget {
 
 class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
   bool _twoFactorEnabled = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load2FAStatus();
+  }
+
+  Future<void> _load2FAStatus() async {
+    try {
+      final profile = await ApiService.getUserProfile();
+      if (mounted) {
+        setState(() {
+          _twoFactorEnabled = profile?['profileData']?['twoFactorEnabled'] ?? false; // In DB it might be at root
+          // Let's check both places since we save it at root in dbService (user.twoFactorEnabled)
+          if (profile != null && profile['twoFactorEnabled'] != null) {
+            _twoFactorEnabled = profile['twoFactorEnabled'];
+          }
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,19 +153,36 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Switch(
+                      _isLoading ? const CircularProgressIndicator() : Switch(
                         value: _twoFactorEnabled,
-                        onChanged: (value) {
+                        onChanged: (value) async {
+                          // Optimistic update
                           setState(() {
                             _twoFactorEnabled = value;
                           });
-                          if (value) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('2FA enabled successfully!'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
+                          
+                          final success = await ApiService.toggle2FA(value);
+                          
+                          if (mounted) {
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(value ? '2FA enabled successfully!' : '2FA disabled successfully!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              // Revert
+                              setState(() {
+                                _twoFactorEnabled = !value;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Failed to update 2FA status.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
                         },
                         activeColor: const Color(0xFF6BA5CF),

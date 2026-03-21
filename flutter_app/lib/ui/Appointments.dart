@@ -25,7 +25,7 @@ class _AppointmentsState extends State<Appointments> {
 
   Future<void> _loadAppointments() async {
     try {
-      final data = await ApiService.getAllAppointments();
+      final data = await ApiService.getAppointments();
       if (mounted) {
         setState(() {
           allAppointments = data.map((apt) {

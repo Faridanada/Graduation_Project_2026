@@ -326,4 +326,194 @@ class ApiService {
     );
     return response.statusCode == 200;
   }
+
+  // --- NOTIFICATION ENDPOINTS ---
+
+  /// Doctor fetches their notifications.
+  static Future<List<dynamic>> getNotifications() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/doctor/notifications'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  /// Mark a single notification as read.
+  static Future<void> markNotificationRead(String notifId) async {
+    final token = await _getToken();
+    if (token == null) return;
+
+    await http.put(
+      Uri.parse('$baseUrl/doctor/notifications/$notifId/read'),
+      headers: _headers(token),
+    );
+  }
+
+  // --- APPOINTMENTS & AVAILABILITY ENDPOINTS ---
+
+  /// Get appointments for the current user (auto-filters for doctor or patient)
+  static Future<List<dynamic>> getAppointments() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/appointments'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  /// Book a new appointment
+  static Future<bool> createAppointment({
+    required String doctorId,
+    required String date,
+    required String time,
+    String notes = '',
+  }) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/appointments'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'doctorId': doctorId,
+        'date': date,
+        'time': time,
+        'notes': notes,
+      }),
+    );
+    return response.statusCode == 201;
+  }
+
+  /// Change appointment status (scheduled, completed, cancelled)
+  static Future<bool> updateAppointmentStatus(String id, String status) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/appointments/$id/status'),
+      headers: _headers(token),
+      body: jsonEncode({'status': status}),
+    );
+    return response.statusCode == 200;
+  }
+
+  /// Get a doctor's own availability
+  static Future<List<dynamic>> getMyAvailability() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/doctor/availability'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  /// Patient fetching a specific doctor's availability
+  static Future<List<dynamic>> getDoctorAvailability(String doctorId) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/patient/doctors/$doctorId/availability'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  /// Doctor sets their availability
+  static Future<bool> setMyAvailability(List<dynamic> availability) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/doctor/availability'),
+      headers: _headers(token),
+      body: jsonEncode({'availability': availability}),
+    );
+    return response.statusCode == 200;
+  }
+
+  /// Get current user profile
+  static Future<Map<String, dynamic>?> getUserProfile() async {
+    final token = await _getToken();
+    if (token == null) return null;
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile'),
+        headers: _headers(token),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['user'];
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Update user profile
+  static Future<bool> updateProfile(Map<String, dynamic> data) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/profile'),
+        headers: _headers(token),
+        body: jsonEncode(data),
+      );
+      return response.statusCode == 200;
+    } catch (_) {}
+    return false;
+  }
+
+  /// Change password
+  static Future<bool> changePassword(String oldPassword, String newPassword) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/change-password'),
+        headers: _headers(token),
+        body: jsonEncode({'oldPassword': oldPassword, 'newPassword': newPassword}),
+      );
+      return response.statusCode == 200;
+    } catch (_) {}
+    return false;
+  }
+
+  /// Toggle 2FA
+  static Future<bool> toggle2FA(bool enabled) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/2fa'),
+        headers: _headers(token),
+        body: jsonEncode({'enabled': enabled}),
+      );
+      return response.statusCode == 200;
+    } catch (_) {}
+    return false;
+  }
 }
+

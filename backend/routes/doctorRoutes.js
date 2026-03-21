@@ -27,4 +27,8 @@ router.get('/wounds', woundController.getDoctorWounds);
 router.get('/notifications', notifController.getNotifications);
 router.put('/notifications/:id/read', notifController.markAsRead);
 
+// Availability for doctor
+router.get('/availability', doctorController.getAvailability);
+router.put('/availability', doctorController.setAvailability);
+
 module.exports = router;

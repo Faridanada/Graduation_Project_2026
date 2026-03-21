@@ -143,3 +143,72 @@ exports.getUserProfile = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, phoneNumber, profileData } = req.body;
+    const updatedUser = await dbService.updateUserProfile(req.user.id, {
+      name,
+      phoneNumber,
+      profileData
+    });
+    
+    if (!updatedUser) return res.status(404).json({ message: "User not found" });
+
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phoneNumber: updatedUser.phoneNumber,
+        profileData: updatedUser.profileData
+      }
+    });
+  } catch (error) {
+    console.error("Profile Update Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: "Both old and new passwords are required" });
+    }
+
+    const user = await dbService.getUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid old password" });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await dbService.updateUserPassword(req.user.id, hashedPassword);
+    res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Password Change Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.toggle2FA = async (req, res) => {
+  try {
+    const { enabled } = req.body;
+    
+    if (enabled === undefined) {
+      return res.status(400).json({ message: "Enabled status required" });
+    }
+
+    await dbService.updateUserProfile(req.user.id, { twoFactorEnabled: enabled });
+    res.json({ message: `2FA ${enabled ? 'enabled' : 'disabled'} successfully` });
+  } catch (error) {
+    console.error("2FA Toggle Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+

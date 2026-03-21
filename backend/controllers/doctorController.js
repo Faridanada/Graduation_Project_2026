@@ -26,6 +26,38 @@ const doctorController = {
         }
     },
 
+    // GET /api/doctor/availability
+    async getAvailability(req, res) {
+        try {
+            if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+            const doctorId = req.user.id;
+            const availability = await dbService.getDoctorAvailability(doctorId);
+            res.json({ data: availability });
+        } catch (error) {
+            console.error('Error fetching availability:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    },
+
+    // PUT /api/doctor/availability
+    async setAvailability(req, res) {
+        try {
+            if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+            const doctorId = req.user.id;
+            const { availability } = req.body;
+            
+            if (!availability) {
+                return res.status(400).json({ message: 'Availability data is required' });
+            }
+
+            const updated = await dbService.setDoctorAvailability(doctorId, availability);
+            res.json({ message: 'Availability updated successfully', data: updated });
+        } catch (error) {
+            console.error('Error setting availability:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    },
+
     // GET /api/doctor/patients/:id
     async getPatientProfile(req, res) {
         try {

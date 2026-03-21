@@ -10,7 +10,15 @@ class PersonalInformationPage extends StatefulWidget {
 
 class _PersonalInformationPageState extends State<PersonalInformationPage> {
   bool isLoading = true;
+  bool isEditing = false;
+  bool isSaving = false;
   Map<String, dynamic> userProfile = {};
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _dobController = TextEditingController();
+  final TextEditingController _genderController = TextEditingController();
 
   @override
   void initState() {
@@ -24,6 +32,11 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       if (mounted) {
         setState(() {
           userProfile = profile;
+          _nameController.text = userProfile['name'] ?? '';
+          _phoneController.text = userProfile['profileData']?['phone'] ?? '';
+          _locationController.text = userProfile['profileData']?['location'] ?? '';
+          _dobController.text = userProfile['profileData']?['dateOfBirth'] ?? '';
+          _genderController.text = userProfile['profileData']?['gender'] ?? '';
           isLoading = false;
         });
       }
@@ -33,6 +46,33 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
           isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _saveData() async {
+    setState(() => isSaving = true);
+    final success = await ApiService.updateProfile({
+      'name': _nameController.text,
+      'phoneNumber': _phoneController.text, // Not standard in profileData before but dbService supports it
+      'profileData': {
+        'phone': _phoneController.text,
+        'location': _locationController.text,
+        'dateOfBirth': _dobController.text,
+        'gender': _genderController.text,
+      }
+    });
+
+    setState(() => isSaving = false);
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully'), backgroundColor: Colors.green),
+      );
+      setState(() => isEditing = false);
+      _loadData();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -55,6 +95,13 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          if (!isLoading && !isEditing)
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () => setState(() => isEditing = true),
+            )
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -66,34 +113,35 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                 if (isLoading)
                   const Center(child: CircularProgressIndicator())
                 else ...[
-                  _buildInfoCard('Full Name', userProfile['name'] ?? 'Not set'),
-                  _buildInfoCard('Email', userProfile['email'] ?? 'Not set'),
-                  _buildInfoCard('Phone', userProfile['profileData']?['phone'] ?? 'Not set'),
-                  _buildInfoCard('Address', userProfile['profileData']?['location'] ?? 'Not set'),
-                  _buildInfoCard('Date of Birth', userProfile['profileData']?['dateOfBirth'] ?? 'Not set'),
-                  _buildInfoCard('Gender', userProfile['profileData']?['gender'] ?? 'Not set'),
+                  _buildField('Full Name', userProfile['name'], _nameController),
+                  _buildField('Email', userProfile['email'], null, readOnly: true),
+                  _buildField('Phone', userProfile['profileData']?['phone'], _phoneController),
+                  _buildField('Address', userProfile['profileData']?['location'], _locationController),
+                  _buildField('Date of Birth', userProfile['profileData']?['dateOfBirth'], _dobController),
+                  _buildField('Gender', userProfile['profileData']?['gender'], _genderController),
                 ],
                 const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6BA5CF),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                if (isEditing)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: isSaving ? null : _saveData,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6BA5CF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Edit Information',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      child: isSaving 
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Save Changes',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -102,7 +150,28 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     );
   }
 
-  Widget _buildInfoCard(String label, String value) {
+  Widget _buildField(String label, String? value, TextEditingController? controller, {bool readOnly = false}) {
+    final displayValue = value ?? 'Not set';
+
+    if (isEditing && !readOnly && controller != null) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: label,
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(16),
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
@@ -131,10 +200,10 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            value,
-            style: const TextStyle(
+            displayValue.isEmpty ? 'Not set' : displayValue,
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.black87,
+              color: readOnly ? Colors.grey[600] : Colors.black87,
               fontWeight: FontWeight.w500,
             ),
           ),
