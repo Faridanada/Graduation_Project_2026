@@ -1,0 +1,46 @@
+{
+  "patients": {
+    "statusCode": 200,
+    "data": [
+      {
+        "password": "$2b$10$fMrjBCfzVPfBXQWvCkvCNeEMnczk1saeYSrco7RTDL2azGFA16KdS",
+        "profileData": {
+          "allergies": "Skin sensitivity",
+          "role": "patient",
+          "gender": "Female",
+          "diagnosis": "Post Fracture",
+          "dateOfBirth": "20 / 03 / 1997",
+          "injuryDate": "03 / 03 / 2026",
+          "rehabilitationGoal": "Return to work",
+          "currentMedicationUse": "Anti-inflammatory medications",
+          "affectedArea": "Shoulder",
+          "currentPainLevel": "2",
+          "phone": "01064420642",
+          "mobilityLimitations": "Moderate limitation",
+          "location": "smouha",
+          "assistiveDevices": "Cane",
+          "age": 29
+        },
+        "role": "patient",
+        "assignedDoctorId": "1773960124632",
+        "createdAt": "2026-03-19T22:40:06.547Z",
+        "email": "yomnayehia18@gmail.com",
+        "id": "1773960006547",
+        "name": "yomna yehia"
+      }
+    ]
+  },
+  "stats": {
+    "statusCode": 200,
+    "data": {
+      "activePatients": 1,
+      "todaySessions": 0,
+      "alerts": 3,
+      "pendingReviews": 2
+    }
+  },
+  "apts": {
+    "statusCode": 200,
+    "data": []
+  }
+}
