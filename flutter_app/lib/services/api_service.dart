@@ -41,25 +41,6 @@ class ApiService {
   }
 
   // --- USER ENDPOINTS ---
-  
-  static Future<Map<String, dynamic>?> getUserProfile() async {
-    final token = await _getToken();
-    if (token == null) return null;
-
-    try {
-      final response = await http.get(
-        Uri.parse("$baseUrl/profile"),
-        headers: _headers(token),
-      );
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body)['user'];
-      }
-    } catch (e) {
-      return null;
-    }
-    return null;
-  }
-
   // --- DOCTOR ENDPOINTS ---
 
   static Future<Map<String, dynamic>> getDoctorStats() async {
