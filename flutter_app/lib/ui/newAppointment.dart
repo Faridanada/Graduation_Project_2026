@@ -54,7 +54,7 @@ class _NewAppointmentState extends State<NewAppointment> {
       }
 
       setState(() {
-        _patients = patientsData ?? [];
+        _patients = patientsData;
         if (_patients.isNotEmpty) {
           _selectedPatientId = _patients[0]['id']?.toString() ?? _patients[0]['_id']?.toString();
         }
@@ -137,26 +137,12 @@ class _NewAppointmentState extends State<NewAppointment> {
 
     setState(() => _isSubmitting = true);
 
-    try {
-      final formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      // We pass the currently logged-in doctor's ID as implicit, but if needed, we pass it. 
-      // The backend uses req.user.id for doctorId if role==doctor, and patientId from body.
-      // Wait, our flutter ApiService.createAppointment takes doctorId. Since we are a doctor booking,
-      // the backend `createAppointment` expects `patientId` in body if role == doctor.
-      // Let's modify ApiService inside this file or assume ApiService.createAppointment handles it.
-      // I will send both doctorId="" and patientId=selected just in case.
-      
-      // Let's use our existing method. I might need to adjust ApiService to send patientId too.
-    } catch (e) {
-      //
-    }
+    final String formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate);
 
-    // Actually, I'll update ApiService locally next.
-    // For now:
     final success = await ApiService.createAppointment(
       doctorId: '', // backend will overwrite with req.user.id
       patientId: _selectedPatientId!,
-      date: DateFormat('yyyy-MM-dd').format(_selectedDate),
+      date: formattedDate,
       time: _selectedTime!,
       type: _selectedSessionType,
       notes: _notesController.text,

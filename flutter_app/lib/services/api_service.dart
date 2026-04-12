@@ -103,6 +103,31 @@ class ApiService {
     return [];
   }
 
+  static Future<bool> assignExercise({
+    required String patientId,
+    required String title,
+    required int estimatedTimeMin,
+    required int repsTotal,
+    required String dateAssigned,
+  }) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/doctor/exercises/assign"),
+      headers: _headers(token),
+      body: jsonEncode({
+        "patientId": patientId,
+        "title": title,
+        "estimatedTimeMin": estimatedTimeMin,
+        "repsTotal": repsTotal,
+        "dateAssigned": dateAssigned,
+      }),
+    );
+
+    return response.statusCode == 201 || response.statusCode == 200;
+  }
+
   // --- PATIENT & REQUEST ENDPOINTS (NEW) ---
   
   static Future<bool> addDoctorPatient(Map<String, dynamic> patientData) async {
@@ -355,9 +380,11 @@ class ApiService {
 
   /// Book a new appointment
   static Future<bool> createAppointment({
-    required String doctorId,
+    String doctorId = '',
+    String patientId = '',
     required String date,
     required String time,
+    String type = 'Consultation',
     String notes = '',
   }) async {
     final token = await _getToken();
@@ -367,9 +394,11 @@ class ApiService {
       Uri.parse('$baseUrl/appointments'),
       headers: _headers(token),
       body: jsonEncode({
-        'doctorId': doctorId,
+        if (doctorId.isNotEmpty) 'doctorId': doctorId,
+        if (patientId.isNotEmpty) 'patientId': patientId,
         'date': date,
         'time': time,
+        'type': type,
         'notes': notes,
       }),
     );

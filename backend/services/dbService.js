@@ -242,6 +242,34 @@ const dbService = {
     }
   },
 
+  async assignExercise(patientId, doctorId, exerciseData) {
+    try {
+      const newExercise = {
+        id: `exercise_${Date.now()}`,
+        patientId,
+        doctorId,
+        ...exerciseData,
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Exercises",
+        Item: newExercise
+      }));
+
+      // Optionally notify the patient
+      await this.createNotification(
+        patientId,
+        "New Exercise Assigned",
+        "Your doctor has assigned a new exercise for you to complete."
+      );
+
+      return newExercise;
+    } catch (error) {
+      console.error("DynamoDB error (assignExercise):", error);
+      throw error;
+    }
+  },
+
   async getReminders(patientId) {
     try {
       const data = await ddbDocClient.send(new ScanCommand({

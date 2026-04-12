@@ -107,6 +107,32 @@ const doctorController = {
         }
     },
 
+    // POST /api/doctor/exercises/assign
+    async assignExercise(req, res) {
+        try {
+            const doctorId = req.user.id || 'doctor_1';
+            const { patientId, title, estimatedTimeMin, repsTotal, dateAssigned } = req.body;
+
+            if (!patientId || !title || !dateAssigned) {
+                return res.status(400).json({ statusCode: 400, message: 'patientId, title, and dateAssigned are required' });
+            }
+
+            const exerciseData = {
+                title,
+                estimatedTimeMin: estimatedTimeMin || 0,
+                repsTotal: repsTotal || 1,
+                repsCompleted: 0,
+                dateAssigned
+            };
+
+            const newExercise = await dbService.assignExercise(patientId, doctorId, exerciseData);
+            res.status(201).json({ statusCode: 201, data: newExercise, message: 'Exercise assigned successfully' });
+        } catch (error) {
+            console.error('Error assigning exercise:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error assigning exercise' });
+        }
+    },
+
     // GET /api/doctor/requests
     async getRequests(req, res) {
         try {

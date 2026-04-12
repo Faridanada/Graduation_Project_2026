@@ -12,6 +12,7 @@ router.use(authMiddleware);
 router.get('/stats', doctorController.getStats);
 router.get('/patients', doctorController.getPatients);
 router.post('/patients/add', doctorController.addPatient);
+router.post('/exercises/assign', doctorController.assignExercise);
 router.get('/appointments/today', doctorController.getTodayAppointments);
 router.get('/requests', doctorController.getRequests);
 router.put('/requests/:id/accept', doctorController.acceptRequest);

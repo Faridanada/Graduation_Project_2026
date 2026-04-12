@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'AssignExerciseScreen.dart';
 
 class ActivePatientsPage extends StatefulWidget {
   const ActivePatientsPage({Key? key}) : super(key: key);
@@ -23,6 +24,7 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
     final fetched = await ApiService.getDoctorPatients();
     setState(() {
       activePatients = fetched.map((p) => {
+        'id': p['id'] ?? p['_id'],
         'name': p['name'] ?? 'Unknown',
         'age': p['age']?.toString() ?? 'N/A',
         'phone': p['phone'] ?? 'N/A',
@@ -172,6 +174,27 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
                     'Injury Type:',
                     patient['injuryType'],
                     Icons.medical_services,
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AssignExerciseScreen(patient: patient),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.fitness_center, size: 16),
+                      label: const Text('Manage Exercises'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF95B8D1),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                      ),
+                    ),
                   ),
                 ],
               ),
