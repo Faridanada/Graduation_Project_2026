@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      final response = await AuthService.login(email, password);
+      final response = await AuthService.login(email, password, rememberMe);
 
       if (response['statusCode'] == 200) {
         // Save the token in memory AND to disk
@@ -316,15 +316,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  if (emailController.text.trim().isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Please enter your email first to reset password.')),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Password reset link sent to ${emailController.text.trim()}')),
-                                    );
-                                  }
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                    ),
+                                    builder: (context) => Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                                      ),
+                                      child: const ForgotPasswordSheet(),
+                                    ),
+                                  );
                                 },
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
@@ -511,3 +515,146 @@ class _GoogleLogo extends StatelessWidget {
     );
   }
 }
+
+class ForgotPasswordSheet extends StatefulWidget {
+  const ForgotPasswordSheet({Key? key}) : super(key: key);
+
+  @override
+  State<ForgotPasswordSheet> createState() => _ForgotPasswordSheetState();
+}
+
+class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
+  int step = 1;
+  final emailController = TextEditingController();
+  final tokenController = TextEditingController();
+  final passwordController = TextEditingController();
+  bool isLoading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    tokenController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> sendToken() async {
+    final email = emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your email')),
+      );
+      return;
+    }
+    setState(() => isLoading = true);
+    final res = await AuthService.forgotPassword(email);
+    setState(() => isLoading = false);
+    if (res['statusCode'] == 200) {
+      setState(() => step = 2);
+      // Backend currently returns resetToken in the response for dev purposes
+      if (res['data']['resetToken'] != null) {
+        // print or pre-fill for development testing
+        print("Dev Token: ${res['data']['resetToken']}");
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['data']['message'] ?? 'Token sent!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['data']['message'] ?? 'Failed to send token'), backgroundColor: Colors.red,),
+      );
+    }
+  }
+
+  Future<void> resetPassword() async {
+    final email = emailController.text.trim();
+    final token = tokenController.text.trim();
+    final newPass = passwordController.text;
+
+    if (token.isEmpty || newPass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter token and new password')),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+    final res = await AuthService.resetPassword(email, token, newPass);
+    setState(() => isLoading = false);
+
+    if (res['statusCode'] == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password reset successfully! You can now log in.'), backgroundColor: Colors.green,),
+      );
+      Navigator.of(context).pop(); // Close modal
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['data']['message'] ?? 'Failed to reset password'), backgroundColor: Colors.red,),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            step == 1 ? 'Forgot Password' : 'Reset Password',
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          if (step == 1) ...[
+            const Text('Enter your email and we will send you a reset token.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email Address',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: isLoading ? null : sendToken,
+              child: isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Send Reset Token'),
+            ),
+          ] else ...[
+            const Text('Enter the token we sent to you, and your new password.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: tokenController,
+              decoration: const InputDecoration(
+                labelText: 'Reset Token',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'New Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: isLoading ? null : resetPassword,
+              child: isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Reset Password'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+

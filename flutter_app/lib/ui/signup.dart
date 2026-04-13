@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import 'login.dart';
 import 'OnboardingPage.dart';
+import 'TermsAndConditions.dart';
 
 
 class SignUpScreen extends StatefulWidget {
@@ -517,6 +518,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         imageFile: selectedProfileImage,
       );
 
+      if (!mounted) return;
+
       if (response['statusCode'] == 201) {
         // Success: Registration complete!
         await ApiService.setToken(response['data']['token'] ?? '');
@@ -540,12 +543,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Network error: Could not connect to the server.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+             content: Text('Network error: Could not connect to the server.'),
+             backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -912,12 +917,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
               visualDensity: VisualDensity.compact,
             ),
             Expanded(
-              child: Text(
-                'I accept the Terms of Use & Privacy Policy',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w500,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const TermsAndConditionsPage(),
+                    ),
+                  );
+                },
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Roboto', // Default flutter sans-serif mapping
+                    ),
+                    children: const [
+                      TextSpan(text: 'I accept the '),
+                      TextSpan(
+                        text: 'Terms of Use & Privacy Policy',
+                        style: TextStyle(
+                          color: Color(0xFF2196F3),
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

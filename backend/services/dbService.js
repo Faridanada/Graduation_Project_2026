@@ -104,6 +104,44 @@ const dbService = {
     }
   },
 
+  async saveResetToken(id, token, expiry) {
+    try {
+      const user = await this.getUserById(id);
+      if (!user) return null;
+      
+      user.resetToken = token;
+      user.resetTokenExpiry = expiry;
+      
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Users",
+        Item: user
+      }));
+      return user;
+    } catch (error) {
+      console.error("DynamoDB error (saveResetToken):", error);
+      throw error;
+    }
+  },
+
+  async clearResetToken(id) {
+    try {
+      const user = await this.getUserById(id);
+      if (!user) return null;
+      
+      delete user.resetToken;
+      delete user.resetTokenExpiry;
+      
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Users",
+        Item: user
+      }));
+      return user;
+    } catch (error) {
+      console.error("DynamoDB error (clearResetToken):", error);
+      throw error;
+    }
+  },
+
   async createUser(userData) {
     try {
       const newUser = {

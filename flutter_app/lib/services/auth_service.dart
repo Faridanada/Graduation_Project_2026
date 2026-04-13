@@ -50,7 +50,7 @@ class AuthService {
 
   // LOGIN
   static Future<Map<String, dynamic>> login(
-      String email, String password) async {
+      String email, String password, bool rememberMe) async {
     try {
       final response = await http.post(
         Uri.parse("$baseUrl/login"),
@@ -58,6 +58,60 @@ class AuthService {
         body: jsonEncode({
           "email": email,
           "password": password,
+          "rememberMe": rememberMe,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      return {
+        "statusCode": response.statusCode,
+        "data": data,
+      };
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "data": {"message": "Server error. Could not decode response."},
+      };
+    }
+  }
+
+  // FORGOT PASSWORD
+  static Future<Map<String, dynamic>> forgotPassword(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/forgot-password"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": email,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      return {
+        "statusCode": response.statusCode,
+        "data": data,
+      };
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "data": {"message": "Server error. Could not decode response."},
+      };
+    }
+  }
+
+  // RESET PASSWORD
+  static Future<Map<String, dynamic>> resetPassword(
+      String email, String token, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/reset-password"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": email,
+          "token": token,
+          "newPassword": newPassword,
         }),
       );
 

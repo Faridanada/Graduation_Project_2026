@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const dbService = require("../services/dbService");
 
 // ================= REGISTER =================
@@ -19,6 +20,11 @@ exports.registerUser = async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
     }
 
     // Check if user already exists using our DB abstraction
@@ -72,7 +78,7 @@ exports.registerUser = async (req, res) => {
 // ================= LOGIN =================
 exports.loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -82,21 +88,23 @@ exports.loginUser = async (req, res) => {
     const user = await dbService.getUserByEmail(email);
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(404).json({ message: "User not found" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Incorrect password" });
     }
 
     const secret = process.env.JWT_SECRET || "supersecretkey";
 
+    const expiresIn = rememberMe ? "30d" : "1d";
+
     const token = jwt.sign(
       { id: user.id, role: user.role },
       secret,
-      { expiresIn: "1d" }
+      { expiresIn }
     );
 
     res.json({
@@ -208,6 +216,64 @@ exports.toggle2FA = async (req, res) => {
     res.json({ message: `2FA ${enabled ? 'enabled' : 'disabled'} successfully` });
   } catch (error) {
     console.error("2FA Toggle Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ================= PASSWORD RECOVERY =================
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await dbService.getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour from now
+
+    await dbService.saveResetToken(user.id, token, expiry);
+
+    // In a real application, send the token via Email here
+    // For development, we return it in the response
+    res.json({
+      message: "Password reset token generated successfully (Check response / email in production)",
+      resetToken: token
+    });
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+    if (!email || !token || !newPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const user = await dbService.getUserByEmail(email);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.resetToken !== token || new Date(user.resetTokenExpiry) < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await dbService.updateUserPassword(user.id, hashedPassword);
+    await dbService.clearResetToken(user.id);
+
+    res.json({ message: "Password has been successfully reset" });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
