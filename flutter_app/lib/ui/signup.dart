@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import 'login.dart';
@@ -42,6 +43,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool obscureConfirmPassword = true;
   bool acceptedTerms = false;
   int currentStep = 0;
+  String _fullPhoneNumber = '';
   String? selectedGender;
   String? selectedPainLevel;
   String? selectedDiagnosis;
@@ -279,7 +281,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _isPhoneValid(String phone) {
     final digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
-    return digitsOnly.length >= 8;
+    return digitsOnly.length >= 7;
+  }
+
+  bool _isEmailValid(String email) {
+    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    return emailRegex.hasMatch(email);
   }
 
   bool _validateStepOne() {
@@ -295,9 +302,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return false;
     }
 
-    if (!_isPhoneValid(phoneController.text.trim())) {
+    if (_fullPhoneNumber.isEmpty || !_isPhoneValid(_fullPhoneNumber)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid phone number')),
+        const SnackBar(content: Text('Please enter a valid phone number with country code')),
+      );
+      return false;
+    }
+
+    if (!_isEmailValid(emailController.text.trim())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
       );
       return false;
     }
@@ -485,7 +499,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     // Prepare Profile Data Map
     final Map<String, dynamic> profileData = {
-      "phone": phoneController.text.trim(),
+      "phone": _fullPhoneNumber,
       "role": selectedRole,
       // Step 2 details
       "gender": selectedGender,
@@ -769,15 +783,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        TextField(
+        IntlPhoneField(
           controller: phoneController,
+          initialCountryCode: 'EG',
           keyboardType: TextInputType.phone,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           decoration: _inputDecoration(
             label: 'Phone Number',
             hint: '01012345678',
-            prefixIcon: Icons.phone_outlined,
           ),
+          onChanged: (phone) {
+            setState(() {
+              _fullPhoneNumber = phone.completeNumber;
+            });
+          },
+          onCountryChanged: (country) {
+            setState(() {
+              _fullPhoneNumber = '';
+              phoneController.clear();
+            });
+          },
         ),
         const SizedBox(height: 16),
         TextField(
