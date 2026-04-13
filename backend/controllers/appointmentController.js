@@ -5,7 +5,11 @@ const appointmentController = {
   async getAppointments(req, res) {
     try {
       if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
-      const appointments = await dbService.getAppointmentsForUser(req.user.id, req.user.role);
+      
+      const { status, startDate, endDate } = req.query;
+      const filters = { status, startDate, endDate };
+      
+      const appointments = await dbService.getAppointmentsForUser(req.user.id, req.user.role, filters);
       res.json({ data: appointments });
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -27,6 +31,12 @@ const appointmentController = {
       }
 
       const { date, time, notes } = req.body;
+
+      // Validation: Date must be in the future (today or later)
+      const today = new Date().toISOString().split('T')[0];
+      if (date < today) {
+        return res.status(400).json({ message: 'Appointment date must be in the future' });
+      }
 
       if (!doctorIdParam || !patientId || !date || !time) {
         return res.status(400).json({ message: 'Must provide doctorId/patientId, date, and time' });
@@ -63,6 +73,20 @@ const appointmentController = {
     } catch (error) {
       console.error('Error updating appointment:', error);
       res.status(500).json({ message: 'Server error updating appointment' });
+    }
+  },
+
+  // DELETE /api/appointments/:id
+  async deleteAppointment(req, res) {
+    try {
+      if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+      
+      const { id } = req.params;
+      await dbService.deleteAppointment(id);
+      res.json({ message: 'Appointment cancelled successfully' });
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      res.status(500).json({ message: 'Server error cancelling appointment' });
     }
   }
 };

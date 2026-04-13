@@ -2,6 +2,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const dbService = require("../services/dbService");
+const fs = require("fs");
+const path = require("path");
 
 // ================= REGISTER =================
 exports.registerUser = async (req, res) => {
@@ -155,22 +157,52 @@ exports.getUserProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { name, phoneNumber, profileData } = req.body;
-    const updatedUser = await dbService.updateUserProfile(req.user.id, {
-      name,
-      phoneNumber,
-      profileData
-    });
+    const userId = req.user.id;
+
+    let parsedData = profileData;
+    if (typeof profileData === 'string' && profileData !== '') {
+      try {
+        parsedData = JSON.parse(profileData);
+      } catch (e) {
+        console.warn("Could not parse profileData JSON string");
+      }
+    }
+
+    const updates = { 
+      name, 
+      phoneNumber, 
+      profileData: parsedData 
+    };
+
+    if (req.file) {
+      const user = await dbService.getUserById(userId);
+      
+      // Delete old image if it exists to save space
+      if (user && user.profileImage) {
+        const oldImagePath = path.resolve(user.profileImage);
+        fs.unlink(oldImagePath, (err) => {
+          if (err) console.warn("Error deleting old profile image:", err.message);
+        });
+      }
+      
+      updates.profileImage = req.file.path.replace(/\\/g, '/'); // Normalize path for all OS
+    }
+
+    const updatedUser = await dbService.updateUserProfile(userId, updates);
     
-    if (!updatedUser) return res.status(404).json({ message: "User not found" });
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     res.json({
-      message: "Profile updated successfully",
+      message: "Profile updated successfully ✅",
       user: {
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
         phoneNumber: updatedUser.phoneNumber,
-        profileData: updatedUser.profileData
+        profileImage: updatedUser.profileImage,
+        profileData: updatedUser.profileData || {}
       }
     });
   } catch (error) {

@@ -16,7 +16,7 @@ router.post("/login", authController.loginUser);
 
 // Get the profile of the current authenticated user
 router.get("/profile", authMiddleware, authController.getUserProfile);
-router.put("/profile", authMiddleware, authController.updateProfile);
+router.put("/profile", authMiddleware, upload.single("profileImage"), authController.updateProfile);
 router.put("/change-password", authMiddleware, authController.changePassword);
 router.put("/2fa", authMiddleware, authController.toggle2FA);
 

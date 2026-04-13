@@ -8,5 +8,6 @@ router.use(authMiddleware);
 router.get('/', appointmentController.getAppointments);
 router.post('/', appointmentController.createAppointment);
 router.put('/:id/status', appointmentController.updateStatus);
+router.delete('/:id', appointmentController.deleteAppointment);
 
 module.exports = router;

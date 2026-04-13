@@ -75,6 +75,10 @@ const dbService = {
         user.twoFactorEnabled = updates.twoFactorEnabled;
       }
       
+      if (updates.profileImage) {
+        user.profileImage = updates.profileImage;
+      }
+      
       await ddbDocClient.send(new PutCommand({
         TableName: "Users",
         Item: user
@@ -280,6 +284,42 @@ const dbService = {
     }
   },
 
+  // Get ALL exercises assigned to a patient (not just today)
+  async getAllExercisesForPatient(patientId) {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Exercises",
+        FilterExpression: "patientId = :patientId",
+        ExpressionAttributeValues: { ":patientId": patientId }
+      }));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getAllExercisesForPatient):", error);
+      throw error;
+    }
+  },
+
+  // Update repsCompleted and mark as done if all reps finished
+  async updateExerciseProgress(exerciseId, patientId, repsCompleted) {
+    try {
+      const data = await ddbDocClient.send(new UpdateCommand({
+        TableName: "Exercises",
+        Key: { id: exerciseId },
+        UpdateExpression: "SET repsCompleted = :reps, completedAt = :now",
+        ExpressionAttributeValues: {
+          ":reps": repsCompleted,
+          ":now": new Date().toISOString()
+        },
+        ReturnValues: "ALL_NEW"
+      }));
+      return data.Attributes;
+    } catch (error) {
+      console.error("DynamoDB error (updateExerciseProgress):", error);
+      throw error;
+    }
+  },
+
+
   async assignExercise(patientId, doctorId, exerciseData) {
     try {
       const newExercise = {
@@ -366,16 +406,30 @@ const dbService = {
     }
   },
 
-  async getAllDoctors() {
+  async getAllDoctors(filters = {}) {
     try {
+      const { name, specialty } = filters;
+      let filterExpression = "#roleAttr = :role";
+      const expressionAttributeNames = { 
+        "#roleAttr": "role",
+        "#nameAttr": "name"
+      };
+      const expressionAttributeValues = { ":role": "doctor" };
+
+      if (name) {
+        filterExpression += " AND contains(#nameAttr, :name)";
+        expressionAttributeValues[":name"] = name;
+      }
+      if (specialty) {
+        filterExpression += " AND contains(profileData.specialty, :specialty)";
+        expressionAttributeValues[":specialty"] = specialty;
+      }
+
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Users",
-        FilterExpression: "#roleAttr = :role",
-        ExpressionAttributeNames: { 
-          "#roleAttr": "role",
-          "#nameAttr": "name"
-        },
-        ExpressionAttributeValues: { ":role": "doctor" },
+        FilterExpression: filterExpression,
+        ExpressionAttributeNames: expressionAttributeNames,
+        ExpressionAttributeValues: expressionAttributeValues,
         ProjectionExpression: "id, #nameAttr, email, profileData"
       }));
       return data.Items || [];
@@ -461,24 +515,7 @@ const dbService = {
     }
   },
 
-  async createAppointment(appointmentData) {
-    try {
-      const newAppt = {
-        id: `appt_${Date.now()}`,
-        ...appointmentData,
-        status: 'upcoming',
-        createdAt: new Date().toISOString()
-      };
-      await ddbDocClient.send(new PutCommand({
-        TableName: "Appointments",
-        Item: newAppt
-      }));
-      return newAppt;
-    } catch (error) {
-      console.error("DynamoDB error (createAppointment):", error);
-      throw error;
-    }
-  },
+
 
   async updateAppointmentStatus(appointmentId, status) {
     try {
@@ -561,6 +598,7 @@ const dbService = {
         // Create a unique composite key representing the conversation room
         conversationId: [senderId, receiverId].sort().join('_'),
         messageText,
+        isRead: false,
         createdAt: new Date().toISOString()
       };
 
@@ -598,6 +636,56 @@ const dbService = {
     } catch (error) {
       console.error("DynamoDB error (getChatHistory):", error);
       throw error;
+    }
+  },
+
+  async markMessagesAsRead(senderId, currentUserId) {
+    try {
+      const conversationId = [senderId, currentUserId].sort().join('_');
+      // Fetch all unread messages where current user is the receiver
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Messages",
+        FilterExpression: "conversationId = :cid AND receiverId = :rid AND isRead = :f",
+        ExpressionAttributeValues: { 
+          ":cid": conversationId,
+          ":rid": currentUserId,
+          ":f": false
+        }
+      }));
+
+      const unreadMessages = data.Items || [];
+      const promises = unreadMessages.map(msg => 
+        ddbDocClient.send(new UpdateCommand({
+          TableName: "Messages",
+          Key: { id: msg.id },
+          UpdateExpression: "SET isRead = :t",
+          ExpressionAttributeValues: { ":t": true }
+        }))
+      );
+
+      await Promise.all(promises);
+      return true;
+    } catch (error) {
+      console.error("DynamoDB error (markMessagesAsRead):", error);
+      return false;
+    }
+  },
+
+  async getUnreadMessageCount(userId) {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Messages",
+        FilterExpression: "receiverId = :rid AND isRead = :f",
+        ExpressionAttributeValues: { 
+          ":rid": userId,
+          ":f": false
+        },
+        Select: "COUNT"
+      }));
+      return data.Count || 0;
+    } catch (error) {
+      console.error("DynamoDB error (getUnreadMessageCount):", error);
+      return 0;
     }
   },
 
@@ -696,17 +784,82 @@ const dbService = {
 
   // --- APPOINTMENTS ---
 
-  async getAppointmentsForUser(userId, role) {
+  async getAppointmentsForUser(userId, role, filters = {}) {
     try {
+      const { status, startDate, endDate } = filters;
       const filterKey = role === 'doctor' ? 'doctorId' : 'patientId';
-      const data = await ddbDocClient.send(new ScanCommand({
+      
+      let filterExpression = `${filterKey} = :uid`;
+      const expressionAttributeValues = { ":uid": userId };
+      const expressionAttributeNames = {};
+
+      if (status) {
+        filterExpression += " AND #st = :status";
+        expressionAttributeValues[":status"] = status;
+        expressionAttributeNames["#st"] = "status";
+      }
+
+      if (startDate) {
+        filterExpression += " AND #dt >= :start";
+        expressionAttributeValues[":start"] = startDate;
+        expressionAttributeNames["#dt"] = "date";
+      }
+
+      if (endDate) {
+        filterExpression += " AND #dt <= :end";
+        expressionAttributeValues[":end"] = endDate;
+        expressionAttributeNames["#dt"] = "date"; // Reuse if already defined
+      }
+
+      const scanParams = {
         TableName: "Appointments",
-        FilterExpression: `${filterKey} = :uid`,
-        ExpressionAttributeValues: { ":uid": userId }
-      }));
+        FilterExpression: filterExpression,
+        ExpressionAttributeValues: expressionAttributeValues
+      };
+
+      if (Object.keys(expressionAttributeNames).length > 0) {
+        scanParams.ExpressionAttributeNames = expressionAttributeNames;
+      }
+
+      const data = await ddbDocClient.send(new ScanCommand(scanParams));
       return data.Items || [];
     } catch (error) {
       console.error("DynamoDB error (getAppointmentsForUser):", error);
+      throw error;
+    }
+  },
+
+  async getFutureAppointments(userId, role) {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const filterKey = role === 'doctor' ? 'doctorId' : 'patientId';
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Appointments",
+        FilterExpression: `${filterKey} = :uid AND #date >= :today`,
+        ExpressionAttributeNames: { "#date": "date" },
+        ExpressionAttributeValues: { ":uid": userId, ":today": today }
+      }));
+      const items = data.Items || [];
+      // Sort by date then time
+      return items.sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.time.localeCompare(b.time);
+      });
+    } catch (error) {
+      console.error("DynamoDB error (getFutureAppointments):", error);
+      return [];
+    }
+  },
+
+  async deleteAppointment(id) {
+    try {
+      await ddbDocClient.send(new DeleteCommand({
+        TableName: "Appointments",
+        Key: { id }
+      }));
+      return true;
+    } catch (error) {
+      console.error("DynamoDB error (deleteAppointment):", error);
       throw error;
     }
   },

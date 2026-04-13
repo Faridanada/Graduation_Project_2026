@@ -90,6 +90,9 @@ const woundController = {
   async updateWoundStatus(req, res) {
     try {
       if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+      if (req.user.role !== 'doctor') {
+        return res.status(403).json({ message: 'Forbidden: Only doctors can update wound status' });
+      }
 
       const { id } = req.params;
       const { status, patientId } = req.body;
