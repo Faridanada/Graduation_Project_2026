@@ -59,6 +59,51 @@ const dbService = {
     }
   },
 
+  async updateUserProfile(id, updates) {
+    try {
+      const user = await this.getUserById(id);
+      if (!user) return null;
+
+      if (updates.name) user.name = updates.name;
+      if (updates.phoneNumber !== undefined) user.phoneNumber = updates.phoneNumber;
+      
+      if (updates.profileData) {
+        user.profileData = { ...user.profileData, ...updates.profileData };
+      }
+
+      if (updates.twoFactorEnabled !== undefined) {
+        user.twoFactorEnabled = updates.twoFactorEnabled;
+      }
+      
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Users",
+        Item: user
+      }));
+      return user;
+    } catch (error) {
+      console.error("DynamoDB error (updateUserProfile):", error);
+      throw error;
+    }
+  },
+
+  async updateUserPassword(id, hashedPassword) {
+    try {
+      const user = await this.getUserById(id);
+      if (!user) throw new Error("User not found");
+      
+      user.password = hashedPassword;
+
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Users",
+        Item: user
+      }));
+      return true;
+    } catch (error) {
+      console.error("DynamoDB error (updateUserPassword):", error);
+      throw error;
+    }
+  },
+
   async createUser(userData) {
     try {
       const newUser = {
@@ -193,6 +238,34 @@ const dbService = {
       return data.Items || [];
     } catch (error) {
       console.error("DynamoDB error (getTodayExercises):", error);
+      throw error;
+    }
+  },
+
+  async assignExercise(patientId, doctorId, exerciseData) {
+    try {
+      const newExercise = {
+        id: `exercise_${Date.now()}`,
+        patientId,
+        doctorId,
+        ...exerciseData,
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Exercises",
+        Item: newExercise
+      }));
+
+      // Optionally notify the patient
+      await this.createNotification(
+        patientId,
+        "New Exercise Assigned",
+        "Your doctor has assigned a new exercise for you to complete."
+      );
+
+      return newExercise;
+    } catch (error) {
+      console.error("DynamoDB error (assignExercise):", error);
       throw error;
     }
   },
@@ -583,34 +656,87 @@ const dbService = {
     }
   },
 
-  // We don't have an availability array yet, let's just keep it in memory
-  _mockAvailability: {}, 
+  // --- APPOINTMENTS ---
+
+  async getAppointmentsForUser(userId, role) {
+    try {
+      const filterKey = role === 'doctor' ? 'doctorId' : 'patientId';
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Appointments",
+        FilterExpression: `${filterKey} = :uid`,
+        ExpressionAttributeValues: { ":uid": userId }
+      }));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getAppointmentsForUser):", error);
+      throw error;
+    }
+  },
+
+  async createAppointment(patientId, doctorId, date, time, notes) {
+    try {
+      const newAppt = {
+        id: `appt_${Date.now()}`,
+        patientId,
+        doctorId,
+        date,
+        time,
+        notes: notes || '',
+        status: 'scheduled',
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Appointments",
+        Item: newAppt
+      }));
+      return newAppt;
+    } catch (error) {
+      console.error("DynamoDB error (createAppointment):", error);
+      throw error;
+    }
+  },
+
+  async updateAppointmentStatus(id, status) {
+    try {
+      await ddbDocClient.send(new UpdateCommand({
+        TableName: "Appointments",
+        Key: { id },
+        UpdateExpression: "SET #st = :status",
+        ExpressionAttributeNames: { "#st": "status" },
+        ExpressionAttributeValues: { ":status": status }
+      }));
+      return true;
+    } catch (error) {
+      console.error("DynamoDB error (updateAppointmentStatus):", error);
+      throw error;
+    }
+  },
+
+  // --- AVAILABILITY ---
 
   async getDoctorAvailability(doctorId) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Default availability if not set
-        const availability = this._mockAvailability[doctorId] || [
-          { day: 'Monday', isAvailable: true, startTime: '09:00', endTime: '17:00' },
-          { day: 'Tuesday', isAvailable: true, startTime: '09:00', endTime: '17:00' },
-          { day: 'Wednesday', isAvailable: true, startTime: '09:00', endTime: '17:00' },
-          { day: 'Thursday', isAvailable: true, startTime: '09:00', endTime: '17:00' },
-          { day: 'Friday', isAvailable: true, startTime: '09:00', endTime: '14:00' },
-          { day: 'Saturday', isAvailable: false, startTime: '', endTime: '' },
-          { day: 'Sunday', isAvailable: false, startTime: '', endTime: '' },
-        ];
-        resolve(availability);
-      }, 100);
-    });
+    try {
+      const user = await this.getUserById(doctorId);
+      return user ? (user.availability || []) : [];
+    } catch (error) {
+      console.error("DynamoDB error (getDoctorAvailability):", error);
+      return [];
+    }
   },
 
   async setDoctorAvailability(doctorId, availabilityData) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        this._mockAvailability[doctorId] = availabilityData;
-        resolve(availabilityData);
-      }, 100);
-    });
+    try {
+      await ddbDocClient.send(new UpdateCommand({
+        TableName: "Users",
+        Key: { id: doctorId },
+        UpdateExpression: "SET availability = :av",
+        ExpressionAttributeValues: { ":av": availabilityData }
+      }));
+      return availabilityData;
+    } catch (error) {
+      console.error("DynamoDB error (setDoctorAvailability):", error);
+      throw error;
+    }
   }
 };
 

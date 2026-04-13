@@ -26,6 +26,38 @@ const doctorController = {
         }
     },
 
+    // GET /api/doctor/availability
+    async getAvailability(req, res) {
+        try {
+            if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+            const doctorId = req.user.id;
+            const availability = await dbService.getDoctorAvailability(doctorId);
+            res.json({ data: availability });
+        } catch (error) {
+            console.error('Error fetching availability:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    },
+
+    // PUT /api/doctor/availability
+    async setAvailability(req, res) {
+        try {
+            if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+            const doctorId = req.user.id;
+            const { availability } = req.body;
+            
+            if (!availability) {
+                return res.status(400).json({ message: 'Availability data is required' });
+            }
+
+            const updated = await dbService.setDoctorAvailability(doctorId, availability);
+            res.json({ message: 'Availability updated successfully', data: updated });
+        } catch (error) {
+            console.error('Error setting availability:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    },
+
     // GET /api/doctor/patients/:id
     async getPatientProfile(req, res) {
         try {
@@ -72,6 +104,32 @@ const doctorController = {
         } catch (error) {
             console.error('Error adding patient:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error adding patient' });
+        }
+    },
+
+    // POST /api/doctor/exercises/assign
+    async assignExercise(req, res) {
+        try {
+            const doctorId = req.user.id || 'doctor_1';
+            const { patientId, title, estimatedTimeMin, repsTotal, dateAssigned } = req.body;
+
+            if (!patientId || !title || !dateAssigned) {
+                return res.status(400).json({ statusCode: 400, message: 'patientId, title, and dateAssigned are required' });
+            }
+
+            const exerciseData = {
+                title,
+                estimatedTimeMin: estimatedTimeMin || 0,
+                repsTotal: repsTotal || 1,
+                repsCompleted: 0,
+                dateAssigned
+            };
+
+            const newExercise = await dbService.assignExercise(patientId, doctorId, exerciseData);
+            res.status(201).json({ statusCode: 201, data: newExercise, message: 'Exercise assigned successfully' });
+        } catch (error) {
+            console.error('Error assigning exercise:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error assigning exercise' });
         }
     },
 

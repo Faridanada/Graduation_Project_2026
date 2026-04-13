@@ -72,6 +72,18 @@ const patientController = {
             console.error('Error sending request:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error sending request' });
         }
+    },
+
+    // GET /api/patient/doctors/:id/availability
+    async getDoctorAvailability(req, res) {
+        try {
+            const doctorId = req.params.id;
+            const availability = await dbService.getDoctorAvailability(doctorId);
+            res.json({ data: availability });
+        } catch (error) {
+            console.error('Error fetching doctor availability:', error);
+            res.status(500).json({ message: 'Server error fetching availability' });
+        }
     }
 };
 

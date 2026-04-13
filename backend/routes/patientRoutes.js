@@ -13,5 +13,6 @@ router.get('/reminders', patientController.getReminders);
 
 router.get('/doctors', patientController.getAllDoctors);
 router.post('/request', patientController.sendRequest);
+router.get('/doctors/:id/availability', patientController.getDoctorAvailability);
 
 module.exports = router;

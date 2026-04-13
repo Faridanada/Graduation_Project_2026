@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({Key? key}) : super(key: key);
@@ -139,9 +140,35 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (_newPasswordController.text ==
-                          _confirmPasswordController.text) {
+                    onPressed: () async {
+                      if (_newPasswordController.text != _confirmPasswordController.text) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Passwords do not match!'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      if (_currentPasswordController.text.isEmpty || _newPasswordController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please fill all fields!'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      final success = await ApiService.changePassword(
+                        _currentPasswordController.text,
+                        _newPasswordController.text,
+                      );
+
+                      if (!mounted) return;
+
+                      if (success) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Password changed successfully!'),
@@ -152,7 +179,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Passwords do not match!'),
+                            content: Text('Failed to change password. Make sure current password is correct.'),
                             backgroundColor: Colors.red,
                           ),
                         );
