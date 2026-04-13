@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Save the token in memory AND to disk
         final String token = response['data']['token'] ?? '';
         await ApiService.setToken(token);
-        
+
         // Extract real role and name from the database response
         final role = response['data']['user']['role'];
 
@@ -70,7 +70,6 @@ class _LoginScreenState extends State<LoginScreen> {
             MaterialPageRoute(builder: (_) => const PatientHomeScreen()),
           );
         }
-
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -127,31 +126,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Column(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'Log In',
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                child: Icon(
-                                  Icons.person_outline,
-                                  size: 28,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
+                          const Text(
+                            'Log In',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
                           ),
                           const SizedBox(height: 24),
                           const Text(
@@ -314,17 +295,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 16),
                               TextButton(
                                 onPressed: () {
                                   showModalBottomSheet(
                                     context: context,
                                     isScrollControlled: true,
                                     shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(24),
+                                      ),
                                     ),
                                     builder: (context) => Padding(
                                       padding: EdgeInsets.only(
-                                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                                        bottom: MediaQuery.of(context)
+                                            .viewInsets
+                                            .bottom,
                                       ),
                                       child: const ForgotPasswordSheet(),
                                     ),
@@ -337,11 +323,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                       MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Text(
-                                  'Forgot your password?',
+                                  'Forgot password?',
                                   style: TextStyle(
-                                    color: Colors.grey[700],
+                                    color: Colors.grey[900],
                                     fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.bold,
                                     decoration: TextDecoration.none,
                                   ),
                                 ),
@@ -467,18 +453,23 @@ class _SocialAuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Ink(
-        width: 72,
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade300),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFD0D7DE), width: 1.5),
+            ),
+            child: Center(child: child),
+          ),
         ),
-        child: Center(child: child),
       ),
     );
   }
@@ -561,7 +552,10 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['data']['message'] ?? 'Failed to send token'), backgroundColor: Colors.red,),
+        SnackBar(
+          content: Text(res['data']['message'] ?? 'Failed to send token'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -584,12 +578,18 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
 
     if (res['statusCode'] == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password reset successfully! You can now log in.'), backgroundColor: Colors.green,),
+        const SnackBar(
+          content: Text('Password reset successfully! You can now log in.'),
+          backgroundColor: Colors.green,
+        ),
       );
       Navigator.of(context).pop(); // Close modal
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['data']['message'] ?? 'Failed to reset password'), backgroundColor: Colors.red,),
+        SnackBar(
+          content: Text(res['data']['message'] ?? 'Failed to reset password'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -626,7 +626,8 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                   : const Text('Send Reset Token'),
             ),
           ] else ...[
-            const Text('Enter the token we sent to you, and your new password.'),
+            const Text(
+                'Enter the token we sent to you, and your new password.'),
             const SizedBox(height: 16),
             TextField(
               controller: tokenController,
@@ -657,4 +658,3 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
     );
   }
 }
-
