@@ -5,10 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
-import 'login.dart';
 import 'OnboardingPage.dart';
 import 'TermsAndConditions.dart';
-
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -31,7 +29,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   late TextEditingController otherDiagnosisController;
   late TextEditingController otherAssistiveDeviceController;
   late TextEditingController otherAllergyController;
-  late TextEditingController otherAffectedAreaController;
   late TextEditingController otherMobilityLevelController;
   late TextEditingController otherMedicationStatusController;
   late TextEditingController otherRehabGoalController;
@@ -45,9 +42,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   int currentStep = 0;
   String _fullPhoneNumber = '';
   String? selectedGender;
-  String? selectedPainLevel;
   String? selectedDiagnosis;
-  String? selectedAffectedArea;
   String? selectedMobilityLevel;
   String? selectedAssistiveDevice;
   String? selectedMedicationStatus;
@@ -79,7 +74,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     otherDiagnosisController = TextEditingController();
     otherAssistiveDeviceController = TextEditingController();
     otherAllergyController = TextEditingController();
-    otherAffectedAreaController = TextEditingController();
     otherMobilityLevelController = TextEditingController();
     otherMedicationStatusController = TextEditingController();
     otherRehabGoalController = TextEditingController();
@@ -111,7 +105,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     otherDiagnosisController.dispose();
     otherAssistiveDeviceController.dispose();
     otherAllergyController.dispose();
-    otherAffectedAreaController.dispose();
     otherMobilityLevelController.dispose();
     otherMedicationStatusController.dispose();
     otherRehabGoalController.dispose();
@@ -274,7 +267,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _hasSpecialChar(String password) =>
       RegExp(r'[^A-Za-z0-9]').hasMatch(password);
 
-
+  bool get _meetsAllPasswordRequirements =>
+      _hasMinLength(passwordController.text) &&
+      _hasUpperCase(passwordController.text) &&
+      _hasLowerCase(passwordController.text) &&
+      _hasNumber(passwordController.text) &&
+      _hasSpecialChar(passwordController.text);
 
   // Explicit Role tracking variable
   String? selectedRole;
@@ -304,7 +302,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (_fullPhoneNumber.isEmpty || !_isPhoneValid(_fullPhoneNumber)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid phone number with country code')),
+        const SnackBar(
+            content:
+                Text('Please enter a valid phone number with country code')),
       );
       return false;
     }
@@ -381,8 +381,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _validateStepThree() {
     if (selectedDiagnosis == null ||
-        selectedAffectedArea == null ||
-        selectedPainLevel == null ||
         selectedMobilityLevel == null ||
         selectedAssistiveDevice == null ||
         selectedMedicationStatus == null ||
@@ -401,14 +399,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         otherDiagnosisController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please specify the diagnosis')),
-      );
-      return false;
-    }
-
-    if (selectedAffectedArea == 'Other' &&
-        otherAffectedAreaController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please specify the affected body area')),
       );
       return false;
     }
@@ -495,7 +485,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     // Prepare Name
-    final fullName = '${firstNameController.text.trim()} ${lastNameController.text.trim()}';
+    final fullName =
+        '${firstNameController.text.trim()} ${lastNameController.text.trim()}';
 
     // Prepare Profile Data Map
     final Map<String, dynamic> profileData = {
@@ -511,15 +502,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // If it's a patient, add Step 3 Medical History details
     if (selectedRole != 'doctor') {
       profileData.addAll({
-        "diagnosis": selectedDiagnosis == 'Other' ? otherDiagnosisController.text.trim() : selectedDiagnosis,
-        "affectedArea": selectedAffectedArea == 'Other' ? otherAffectedAreaController.text.trim() : selectedAffectedArea,
-        "currentPainLevel": selectedPainLevel,
-        "mobilityLimitations": selectedMobilityLevel == 'Other' ? otherMobilityLevelController.text.trim() : selectedMobilityLevel,
-        "assistiveDevices": selectedAssistiveDevice == 'Other' ? otherAssistiveDeviceController.text.trim() : selectedAssistiveDevice,
-        "currentMedicationUse": selectedMedicationStatus == 'Other' ? otherMedicationStatusController.text.trim() : selectedMedicationStatus,
-        "allergies": selectedAllergyStatus == 'Other' ? otherAllergyController.text.trim() : selectedAllergyStatus,
+        "diagnosis": selectedDiagnosis == 'Other'
+            ? otherDiagnosisController.text.trim()
+            : selectedDiagnosis,
+        "mobilityLimitations": selectedMobilityLevel == 'Other'
+            ? otherMobilityLevelController.text.trim()
+            : selectedMobilityLevel,
+        "assistiveDevices": selectedAssistiveDevice == 'Other'
+            ? otherAssistiveDeviceController.text.trim()
+            : selectedAssistiveDevice,
+        "currentMedicationUse": selectedMedicationStatus == 'Other'
+            ? otherMedicationStatusController.text.trim()
+            : selectedMedicationStatus,
+        "allergies": selectedAllergyStatus == 'Other'
+            ? otherAllergyController.text.trim()
+            : selectedAllergyStatus,
         "injuryDate": injuryDateController.text.trim(),
-        "rehabilitationGoal": selectedRehabGoal == 'Other' ? otherRehabGoalController.text.trim() : selectedRehabGoal,
+        "rehabilitationGoal": selectedRehabGoal == 'Other'
+            ? otherRehabGoalController.text.trim()
+            : selectedRehabGoal,
       });
     }
 
@@ -537,7 +538,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (response['statusCode'] == 201) {
         // Success: Registration complete!
         await ApiService.setToken(response['data']['token'] ?? '');
-        
+
         if (!mounted) return;
 
         // Take Patient directly to Onboarding
@@ -560,8 +561,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-             content: Text('Network error: Could not connect to the server.'),
-             backgroundColor: Colors.red,
+            content: Text('Network error: Could not connect to the server.'),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -656,109 +657,121 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget _buildStepOneContent() {
     return Column(
       children: [
-        // ROLE SELECTION UI
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedRole = 'patient';
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
+        _buildRoleSelection(),
+        const SizedBox(height: 24),
+        _buildStepOneFormFields(),
+        _buildStepOneSocialButtons(),
+      ],
+    );
+  }
+
+  Widget _buildRoleSelection() {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedRole = 'patient';
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: selectedRole == 'patient'
+                    ? const Color(0xFF2196F3).withValues(alpha: 0.1)
+                    : Colors.white,
+                border: Border.all(
+                  color: selectedRole == 'patient'
+                      ? const Color(0xFF2196F3)
+                      : Colors.grey.shade300,
+                  width: selectedRole == 'patient' ? 2 : 1,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.accessible_forward,
+                    size: 32,
                     color: selectedRole == 'patient'
-                        ? const Color(0xFF2196F3).withValues(alpha: 0.1)
-                        : Colors.white,
-                    border: Border.all(
+                        ? const Color(0xFF2196F3)
+                        : Colors.grey.shade500,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Patient',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: selectedRole == 'patient'
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: selectedRole == 'patient'
                           ? const Color(0xFF2196F3)
-                          : Colors.grey.shade300,
-                      width: selectedRole == 'patient' ? 2 : 1,
+                          : Colors.grey.shade700,
                     ),
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.accessible_forward,
-                        size: 32,
-                        color: selectedRole == 'patient'
-                            ? const Color(0xFF2196F3)
-                            : Colors.grey.shade500,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Patient',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: selectedRole == 'patient'
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: selectedRole == 'patient'
-                              ? const Color(0xFF2196F3)
-                              : Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedRole = 'doctor';
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedRole = 'doctor';
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: selectedRole == 'doctor'
+                    ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
+                    : Colors.white,
+                border: Border.all(
+                  color: selectedRole == 'doctor'
+                      ? const Color(0xFF4CAF50)
+                      : Colors.grey.shade300,
+                  width: selectedRole == 'doctor' ? 2 : 1,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.local_hospital,
+                    size: 32,
                     color: selectedRole == 'doctor'
-                        ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
-                        : Colors.white,
-                    border: Border.all(
+                        ? const Color(0xFF4CAF50)
+                        : Colors.grey.shade500,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Doctor',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: selectedRole == 'doctor'
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: selectedRole == 'doctor'
                           ? const Color(0xFF4CAF50)
-                          : Colors.grey.shade300,
-                      width: selectedRole == 'doctor' ? 2 : 1,
+                          : Colors.grey.shade700,
                     ),
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.local_hospital,
-                        size: 32,
-                        color: selectedRole == 'doctor'
-                            ? const Color(0xFF4CAF50)
-                            : Colors.grey.shade500,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Doctor',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: selectedRole == 'doctor'
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: selectedRole == 'doctor'
-                              ? const Color(0xFF4CAF50)
-                              : Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
-        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildStepOneFormFields() {
+    return Column(
+      children: [
         Row(
           children: [
             Expanded(
@@ -782,7 +795,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         IntlPhoneField(
           controller: phoneController,
           initialCountryCode: 'EG',
@@ -804,7 +817,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             });
           },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         TextField(
           controller: emailController,
           keyboardType: TextInputType.emailAddress,
@@ -860,7 +873,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ),
         ),
-        if (passwordController.text.isNotEmpty) ...[
+        if (passwordController.text.isNotEmpty &&
+            (!_meetsAllPasswordRequirements || !_passwordsMatch)) ...[
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
@@ -956,7 +970,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       fontSize: 13,
                       color: Colors.grey[700],
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Roboto', // Default flutter sans-serif mapping
+                      fontFamily:
+                          'Roboto', // Default flutter sans-serif mapping
                     ),
                     children: const [
                       TextSpan(text: 'I accept the '),
@@ -997,7 +1012,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 22),
+      ],
+    );
+  }
+
+  Widget _buildStepOneSocialButtons() {
+    return Column(
+      children: [
+        const SizedBox(height: 18),
         Text(
           'Or Continue with',
           style: TextStyle(
@@ -1006,7 +1028,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -1031,6 +1053,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1877F2),
                   height: 0.95,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Already have an account? ',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Log in here!',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  decoration: TextDecoration.underline,
                 ),
               ),
             ),
@@ -1250,65 +1299,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ],
         const SizedBox(height: 16),
-        _buildRehabDropdown(
-          label: 'Affected Body Area',
-          hint: 'Select area',
-          icon: Icons.accessibility_new_outlined,
-          value: selectedAffectedArea,
-          options: const [
-            'Neck',
-            'Shoulder',
-            'Arm',
-            'Back',
-            'Hip',
-            'Knee',
-            'Ankle / Foot',
-            'Multiple Areas',
-            'Other',
-          ],
-          onChanged: (value) {
-            setState(() {
-              selectedAffectedArea = value;
-              if (value != 'Other') {
-                otherAffectedAreaController.clear();
-              }
-            });
-          },
-        ),
-        if (selectedAffectedArea == 'Other') ...[
-          const SizedBox(height: 12),
-          TextField(
-            controller: otherAffectedAreaController,
-            decoration: _inputDecoration(
-              label: 'Specify Other Body Area',
-              hint: 'Enter the affected body area',
-              prefixIcon: Icons.edit_outlined,
-            ),
-          ),
-        ],
-        const SizedBox(height: 16),
-        DropdownButtonFormField<String>(
-          initialValue: selectedPainLevel,
-          isExpanded: true,
-          decoration: _inputDecoration(
-            label: 'Current Pain Level',
-            hint: 'Select pain level (0-10)',
-            prefixIcon: Icons.monitor_heart_outlined,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          items: List.generate(
-            11,
-            (index) => DropdownMenuItem(
-              value: index.toString(),
-              child: Text('$index / 10'),
-            ),
-          ),
-          onChanged: (value) {
-            setState(() {
-              selectedPainLevel = value;
-            });
-          },
-        ),
         const SizedBox(height: 16),
         _buildRehabDropdown(
           label: 'Mobility Limitations',
@@ -1572,169 +1562,225 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                children: [
-                  if (currentStep == 0)
-                    const SizedBox(height: 5)
-                  else
-                    const SizedBox(height: 20),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.10),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: currentStep == 0
-                          ? const EdgeInsets.fromLTRB(24, 16, 24, 35)
-                          : currentStep == 1
-                              ? const EdgeInsets.fromLTRB(24, 16, 24, 80)
-                              : const EdgeInsets.fromLTRB(24, 16, 24, 10),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+          child: currentStep == 0
+              ? Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Column(
                             children: [
-                              const Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
+                              const SizedBox(height: 5),
                               Container(
-                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(50),
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.10),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
                                 ),
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 28,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            currentStep == 0
-                                ? (selectedRole == 'doctor'
-                                    ? 'Step 1 of 2 • Essential account details'
-                                    : 'Step 1 of 3 • Essential account details')
-                                : currentStep == 1
-                                    ? (selectedRole == 'doctor'
-                                        ? 'Step 2 of 2 • Personal information'
-                                        : 'Step 2 of 3 • Personal information')
-                                    : 'Step 3 of 3 • Medical history',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          if (currentStep == 0)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.grey.shade200,
-                                  width: 1,
-                                ),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 16,
-                              ),
-                              child: _buildStepOneContent(),
-                            )
-                          else if (currentStep == 1)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.grey.shade200,
-                                  width: 1,
-                                ),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 16,
-                              ),
-                              child: _buildStepTwoContent(),
-                            )
-                          else
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.grey.shade200,
-                                  width: 1,
-                                ),
-                              ),
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxHeight:
-                                      MediaQuery.of(context).size.height * 0.75,
-                                ),
-                                child: SingleChildScrollView(
-                                  child: _buildStepThreeContent(),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Already have an account? ',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text(
-                                  'Log in here!',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    decoration: TextDecoration.underline,
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(24, 16, 24, 35),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            'Sign Up',
+                                            style: TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        selectedRole == 'doctor'
+                                            ? 'Step 1 of 2 • Essential account details'
+                                            : 'Step 1 of 3 • Essential account details',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Colors.grey.shade200,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.fromLTRB(
+                                            16, 12, 16, 16),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            maxHeight: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.75,
+                                          ),
+                                          child: SingleChildScrollView(
+                                            child: _buildStepOneContent(),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 24),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
+                  ],
+                )
+              : SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      children: [
+                        if (currentStep == 0)
+                          const SizedBox(height: 5)
+                        else
+                          const SizedBox(height: 20),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.10),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: currentStep == 1
+                                ? const EdgeInsets.fromLTRB(24, 16, 24, 80)
+                                : const EdgeInsets.fromLTRB(24, 16, 24, 10),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Sign Up',
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  currentStep == 1
+                                      ? (selectedRole == 'doctor'
+                                          ? 'Step 2 of 2 • Personal information'
+                                          : 'Step 2 of 3 • Personal information')
+                                      : 'Step 3 of 3 • Medical history',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                if (currentStep == 1)
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.grey.shade200,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    child: _buildStepTwoContent(),
+                                  )
+                                else
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.grey.shade200,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.fromLTRB(
+                                        16, 24, 16, 16),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxHeight:
+                                            MediaQuery.of(context).size.height *
+                                                0.75,
+                                      ),
+                                      child: SingleChildScrollView(
+                                        child: _buildStepThreeContent(),
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Already have an account? ',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text(
+                                        'Log in here!',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ),
+                ),
         ),
       ),
     );
@@ -1789,18 +1835,23 @@ class _SocialAuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Ink(
-        width: 72,
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade300),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFD0D7DE), width: 1.5),
+            ),
+            child: Center(child: child),
+          ),
         ),
-        child: Center(child: child),
       ),
     );
   }
