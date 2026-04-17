@@ -6,6 +6,7 @@ import 'MedicalLicensePage.dart';
 import 'SpecializationPage.dart';
 import 'AvailabilityPage.dart';
 import 'ChangePasswordPage.dart';
+import 'Chats.dart';
 
 class DoctorProfile extends StatefulWidget {
   final String source; // 'home' or 'settings'
@@ -20,6 +21,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
   bool isLoading = true;
   Map<String, dynamic> userProfile = {};
   Map<String, dynamic> doctorStats = {};
+  int _selectedNavIndex = 2; // Profile is index 2
 
   @override
   void initState() {
@@ -274,7 +276,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildStatCard('94%', 'Success Rate'),
+                      child: _buildStatCard('-', 'Success Rate'),
                     ),
                   ],
                 ),
@@ -328,6 +330,45 @@ class _DoctorProfileState extends State<DoctorProfile> {
           ),
         ),
       ),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return BottomNavigationBar(
+      currentIndex: _selectedNavIndex,
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: Colors.white,
+      selectedItemColor: const Color(0xFF6BA5CF),
+      unselectedItemColor: Colors.grey[400],
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline),
+          label: 'Chats',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+      onTap: (index) {
+        if (index == 2) return;
+        if (index == 0) {
+          Navigator.popUntil(context, (route) => route.isFirst);
+          return;
+        }
+        if (index == 1) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const Chats()),
+          );
+          return;
+        }
+      },
     );
   }
 

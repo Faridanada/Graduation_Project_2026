@@ -41,6 +41,20 @@ class ApiService {
   }
 
   // --- USER ENDPOINTS ---
+
+  static Future<bool> checkEmailUsage(String email) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/check-email?email=$email"),
+        headers: {"Content-Type": "application/json"},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return !data['available']; // Returns true if email IS used
+      }
+    } catch (_) {}
+    return false;
+  }
   // --- DOCTOR ENDPOINTS ---
 
   static Future<Map<String, dynamic>> getDoctorStats() async {
@@ -461,6 +475,21 @@ class ApiService {
     return response.statusCode == 200;
   }
 
+  /// Get listing of conversations for the current user
+  static Future<List<dynamic>> getConversations() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/chat'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
   /// Get current user profile
   static Future<Map<String, dynamic>?> getUserProfile() async {
     final token = await _getToken();
@@ -522,6 +551,42 @@ class ApiService {
         body: jsonEncode({'enabled': enabled}),
       );
       return response.statusCode == 200;
+    } catch (_) {}
+    return false;
+  }
+
+  /// Get chat history between current user and another user
+  static Future<List<dynamic>> getChatHistory(String otherUserId) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/chat/$otherUserId'),
+        headers: _headers(token),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['data'] ?? [];
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Send a chat message
+  static Future<bool> sendChatMessage(String receiverId, String text) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/chat'),
+        headers: _headers(token),
+        body: jsonEncode({
+          'receiverId': receiverId,
+          'messageText': text,
+        }),
+      );
+      return response.statusCode == 201;
     } catch (_) {}
     return false;
   }

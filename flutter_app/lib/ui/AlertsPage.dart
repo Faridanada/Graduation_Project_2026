@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class AlertsPage extends StatefulWidget {
   const AlertsPage({Key? key}) : super(key: key);
@@ -8,76 +9,40 @@ class AlertsPage extends StatefulWidget {
 }
 
 class _AlertsPageState extends State<AlertsPage> {
-  final List<Map<String, dynamic>> highRiskAlerts = [
-    {
-      'name': 'Jack Doe',
-      'age': '43',
-      'phone': '555-0103',
-      'injuryType': 'Back Strain',
-      'riskLevel': 'Critical',
-      'alertMessage':
-          'No progress in last 2 weeks. Requires immediate intervention.',
-      'timestamp': '2 hours ago',
-    },
-    {
-      'name': 'Michael Brown',
-      'age': '35',
-      'phone': '555-0106',
-      'injuryType': 'Hip Replacement',
-      'riskLevel': 'High',
-      'alertMessage': 'Abnormal pain levels detected during last session.',
-      'timestamp': '4 hours ago',
-    },
-    {
-      'name': 'Sarah Wilson',
-      'age': '42',
-      'phone': '555-0107',
-      'injuryType': 'Knee Ligament Tear',
-      'riskLevel': 'High',
-      'alertMessage': 'Patient missed scheduled appointment.',
-      'timestamp': '6 hours ago',
-    },
-    {
-      'name': 'James White',
-      'age': '45',
-      'phone': '555-0112',
-      'injuryType': 'Spinal Cord Injury',
-      'riskLevel': 'Critical',
-      'alertMessage': 'Decreased range of motion detected. Follow-up required.',
-      'timestamp': '8 hours ago',
-    },
-    {
-      'name': 'Daniel Miller',
-      'age': '44',
-      'phone': '555-0116',
-      'injuryType': 'Hip Strain',
-      'riskLevel': 'Moderate',
-      'alertMessage': 'Medication compliance needs review.',
-      'timestamp': '12 hours ago',
-    },
-    {
-      'name': 'Ethan Walker',
-      'age': '40',
-      'phone': '555-0124',
-      'injuryType': 'Lumbar Strain',
-      'riskLevel': 'High',
-      'alertMessage': 'Patient reported increased pain at night.',
-      'timestamp': '1 day ago',
-    },
-    {
-      'name': 'Nathan Garcia',
-      'age': '41',
-      'phone': '555-0120',
-      'injuryType': 'Back Disc Herniation',
-      'riskLevel': 'Critical',
-      'alertMessage':
-          'Severe pain episode. Patient needs immediate consultation.',
-      'timestamp': '1 day ago',
-    },
-  ];
+  List<dynamic> _alerts = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAlerts();
+  }
+
+  Future<void> _fetchAlerts() async {
+    try {
+      final data = await ApiService.getNotifications();
+      if (mounted) {
+        setState(() {
+          // In a real app, we'd have a specific alerts endpoint or flag.
+          // For now, we'll treat notifications with "Recovery", "Alert", or "Critical" in the title/message as alerts.
+          _alerts = data.where((n) {
+            final text = (n['title'] + n['message']).toLowerCase();
+            return text.contains('alert') || text.contains('critical') || text.contains('recovery') || text.contains('wound');
+          }).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final criticalCount = _alerts.where((a) => (a['title'] + a['message']).toLowerCase().contains('critical')).length;
+    final highCount = _alerts.where((a) => (a['title'] + a['message']).toLowerCase().contains('recovery')).length;
+    final otherCount = _alerts.length - criticalCount - highCount;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -85,9 +50,7 @@ class _AlertsPageState extends State<AlertsPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Alerts',
@@ -100,63 +63,70 @@ class _AlertsPageState extends State<AlertsPage> {
         ),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Total Alerts: ${highRiskAlerts.length}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                      fontFamily: 'Poppins',
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Alerts: ${_alerts.length}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _buildRiskSummary('Critical', criticalCount, Colors.red),
+                            const SizedBox(width: 12),
+                            _buildRiskSummary('High', highCount, Colors.orange),
+                            const SizedBox(width: 12),
+                            _buildRiskSummary('Moderate', otherCount, Colors.amber),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildRiskSummary(
-                          'Critical',
-                          highRiskAlerts
-                              .where((a) => a['riskLevel'] == 'Critical')
-                              .length,
-                          Colors.red),
-                      const SizedBox(width: 12),
-                      _buildRiskSummary(
-                          'High',
-                          highRiskAlerts
-                              .where((a) => a['riskLevel'] == 'High')
-                              .length,
-                          Colors.orange),
-                      const SizedBox(width: 12),
-                      _buildRiskSummary(
-                          'Moderate',
-                          highRiskAlerts
-                              .where((a) => a['riskLevel'] == 'Moderate')
-                              .length,
-                          Colors.yellow),
-                    ],
+                  Expanded(
+                    child: _alerts.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _alerts.length,
+                            itemBuilder: (context, index) {
+                              return _buildAlertCard(_alerts[index]);
+                            },
+                          ),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: highRiskAlerts.length,
-                itemBuilder: (context, index) {
-                  return _buildAlertCard(highRiskAlerts[index]);
-                },
-              ),
-            ),
-          ],
-        ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check_circle_outline, size: 80, color: Colors.green[200]),
+          const SizedBox(height: 16),
+          const Text(
+            'System Stable',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black54),
+          ),
+          const SizedBox(height: 8),
+          const Text('No critical patient alerts at this time.', style: TextStyle(color: Colors.grey)),
+        ],
       ),
     );
   }
@@ -165,28 +135,19 @@ class _AlertsPageState extends State<AlertsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         children: [
           Text(
             count.toString(),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -194,8 +155,10 @@ class _AlertsPageState extends State<AlertsPage> {
   }
 
   Widget _buildAlertCard(Map<String, dynamic> alert) {
-    Color riskColor = _getRiskColor(alert['riskLevel']);
-    IconData riskIcon = _getRiskIcon(alert['riskLevel']);
+    final String title = alert['title'] ?? '';
+    final String message = alert['message'] ?? '';
+    final bool isCritical = (title + message).toLowerCase().contains('critical');
+    final Color riskColor = isCritical ? Colors.red : Colors.orange;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -204,10 +167,10 @@ class _AlertsPageState extends State<AlertsPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: riskColor.withOpacity(0.3), width: 2),
+          border: Border.all(color: riskColor.withOpacity(0.2), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
+              color: Colors.black.withOpacity(0.03),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -218,166 +181,39 @@ class _AlertsPageState extends State<AlertsPage> {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: const Color(0xFF95B8D1).withOpacity(0.6),
-                  child: Text(
-                    alert['name'].substring(0, 1),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
+                Icon(isCritical ? Icons.priority_high : Icons.warning_amber_rounded, color: riskColor),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        alert['name'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Age: ${alert['age']}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: riskColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(riskIcon, size: 14, color: riskColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        alert['riskLevel'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: riskColor,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ],
-                  ),
+                Text(
+                  _formatDate(alert['createdAt']),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: riskColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.warning_outlined, size: 16, color: riskColor),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          alert['alertMessage'],
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black87,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
-                      const SizedBox(width: 8),
-                      Text(
-                        alert['timestamp'],
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[600],
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            Text(
+              message,
+              style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
             ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInfoRow(
-                    'Phone:',
-                    alert['phone'],
-                    Icons.phone,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildInfoRow(
-                    'Injury Type:',
-                    alert['injuryType'],
-                    Icons.medical_services,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text('Patient ${alert['name']} marked for follow-up'),
-                    ),
-                  );
+                  // Mark as read and refresh
+                  ApiService.markNotificationRead(alert['id']).then((_) => _fetchAlerts());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: riskColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text(
-                  'Take Action',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: const Text('Acknowledge'),
               ),
             ),
           ],
@@ -386,58 +222,13 @@ class _AlertsPageState extends State<AlertsPage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: const Color(0xFF95B8D1)),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-            fontFamily: 'Poppins',
-          ),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[700],
-              fontFamily: 'Poppins',
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getRiskColor(String riskLevel) {
-    switch (riskLevel) {
-      case 'Critical':
-        return Colors.red;
-      case 'High':
-        return Colors.orange;
-      case 'Moderate':
-        return Colors.amber;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getRiskIcon(String riskLevel) {
-    switch (riskLevel) {
-      case 'Critical':
-        return Icons.priority_high;
-      case 'High':
-        return Icons.warning;
-      case 'Moderate':
-        return Icons.info;
-      default:
-        return Icons.help;
+  String _formatDate(dynamic dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final date = DateTime.parse(dateStr);
+      return "${date.hour}:${date.minute.toString().padLeft(2, '0')} · ${date.day}/${date.month}";
+    } catch (_) {
+      return '';
     }
   }
 }

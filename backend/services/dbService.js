@@ -239,11 +239,27 @@ const dbService = {
       }));
       const appointmentsToday = appointmentsData.Items || [];
 
+      // Fetch real high-risk/unread alert count
+      const notifications = await this.getNotificationsForUser(doctorId);
+      const alertsCount = notifications.filter(n => !n.isRead).length;
+
+      // Fetch pending reviews count from Wounds table
+      const woundsData = await ddbDocClient.send(new ScanCommand({
+        TableName: "Wounds",
+        FilterExpression: "doctorId = :doctorId AND #statusAttr = :pendingStatus",
+        ExpressionAttributeNames: { "#statusAttr": "status" },
+        ExpressionAttributeValues: { 
+          ":doctorId": doctorId, 
+          ":pendingStatus": "pending review" 
+        }
+      }));
+      const pendingReviewsCount = (woundsData.Items || []).length;
+
       return {
         activePatients: patients.length,
         todaySessions: appointmentsToday.length,
-        alerts: 3, // Mock alert count
-        pendingReviews: 2,
+        alerts: alertsCount,
+        pendingReviews: pendingReviewsCount,
       };
     } catch (error) {
       console.error("Error in getDashboardStats:", error);
@@ -635,6 +651,50 @@ const dbService = {
       return messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     } catch (error) {
       console.error("DynamoDB error (getChatHistory):", error);
+      throw error;
+    }
+  },
+
+  async getConversations(userId) {
+    try {
+      // Scanning messages for this user as sender OR receiver
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Messages",
+        FilterExpression: "senderId = :uid OR receiverId = :uid",
+        ExpressionAttributeValues: { ":uid": userId }
+      }));
+
+      const messages = data.Items || [];
+      const conversationsMap = new Map();
+
+      // Get last message for each conversation
+      for (const msg of messages) {
+        const otherId = msg.senderId === userId ? msg.receiverId : msg.senderId;
+        const currentLast = conversationsMap.get(otherId);
+        if (!currentLast || new Date(msg.createdAt) > new Date(currentLast.createdAt)) {
+          conversationsMap.set(otherId, msg);
+        }
+      }
+
+      // Convert to list and get user details for each partner
+      const conversationList = [];
+      for (const [otherId, lastMsg] of conversationsMap.entries()) {
+        const partner = await this.getUserById(otherId);
+        if (partner) {
+          conversationList.push({
+            otherUserId: otherId,
+            otherUserName: partner.name,
+            lastMessage: lastMsg.messageText,
+            lastMessageTime: lastMsg.createdAt,
+            unreadCount: 0 // Simplification for now
+          });
+        }
+      }
+
+      // Sort by last message time
+      return conversationList.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+    } catch (error) {
+      console.error("DynamoDB error (getConversations):", error);
       throw error;
     }
   },

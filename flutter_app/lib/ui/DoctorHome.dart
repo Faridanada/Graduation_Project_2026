@@ -111,37 +111,40 @@ class _DoctorHomeState extends State<DoctorHome> {
         ),
       ),
       actions: [
-        // Notifications button with badge
-        Stack(
-          alignment: Alignment.topRight,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications_none, color: Colors.blue),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationsPage(),
-                  ),
-                );
-              },
-            ),
-            Positioned(
-              right: 8,
-              top: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  '2',
-                  style: TextStyle(color: Colors.white, fontSize: 10),
-                ),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NotificationsPage()),
+            );
+          },
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: Icon(Icons.notifications_none, color: Colors.blue, size: 28),
               ),
-            ),
-          ],
+              if (doctorStats['alerts'] != null && doctorStats['alerts'] > 0)
+                Positioned(
+                  right: 8,
+                  top: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      '${doctorStats['alerts']}',
+                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
         // Settings button
         IconButton(
@@ -276,12 +279,15 @@ class _DoctorHomeState extends State<DoctorHome> {
               ),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RemindersDetailsPage(),
-                    ),
-                  );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RemindersDetailsPage(
+                          todayAppointments: todayAppointments,
+                          doctorStats: doctorStats,
+                        ),
+                      ),
+                    );
                 },
                 child: const Text(
                   'See All >',
@@ -308,56 +314,64 @@ class _DoctorHomeState extends State<DoctorHome> {
                 ),
               ],
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Appointments:',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+            child: SingleChildScrollView(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Appointments:',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Loop through real appointments
-                      if (todayAppointments.isNotEmpty)
-                        ...todayAppointments.map((apt) {
-                          final timeTitle = '${apt['time'] ?? '??:??'} · ${apt['patientName'] ?? 'Unknown'}';
-                          return _buildReminderItem(timeTitle, apt['id'] ?? 'apt_unknown', false);
-                        })
-                      else
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 6),
-                          child: Text('No appointments today.',
-                              style: TextStyle(color: Colors.grey, fontSize: 13)),
-                        ),
-                    ],
+                        const SizedBox(height: 8),
+                        if (todayAppointments.isNotEmpty)
+                          ...todayAppointments.map((apt) {
+                            final timeTitle = '${apt['time'] ?? '??:??'} · ${apt['patientName'] ?? 'Patient'}';
+                            return _buildReminderItem(timeTitle, apt['id'] ?? 'apt_${apt['time']}', false);
+                          })
+                        else
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 6),
+                            child: Text('No appointments today.',
+                                style: TextStyle(color: Colors.grey, fontSize: 13)),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Exercises to Review:',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Tasks:',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildReminderItem('Pending Reviews: ${doctorStats['pendingReviews'] ?? 0}', 'ex_reviews', false),
-                    ],
+                        const SizedBox(height: 8),
+                        if ((doctorStats['pendingReviews'] ?? 0) > 0)
+                          _buildReminderItem('Review ${doctorStats['pendingReviews']} Pending Exercises', 'ex_reviews', false)
+                        else
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 6),
+                            child: Text('No pending tasks.',
+                                style: TextStyle(color: Colors.grey, fontSize: 13)),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -860,7 +874,14 @@ class _DoctorHomeState extends State<DoctorHome> {
 }
 
 class RemindersDetailsPage extends StatelessWidget {
-  const RemindersDetailsPage({Key? key}) : super(key: key);
+  final List<dynamic> todayAppointments;
+  final Map<String, dynamic> doctorStats;
+
+  const RemindersDetailsPage({
+    Key? key,
+    required this.todayAppointments,
+    required this.doctorStats,
+  }) : super(key: key);
 
   static const Color _primary = Color.fromRGBO(128, 155, 206, 1);
   static const Color _secondary = Color.fromRGBO(149, 184, 209, 1);
@@ -882,148 +903,96 @@ class RemindersDetailsPage extends StatelessWidget {
           ),
         ),
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const _SectionHeader(title: 'Overview'),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
                   child: _SummaryCard(
                     label: 'Today',
-                    value: '14',
+                    value: '${todayAppointments.length}',
                     icon: Icons.today_outlined,
                     color: _primary,
                   ),
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(
                   child: _SummaryCard(
                     label: 'Pending',
-                    value: '8',
+                    value: '${doctorStats['pendingReviews'] ?? 0}',
                     icon: Icons.pending_actions_outlined,
                     color: _secondary,
                   ),
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(
                   child: _SummaryCard(
-                    label: 'Done',
-                    value: '6',
-                    icon: Icons.task_alt_outlined,
+                    label: 'Alerts',
+                    value: '${doctorStats['alerts'] ?? 0}',
+                    icon: Icons.warning_outlined,
                     color: _teal,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 20),
-            _SectionHeader(title: 'Today\'s Appointments'),
-            SizedBox(height: 10),
+            const SizedBox(height: 25),
+            const _SectionHeader(title: 'Appointments Today'),
+            const SizedBox(height: 10),
             _InfoCard(
               children: [
-                _ReminderRow(
-                  time: '09:00',
-                  title: 'John Doe',
-                  subtitle: 'Knee rehab follow-up · Room 2',
-                  status: 'High',
-                ),
-                _ReminderRow(
-                  time: '10:30',
-                  title: 'Harry Black',
-                  subtitle: 'Post-surgery check · Room 1',
-                  status: 'Normal',
-                ),
-                _ReminderRow(
-                  time: '11:00',
-                  title: 'John Doe',
-                  subtitle: 'Mobility assessment · Video call',
-                  status: 'Normal',
-                ),
-                _ReminderRow(
-                  time: '12:00',
-                  title: 'Harry Black',
-                  subtitle: 'Pain management review · Room 4',
-                  status: 'Normal',
-                ),
-                _ReminderRow(
-                  time: '13:00',
-                  title: 'Jack Doe',
-                  subtitle: 'Wound care session · Room 3',
-                  status: 'High',
-                ),
-                _ReminderRow(
-                  time: '15:30',
-                  title: 'Sarah White',
-                  subtitle: 'Discharge readiness check · Room 5',
-                  status: 'Normal',
-                ),
+                if (todayAppointments.isNotEmpty)
+                  ...todayAppointments.map((apt) => _ReminderRow(
+                        time: apt['time'] ?? '??:??',
+                        title: apt['patientName'] ?? 'Patient',
+                        subtitle: apt['notes'] ?? 'General Consultation',
+                        status: 'Scheduled',
+                      ))
+                else
+                  const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Text('No appointments today.',
+                        style: TextStyle(color: Colors.grey)),
+                  ),
               ],
             ),
-            SizedBox(height: 18),
-            _SectionHeader(title: 'Exercise Follow-ups'),
-            SizedBox(height: 10),
+            const SizedBox(height: 18),
+            const _SectionHeader(title: 'Pending Tasks'),
+            const SizedBox(height: 10),
             _InfoCard(
               children: [
-                _ReminderRow(
-                  time: '08:00',
-                  title: 'Fred Nerk',
-                  subtitle: 'Ankle flexion set · 3 x 12 reps',
-                  status: 'Pending',
-                ),
-                _ReminderRow(
-                  time: '09:45',
-                  title: 'Alice Smith',
-                  subtitle: 'Shoulder ROM exercise · 20 min',
-                  status: 'Pending',
-                ),
-                _ReminderRow(
-                  time: '11:15',
-                  title: 'Jane Doe',
-                  subtitle: 'Balance training · 2 rounds',
-                  status: 'Done',
-                ),
-                _ReminderRow(
-                  time: '14:00',
-                  title: 'Michael Hill',
-                  subtitle: 'Resistance band protocol · Level 2',
-                  status: 'Pending',
-                ),
-                _ReminderRow(
-                  time: '16:00',
-                  title: 'Emma Cole',
-                  subtitle: 'Core activation routine · 15 min',
-                  status: 'Done',
-                ),
+                if ((doctorStats['pendingReviews'] ?? 0) > 0)
+                  _ReminderRow(
+                    time: 'ASAP',
+                    title: 'Exercise Reviews',
+                    subtitle:
+                        'Review ${doctorStats['pendingReviews']} pending exercises',
+                    status: 'High',
+                  )
+                else
+                  const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Text('No pending tasks.',
+                        style: TextStyle(color: Colors.grey)),
+                  ),
               ],
             ),
-            SizedBox(height: 18),
-            _SectionHeader(title: 'Upcoming This Week'),
-            SizedBox(height: 10),
-            _InfoCard(
-              children: [
-                _UpcomingRow(day: 'Tue', item: '7 new patient assessments'),
-                _UpcomingRow(day: 'Wed', item: '4 wound photo reviews pending'),
-                _UpcomingRow(day: 'Thu', item: '6 telehealth rehab check-ins'),
-                _UpcomingRow(day: 'Fri', item: '2 discharge planning meetings'),
-                _UpcomingRow(
-                    day: 'Sat', item: 'Monthly progress reports submission'),
-              ],
-            ),
-            SizedBox(height: 18),
-            _SectionHeader(title: 'Notes & Alerts'),
-            SizedBox(height: 10),
-            _InfoCard(
-              children: [
-                _NoteRow(text: 'Jack Doe missed morning medication reminder.'),
-                _NoteRow(
-                    text: 'Alice Smith uploaded new exercise video evidence.'),
-                _NoteRow(
-                    text: '2 critical alerts require response before 5:00 PM.'),
-                _NoteRow(
-                    text: 'Review AI recommendations for chronic pain group.'),
-              ],
-            ),
+            if ((doctorStats['alerts'] ?? 0) > 0) ...[
+              const SizedBox(height: 18),
+              const _SectionHeader(title: 'Active Alerts'),
+              const SizedBox(height: 10),
+              _InfoCard(
+                children: [
+                  _NoteRow(
+                    text: '${doctorStats['alerts']} critical alerts require response.',
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

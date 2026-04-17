@@ -1,7 +1,51 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
-class NotificationsPage extends StatelessWidget {
+class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
+
+  @override
+  State<NotificationsPage> createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends State<NotificationsPage> {
+  List<dynamic> _notifications = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchNotifications();
+  }
+
+  Future<void> _fetchNotifications() async {
+    try {
+      final data = await ApiService.getNotifications();
+      if (mounted) {
+        setState(() {
+          _notifications = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _markAsRead(String id) async {
+    try {
+      await ApiService.markNotificationRead(id);
+      // Optimistically update UI
+      if (mounted) {
+        setState(() {
+          final index = _notifications.indexWhere((n) => n['id'] == id);
+          if (index != -1) {
+            _notifications[index]['isRead'] = true;
+          }
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,145 +61,166 @@ class NotificationsPage extends StatelessWidget {
         title: const Text(
           'Notifications',
           style: TextStyle(
-            fontSize: 28,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                _buildNotificationCard(
-                  icon: Icons.calendar_today,
-                  iconColor: Colors.blue,
-                  iconBgColor: Colors.blue.withOpacity(0.1),
-                  title: 'Appointment Reminder',
-                  message: 'You have a patient session today at 11:30 AM',
-                  time: '10 min ago',
-                ),
-                _buildNotificationCard(
-                  icon: Icons.check_circle_outline,
-                  iconColor: Colors.green,
-                  iconBgColor: Colors.green.withOpacity(0.1),
-                  title: 'Exercise Completed 🎉',
-                  message: 'John Doe finished today\'s exercise session!',
-                  time: '1 hour ago',
-                ),
-                _buildNotificationCard(
-                  icon: Icons.mail_outline,
-                  iconColor: Colors.blue,
-                  iconBgColor: Colors.blue.withOpacity(0.1),
-                  title: 'New Message',
-                  message: 'Sarah Johnson sent you a message',
-                  time: '2 hours ago',
-                ),
-                _buildNotificationCard(
-                  icon: Icons.check_circle_outline,
-                  iconColor: Colors.green,
-                  iconBgColor: Colors.green.withOpacity(0.1),
-                  title: 'Wound Review Update',
-                  message: 'New wound photo uploaded by patient.',
-                  time: 'Yesterday',
-                ),
-                _buildNotificationCard(
-                  icon: Icons.error_outline,
-                  iconColor: Colors.red,
-                  iconBgColor: Colors.red.withOpacity(0.1),
-                  title: 'Recovery Alert',
-                  message: 'Patient compliance decreased this week.',
-                  time: '2 days ago',
-                ),
-              ],
-            ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.blue),
+            onPressed: _fetchNotifications,
           ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _notifications.isEmpty
+              ? _buildEmptyState()
+              : SafeArea(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: _notifications.length,
+                    itemBuilder: (context, index) {
+                      final notif = _notifications[index];
+                      return _buildNotificationCard(notif);
+                    },
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text(
+            'No notifications yet',
+            style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "We'll let you know when there's an update.",
+            style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard(Map<String, dynamic> notif) {
+    final bool isRead = notif['isRead'] ?? false;
+    final String type = notif['title'] ?? '';
+    
+    IconData iconData = Icons.notifications;
+    Color iconColor = Colors.blue;
+    
+    if (type.contains('Message')) {
+      iconData = Icons.mail_outline;
+      iconColor = Colors.orange;
+    } else if (type.contains('Wound') || type.contains('Recovery')) {
+      iconData = Icons.healing_outlined;
+      iconColor = Colors.red;
+    } else if (type.contains('Exercise')) {
+      iconData = Icons.check_circle_outline;
+      iconColor = Colors.green;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        if (!isRead) _markAsRead(notif['id']);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: isRead ? null : Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(iconData, color: iconColor, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          notif['title'] ?? 'Notification',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      if (!isRead)
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    notif['message'] ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _formatTime(notif['createdAt']),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildNotificationCard({
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBgColor,
-    required String title,
-    required String message,
-    required String time,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      time,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatTime(dynamic dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final date = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      final diff = now.difference(date);
+      
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      return '${diff.inDays}d ago';
+    } catch (_) {
+      return dateStr.toString();
+    }
   }
 }

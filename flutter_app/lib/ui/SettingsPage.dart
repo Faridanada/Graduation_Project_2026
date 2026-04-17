@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login.dart';
 import '../services/api_service.dart';
 import 'DoctorProfile.dart';
 import 'PersonalInformationPage.dart';
@@ -433,11 +434,18 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logged out successfully')),
-                );
+              onPressed: () async {
+                await ApiService.clearToken();
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logged out successfully')),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[400],

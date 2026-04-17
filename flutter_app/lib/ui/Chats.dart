@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'ConversationScreen.dart';
 import 'DoctorProfile.dart';
 import 'SettingsPage.dart';
@@ -14,43 +15,63 @@ class Chats extends StatefulWidget {
 class _ChatsState extends State<Chats> {
   int _selectedNavIndex = 1;
 
-  final List<Map<String, dynamic>> chatList = [
-    {
-      'name': 'John Doe',
-      'message': 'I completed the session 😊',
-      'time': '2 min ago',
-      'unread': 1,
-      'initials': 'JD',
-    },
-    {
-      'name': 'Alice Smith',
-      'message': 'Can we reschedule tomorrow?',
-      'time': '15 min ago',
-      'unread': 0,
-      'initials': 'AS',
-    },
-    {
-      'name': 'Mark Lee',
-      'message': 'Shoulder feels better today.',
-      'time': '1 hour ago',
-      'unread': 0,
-      'initials': 'ML',
-    },
-    {
-      'name': 'Emma Brown',
-      'message': 'Uploaded new wound photos.',
-      'time': 'Yesterday',
-      'unread': 0,
-      'initials': 'EB',
-    },
-    {
-      'name': 'David Clark',
-      'message': 'Pain increased during exercise.',
-      'time': '2 days ago',
-      'unread': 0,
-      'initials': 'DC',
-    },
-  ];
+  List<Map<String, dynamic>> chatList = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchConversations();
+  }
+
+  Future<void> _fetchConversations() async {
+    try {
+      final fetched = await ApiService.getConversations();
+      if (mounted) {
+        setState(() {
+          chatList = fetched.map((c) {
+            String initials = '';
+            if (c['otherUserName'] != null && (c['otherUserName'] as String).isNotEmpty) {
+              final names = (c['otherUserName'] as String).trim().split(' ');
+              if (names.length >= 2) {
+                initials = (names[0][0] + names[1][0]).toUpperCase();
+              } else {
+                initials = names[0][0].toUpperCase();
+              }
+            }
+            return {
+              'userId': c['otherUserId'],
+              'name': c['otherUserName'] ?? 'Unknown',
+              'message': c['lastMessage'] ?? '',
+              'time': _formatTime(c['lastMessageTime']),
+              'unread': c['unreadCount'] ?? 0,
+              'initials': initials.isEmpty ? '?' : initials,
+            };
+          }).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatTime(String? iso) {
+    if (iso == null || iso.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+      if (diff.inHours < 24) return '${diff.inHours} hours ago';
+      if (diff.inDays == 1) return 'Yesterday';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (_) {
+      return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,35 +104,46 @@ class _ChatsState extends State<Chats> {
           ),
           // Chat list with white background
           Expanded(
-            child: Container(
-              color: Colors.white,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: ListView.separated(
-                  itemCount: chatList.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final chat = chatList[index];
-                    return _buildChatTile(
-                      chat,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ConversationScreen(
-                              name: chat['name'],
-                              initials: chat['initials'],
-                              message: chat['message'],
-                            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : chatList.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No conversations yet',
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      )
+                    : Container(
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          child: ListView.separated(
+                            itemCount: chatList.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final chat = chatList[index];
+                              return _buildChatTile(
+                                chat,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ConversationScreen(
+                                        name: chat['name'],
+                                        initials: chat['initials'],
+                                        message: chat['message'],
+                                        receiverId: chat['userId'], // Ensure receiverId is passed
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
+                        ),
+                      ),
           ),
         ],
       ),

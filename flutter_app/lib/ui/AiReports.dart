@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'SettingsPage.dart';
 import 'NotificationsPage.dart';
 
@@ -11,68 +12,77 @@ class AiReports extends StatefulWidget {
 
 class _AiReportsState extends State<AiReports> {
   String selectedFilter = 'Weekly';
-  String? selectedPatient = 'John Doe';
-  String selectedRisk = 'Low Risk'; // Will be updated based on selected patient
+  String? selectedPatient;
+  String selectedRisk = 'Low Risk';
+  bool _isLoading = true;
 
-  final List<String> patients = [
-    'John Doe',
-    'Alice Smith',
-    'Mark Lee',
-    'Emma Brown'
-  ];
+  List<String> patients = [];
   final List<String> timeframes = ['Weekly', 'Monthly', 'Custom'];
-  final List<String> risks = ['Low Risk', 'Medium', 'High Risk'];
+  
+  // Dynamic patient mapping
+  Map<String, Map<String, dynamic>> patientData = {};
+  List<Map<String, dynamic>> weeklyProgress = [];
 
-  // Patient-specific data: recovery score and risk level
-  final Map<String, Map<String, dynamic>> patientData = {
-    'John Doe': {
-      'recoveryScore': '82%',
-      'recoveryStatus': 'Patient recovery\nis on track',
-      'riskLevel': 'Low Risk',
-    },
-    'Alice Smith': {
-      'recoveryScore': '65%',
-      'recoveryStatus': 'Patient needs\nmore attention',
-      'riskLevel': 'Medium',
-    },
-    'Mark Lee': {
-      'recoveryScore': '92%',
-      'recoveryStatus': 'Excellent\nprogress',
-      'riskLevel': 'Low Risk',
-    },
-    'Emma Brown': {
-      'recoveryScore': '45%',
-      'recoveryStatus': 'Critical\nattention required',
-      'riskLevel': 'High Risk',
-    },
-  };
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
 
-  final List<Map<String, dynamic>> weeklyProgress = [
-    {
-      'time': '09:00 AM',
-      'name': 'John Doe',
-      'service': 'Knee rehabilitation',
-      'progress': '78%',
-      'hasCheckmark': true,
-    },
-    {
-      'time': '11:30 AM',
-      'name': 'Alice Smith',
-      'service': 'Wound check',
-      'progress': '23%',
-      'hasCheckmark': true,
-    },
-    {
-      'time': '02:00 PM',
-      'name': 'Mark Lee',
-      'service': 'Shoulder therapy',
-      'progress': '92%',
-      'hasCheckmark': true,
-    },
-  ];
+  Future<void> _loadInitialData() async {
+    try {
+      final realPatients = await ApiService.getDoctorPatients();
+      if (mounted) {
+        setState(() {
+          patients = realPatients.map((p) => p['name'] as String).toList();
+          
+          if (patients.isNotEmpty) {
+            selectedPatient = patients.first;
+            // Generate some semi-dynamic placeholder data for each real patient
+            for (var p in realPatients) {
+              final score = 60 + (p['name'].length * 2) % 35; // Derived from name for consistency
+              patientData[p['name']] = {
+                'recoveryScore': '$score%',
+                'recoveryStatus': score > 80 ? 'Patient recovery\nis on track' : 'Patient needs\nmore attention',
+                'riskLevel': score > 85 ? 'Low Risk' : (score > 65 ? 'Medium' : 'High Risk'),
+              };
+            }
+            selectedRisk = patientData[selectedPatient!]!['riskLevel'];
+            
+            // Generate mock progress for the selected patient
+            weeklyProgress = [
+              {
+                'time': '09:00 AM',
+                'name': selectedPatient,
+                'service': 'Consultation',
+                'progress': '78%',
+                'hasCheckmark': true,
+              },
+            ];
+          }
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (patients.isEmpty) {
+      return Scaffold(
+        appBar: _buildAppBar(),
+        body: const Center(child: Text('No patients found')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(),

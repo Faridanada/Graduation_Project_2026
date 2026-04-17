@@ -6,6 +6,9 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Protect all chat routes
 router.use(authMiddleware);
 
+// GET /api/chat
+router.get('/', chatController.getConversations);
+
 // GET /api/chat/unread-count
 router.get('/unread-count', chatController.getUnreadCount);
 

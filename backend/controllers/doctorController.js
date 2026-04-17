@@ -183,6 +183,30 @@ const doctorController = {
             }
             res.status(500).json({ statusCode: 500, message: 'Server error rejecting request' });
         }
+    },
+
+    // GET /api/doctor/notifications
+    async getNotifications(req, res) {
+        try {
+            const userId = req.user.id;
+            const notifications = await dbService.getNotificationsForUser(userId);
+            res.json({ statusCode: 200, data: notifications });
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error fetching notifications' });
+        }
+    },
+
+    // PUT /api/doctor/notifications/:id/read
+    async markNotificationRead(req, res) {
+        try {
+            const notifId = req.params.id;
+            await dbService.markNotificationRead(notifId);
+            res.json({ statusCode: 200, message: 'Notification marked as read' });
+        } catch (error) {
+            console.error('Error marking notification read:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error' });
+        }
     }
 };
 

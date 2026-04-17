@@ -4,7 +4,14 @@ import 'NotificationsPage.dart';
 import 'Exoskeleton.dart';
 
 class MonitorEx extends StatefulWidget {
-  const MonitorEx({Key? key}) : super(key: key);
+  final String patientName;
+  final String exerciseTitle;
+
+  const MonitorEx({
+    Key? key,
+    this.patientName = 'Select Patient',
+    this.exerciseTitle = 'None',
+  }) : super(key: key);
 
   @override
   State<MonitorEx> createState() => _MonitorExState();
@@ -171,22 +178,22 @@ class _MonitorExState extends State<MonitorEx> {
             color: Colors.grey[100],
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Patient: John Doe',
-                style: TextStyle(
+                'Patient: ${widget.patientName}',
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                   color: Colors.black,
                   fontFamily: 'Poppins',
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Exercise: Knee Flexion',
-                style: TextStyle(
+                'Exercise: ${widget.exerciseTitle}',
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                   color: Colors.black,

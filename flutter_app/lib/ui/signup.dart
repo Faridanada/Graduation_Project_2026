@@ -287,7 +287,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return emailRegex.hasMatch(email);
   }
 
-  bool _validateStepOne() {
+  Future<bool> _validateStepOne() async {
     if (firstNameController.text.trim().isEmpty ||
         lastNameController.text.trim().isEmpty ||
         phoneController.text.trim().isEmpty ||
@@ -312,6 +312,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_isEmailValid(emailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid email address')),
+      );
+      return false;
+    }
+
+    // NEW: Check if email is already in use
+    final isEmailTaken = await ApiService.checkEmailUsage(emailController.text.trim());
+    if (isEmailTaken) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This email is already registered. Please use another or log in.')),
       );
       return false;
     }
@@ -357,12 +366,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _validateStepTwo() {
     if (selectedGender == null ||
         dateOfBirthController.text.trim().isEmpty ||
-        ageController.text.trim().isEmpty ||
-        locationController.text.trim().isEmpty) {
+        ageController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content:
-              Text('Please complete gender, date of birth, age and address'),
+              Text('Please complete gender, date of birth, and age'),
         ),
       );
       return false;
@@ -447,8 +455,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return true;
   }
 
-  void _goToPersonalInfo() {
-    if (!_validateStepOne()) {
+  Future<void> _goToPersonalInfo() async {
+    if (!await _validateStepOne()) {
       return;
     }
 
@@ -476,7 +484,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> handleSignUp() async {
     // Steps 1 & 2 are already validated before reaching this point.
     // However, if the user bypasses step 3 (Doctor), we should ensure they are valid:
-    if (!_validateStepOne() || !_validateStepTwo()) {
+    if (!await _validateStepOne() || !_validateStepTwo()) {
       return;
     }
 

@@ -77,6 +77,26 @@ exports.registerUser = async (req, res) => {
   }
 };
 
+// ================= CHECK EMAIL =================
+exports.checkEmailAvailability = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await dbService.getUserByEmail(email);
+    res.json({
+      available: !user,
+      message: user ? "Email already registered" : "Email available"
+    });
+  } catch (error) {
+    console.error("Check Email Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 // ================= LOGIN =================
 exports.loginUser = async (req, res) => {
   try {

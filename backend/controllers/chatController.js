@@ -1,6 +1,18 @@
 const dbService = require('../services/dbService');
 
 const chatController = {
+    // GET /api/chat
+    async getConversations(req, res) {
+        try {
+            const userId = req.user.id;
+            const conversations = await dbService.getConversations(userId);
+            res.json({ statusCode: 200, data: conversations });
+        } catch (error) {
+            console.error('Error fetching conversations:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error fetching conversations' });
+        }
+    },
+
     // GET /api/chat/:userId
     // Fetches the chat history between the currently logged-in user and another user
     async getChatHistory(req, res) {

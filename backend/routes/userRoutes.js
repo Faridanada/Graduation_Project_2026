@@ -14,6 +14,9 @@ router.post("/register", upload.single("profileImage"), authController.registerU
 // Login a user
 router.post("/login", authController.loginUser);
 
+// Check if email already exists
+router.get("/check-email", authController.checkEmailAvailability);
+
 // Get the profile of the current authenticated user
 router.get("/profile", authMiddleware, authController.getUserProfile);
 router.put("/profile", authMiddleware, upload.single("profileImage"), authController.updateProfile);
