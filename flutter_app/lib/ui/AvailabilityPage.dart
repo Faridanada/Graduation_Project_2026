@@ -208,7 +208,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -229,7 +229,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
               ),
               Switch(
                 value: isActive,
-                activeColor: const Color(0xFF6BA5CF),
+                activeThumbColor: const Color(0xFF6BA5CF),
                 onChanged: (val) {
                   setState(() {
                     _availabilityList[index]['isAvailable'] = val;
@@ -296,3 +296,4 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
     );
   }
 }
+

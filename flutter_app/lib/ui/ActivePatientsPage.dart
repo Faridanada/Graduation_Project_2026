@@ -103,7 +103,7 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
+              color: Colors.grey.withValues(alpha: 0.08),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -116,7 +116,7 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundColor: const Color(0xFF95B8D1).withOpacity(0.6),
+                  backgroundColor: const Color(0xFF95B8D1).withValues(alpha: 0.6),
                   child: Text(
                     patient['name'].substring(0, 1),
                     style: const TextStyle(
@@ -234,3 +234,4 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
     );
   }
 }
+

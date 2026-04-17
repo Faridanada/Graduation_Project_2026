@@ -45,7 +45,7 @@ class _DoctorHomeState extends State<DoctorHome> {
       final stats = await ApiService.getDoctorStats();
       final patients = await ApiService.getDoctorPatients();
       final appointments = await ApiService.getDoctorTodayAppointments();
-      
+
       if (mounted) {
         setState(() {
           doctorStats = stats;
@@ -99,9 +99,10 @@ class _DoctorHomeState extends State<DoctorHome> {
   /// Builds the professional app bar with branding
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
+      automaticallyImplyLeading: false,
       backgroundColor: Colors.white,
       elevation: 0.5,
-      shadowColor: Colors.grey.withOpacity(0.1),
+      shadowColor: Colors.grey.withValues(alpha: 0.1),
       title: const Text(
         'FLEXIO',
         style: TextStyle(
@@ -115,7 +116,8 @@ class _DoctorHomeState extends State<DoctorHome> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const NotificationsPage()),
+              MaterialPageRoute(
+                  builder: (context) => const NotificationsPage()),
             );
           },
           child: Stack(
@@ -123,22 +125,28 @@ class _DoctorHomeState extends State<DoctorHome> {
             children: [
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Icon(Icons.notifications_none, color: Colors.blue, size: 28),
+                child: Icon(Icons.notifications_none,
+                    color: Colors.blue, size: 28),
               ),
               if (doctorStats['alerts'] != null && doctorStats['alerts'] > 0)
                 Positioned(
                   right: 8,
                   top: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.red,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    constraints:
+                        const BoxConstraints(minWidth: 16, minHeight: 16),
                     child: Text(
                       '${doctorStats['alerts']}',
-                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -176,7 +184,7 @@ class _DoctorHomeState extends State<DoctorHome> {
               child: _buildStatusCard(
                 'Active Patients',
                 isLoading ? '-' : '${doctorStats['activePatients'] ?? 0}',
-                const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                const Color.fromRGBO(128, 155, 206, 1).withValues(alpha: 0.6),
                 Icons.people_outline,
               ),
             ),
@@ -193,7 +201,7 @@ class _DoctorHomeState extends State<DoctorHome> {
               child: _buildStatusCard(
                 'Today\'s Sessions',
                 isLoading ? '-' : '${doctorStats['todaySessions'] ?? 0}',
-                const Color.fromRGBO(149, 184, 209, 1).withOpacity(0.6),
+                const Color.fromRGBO(149, 184, 209, 1).withValues(alpha: 0.6),
                 Icons.check_circle_outline,
               ),
             ),
@@ -210,7 +218,7 @@ class _DoctorHomeState extends State<DoctorHome> {
               child: _buildStatusCard(
                 'Alerts',
                 isLoading ? '-' : '${doctorStats['alerts'] ?? 0}',
-                const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
+                const Color.fromRGBO(184, 224, 210, 1).withValues(alpha: 0.6),
                 Icons.warning_outlined,
               ),
             ),
@@ -227,30 +235,30 @@ class _DoctorHomeState extends State<DoctorHome> {
     IconData icon,
   ) {
     return Container(
-      height: 140,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.black54, size: 24),
-          const Spacer(),
+          Icon(icon, color: Colors.black54, size: 16),
+          const SizedBox(height: 2),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 13.5,
+              fontSize: 10,
               color: Colors.black54,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
@@ -279,15 +287,15 @@ class _DoctorHomeState extends State<DoctorHome> {
               ),
               GestureDetector(
                 onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => RemindersDetailsPage(
-                          todayAppointments: todayAppointments,
-                          doctorStats: doctorStats,
-                        ),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RemindersDetailsPage(
+                        todayAppointments: todayAppointments,
+                        doctorStats: doctorStats,
                       ),
-                    );
+                    ),
+                  );
                 },
                 child: const Text(
                   'See All >',
@@ -308,7 +316,7 @@ class _DoctorHomeState extends State<DoctorHome> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.08),
+                  color: Colors.grey.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -333,14 +341,17 @@ class _DoctorHomeState extends State<DoctorHome> {
                         const SizedBox(height: 8),
                         if (todayAppointments.isNotEmpty)
                           ...todayAppointments.map((apt) {
-                            final timeTitle = '${apt['time'] ?? '??:??'} · ${apt['patientName'] ?? 'Patient'}';
-                            return _buildReminderItem(timeTitle, apt['id'] ?? 'apt_${apt['time']}', false);
+                            final timeTitle =
+                                '${apt['time'] ?? '??:??'} · ${apt['patientName'] ?? 'Patient'}';
+                            return _buildReminderItem(timeTitle,
+                                apt['id'] ?? 'apt_${apt['time']}', false);
                           })
                         else
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 6),
                             child: Text('No appointments today.',
-                                style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                style: TextStyle(
+                                    color: Colors.grey, fontSize: 13)),
                           ),
                       ],
                     ),
@@ -360,12 +371,16 @@ class _DoctorHomeState extends State<DoctorHome> {
                         ),
                         const SizedBox(height: 8),
                         if ((doctorStats['pendingReviews'] ?? 0) > 0)
-                          _buildReminderItem('Review ${doctorStats['pendingReviews']} Pending Exercises', 'ex_reviews', false)
+                          _buildReminderItem(
+                              'Review ${doctorStats['pendingReviews']} Pending Exercises',
+                              'ex_reviews',
+                              false)
                         else
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 6),
                             child: Text('No pending tasks.',
-                                style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                style: TextStyle(
+                                    color: Colors.grey, fontSize: 13)),
                           ),
                       ],
                     ),
@@ -545,7 +560,8 @@ class _DoctorHomeState extends State<DoctorHome> {
                     'age': patient['profileData']?['age']?.toString() ?? 'N/A',
                     'progress': '0', // Not yet tracked in backend
                     'status': 'New',
-                    'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                    'statusColor': const Color.fromRGBO(128, 155, 206, 1)
+                        .withValues(alpha: 0.6),
                   };
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
@@ -570,7 +586,7 @@ class _DoctorHomeState extends State<DoctorHome> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -586,8 +602,8 @@ class _DoctorHomeState extends State<DoctorHome> {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor:
-                    const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                backgroundColor: const Color.fromRGBO(128, 155, 206, 1)
+                    .withValues(alpha: 0.6),
                 child: Text(
                   patient['name'].substring(0, 1),
                   style: const TextStyle(
@@ -600,8 +616,8 @@ class _DoctorHomeState extends State<DoctorHome> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color:
-                      const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
+                  color: const Color.fromRGBO(184, 224, 210, 1)
+                      .withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -775,7 +791,7 @@ class _DoctorHomeState extends State<DoctorHome> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
+              color: Colors.grey.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -790,7 +806,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: color?.withOpacity(0.3),
+                    color: color?.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -814,11 +830,7 @@ class _DoctorHomeState extends State<DoctorHome> {
             Positioned(
               top: 0,
               right: 0,
-              child: Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Colors.grey[400],
-              ),
+              child: const SizedBox.shrink(),
             ),
           ],
         ),
@@ -988,7 +1000,8 @@ class RemindersDetailsPage extends StatelessWidget {
               _InfoCard(
                 children: [
                   _NoteRow(
-                    text: '${doctorStats['alerts']} critical alerts require response.',
+                    text:
+                        '${doctorStats['alerts']} critical alerts require response.',
                   ),
                 ],
               ),
@@ -1018,7 +1031,7 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.55),
+        color: color.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -1081,7 +1094,7 @@ class _InfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1158,7 +1171,7 @@ class _ReminderRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: badgeColor.withOpacity(0.14),
+              color: badgeColor.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -1167,51 +1180,6 @@ class _ReminderRow extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: badgeColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UpcomingRow extends StatelessWidget {
-  const _UpcomingRow({required this.day, required this.item});
-
-  final String day;
-  final String item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color.fromRGBO(149, 184, 209, 1).withOpacity(0.45),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              day,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              item,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black87,
               ),
             ),
           ),
@@ -1278,13 +1246,16 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
       final fetched = await ApiService.getDoctorPatients();
       if (mounted) {
         setState(() {
-          _patients = fetched.map((p) => {
-            'name': p['name'] ?? 'Unknown',
-            'age': p['age'] ?? 0,
-            'progress': 0, // Mock for now
-            'status': 'On Track',
-            'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-          }).toList();
+          _patients = fetched
+              .map((p) => {
+                    'name': p['name'] ?? 'Unknown',
+                    'age': p['age'] ?? 0,
+                    'progress': 0, // Mock for now
+                    'status': 'On Track',
+                    'statusColor': const Color.fromRGBO(128, 155, 206, 1)
+                        .withValues(alpha: 0.6),
+                  })
+              .toList();
           isLoading = false;
         });
       }
@@ -1367,33 +1338,33 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
             ),
           ),
           Expanded(
-            child: isLoading 
-              ? const Center(child: CircularProgressIndicator())
-              : patients.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No patients found',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w600,
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : patients.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No patients found',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    : GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.76,
+                        ),
+                        itemCount: patients.length,
+                        itemBuilder: (context, index) {
+                          return _AllPatientCard(patient: patients[index]);
+                        },
                       ),
-                    ),
-                  )
-                : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.76,
-                    ),
-                    itemCount: patients.length,
-                    itemBuilder: (context, index) {
-                      return _AllPatientCard(patient: patients[index]);
-                    },
-                  ),
           ),
         ],
       ),
@@ -1410,7 +1381,7 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
           _selectedFilter = label;
         });
       },
-      selectedColor: const Color(0xFF2196F3).withOpacity(0.18),
+      selectedColor: const Color(0xFF2196F3).withValues(alpha: 0.18),
       backgroundColor: Colors.white,
       labelStyle: TextStyle(
         fontSize: 12,
@@ -1419,7 +1390,7 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
       ),
       side: BorderSide(
         color: isSelected
-            ? const Color(0xFF2196F3).withOpacity(0.45)
+            ? const Color(0xFF2196F3).withValues(alpha: 0.45)
             : Colors.grey.shade300,
       ),
       shape: RoundedRectangleBorder(
@@ -1443,7 +1414,7 @@ class _AllPatientCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1458,8 +1429,8 @@ class _AllPatientCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor:
-                    const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                backgroundColor: const Color.fromRGBO(128, 155, 206, 1)
+                    .withValues(alpha: 0.6),
                 child: Text(
                   (patient['name'] as String).substring(0, 1),
                   style: const TextStyle(
@@ -1472,8 +1443,8 @@ class _AllPatientCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color:
-                      const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
+                  color: const Color.fromRGBO(184, 224, 210, 1)
+                      .withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

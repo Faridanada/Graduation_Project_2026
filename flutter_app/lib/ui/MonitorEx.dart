@@ -295,7 +295,7 @@ class _MonitorExState extends State<MonitorEx> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -319,7 +319,7 @@ class _MonitorExState extends State<MonitorEx> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: valueColor.withOpacity(0.8),
+                color: valueColor.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -462,7 +462,7 @@ class _MonitorExState extends State<MonitorEx> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                      const Color.fromARGB(255, 87, 152, 198).withOpacity(0.8),
+                      const Color.fromARGB(255, 87, 152, 198).withValues(alpha: 0.8),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -503,7 +503,7 @@ class _MonitorExState extends State<MonitorEx> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  const Color.fromARGB(255, 87, 152, 198).withOpacity(0.8),
+                  const Color.fromARGB(255, 87, 152, 198).withValues(alpha: 0.8),
               padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -541,7 +541,7 @@ class _MonitorExState extends State<MonitorEx> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -658,3 +658,4 @@ class _MonitorExState extends State<MonitorEx> {
     );
   }
 }
+

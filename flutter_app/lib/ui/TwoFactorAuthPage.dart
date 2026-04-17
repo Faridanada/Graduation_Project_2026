@@ -67,9 +67,9 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                    border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,7 +120,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -185,7 +185,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
                             }
                           }
                         },
-                        activeColor: const Color(0xFF6BA5CF),
+                        activeThumbColor: const Color(0xFF6BA5CF),
                       ),
                     ],
                   ),
@@ -264,7 +264,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -275,7 +275,7 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: Colors.green.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: Colors.green, size: 24),
@@ -318,3 +318,4 @@ class _TwoFactorAuthPageState extends State<TwoFactorAuthPage> {
     );
   }
 }
+

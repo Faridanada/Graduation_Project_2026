@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   static const String baseUrl = "http://10.0.2.2:5000/api";
   static const String _tokenKey = 'jwt_token';
-  
+
   static String? currentToken;
 
   /// Call this once at app startup (e.g., in main.dart) to restore the token.
@@ -143,7 +144,7 @@ class ApiService {
   }
 
   // --- PATIENT & REQUEST ENDPOINTS (NEW) ---
-  
+
   static Future<bool> addDoctorPatient(Map<String, dynamic> patientData) async {
     final token = await _getToken();
     if (token == null) return false;
@@ -172,10 +173,11 @@ class ApiService {
     return [];
   }
 
-  static Future<bool> respondToDoctorRequest(String requestId, bool accept) async {
+  static Future<bool> respondToDoctorRequest(
+      String requestId, bool accept) async {
     final token = await _getToken();
     if (token == null) return false;
-    
+
     final endpoint = accept ? "accept" : "reject";
 
     final response = await http.put(
@@ -273,7 +275,10 @@ class ApiService {
   }) async {
     final token = await _getToken();
     if (token == null) {
-      print('[WoundSubmit] ERROR: No token found — user may not be logged in');
+      developer.log(
+        '[WoundSubmit] ERROR: No token found - user may not be logged in',
+        name: 'ApiService.submitWoundReport',
+      );
       return false;
     }
 
@@ -296,10 +301,16 @@ class ApiService {
 
       final streamed = await request.send();
       final responseBody = await streamed.stream.bytesToString();
-      print('[WoundSubmit] Status: ${streamed.statusCode}, Body: $responseBody');
+      developer.log(
+        '[WoundSubmit] Status: ${streamed.statusCode}, Body: $responseBody',
+        name: 'ApiService.submitWoundReport',
+      );
       return streamed.statusCode == 201;
     } catch (e) {
-      print('[WoundSubmit] Exception: $e');
+      developer.log(
+        '[WoundSubmit] Exception: $e',
+        name: 'ApiService.submitWoundReport',
+      );
       return false;
     }
   }
@@ -335,7 +346,8 @@ class ApiService {
   }
 
   /// Doctor marks a wound as reviewed or healed.
-  static Future<bool> updateWoundStatus(String woundId, String status, String patientId) async {
+  static Future<bool> updateWoundStatus(
+      String woundId, String status, String patientId) async {
     final token = await _getToken();
     if (token == null) return false;
 
@@ -524,7 +536,8 @@ class ApiService {
   }
 
   /// Change password
-  static Future<bool> changePassword(String oldPassword, String newPassword) async {
+  static Future<bool> changePassword(
+      String oldPassword, String newPassword) async {
     final token = await _getToken();
     if (token == null) return false;
 
@@ -532,7 +545,8 @@ class ApiService {
       final response = await http.put(
         Uri.parse('$baseUrl/change-password'),
         headers: _headers(token),
-        body: jsonEncode({'oldPassword': oldPassword, 'newPassword': newPassword}),
+        body: jsonEncode(
+            {'oldPassword': oldPassword, 'newPassword': newPassword}),
       );
       return response.statusCode == 200;
     } catch (_) {}
@@ -591,4 +605,3 @@ class ApiService {
     return false;
   }
 }
-

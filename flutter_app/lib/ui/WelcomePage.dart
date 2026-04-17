@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'OnboardingPage.dart';
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({Key? key}) : super(key: key);
@@ -29,10 +30,13 @@ class _WelcomePageState extends State<WelcomePage>
       });
     });
 
-    // Navigate to login after 10 seconds
+    // Navigate to onboarding after 10 seconds
     Future.delayed(const Duration(seconds: 10), () {
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+              builder: (_) => const OnboardingPage(userEmail: null)),
+        );
       }
     });
   }
@@ -88,8 +92,9 @@ class _WelcomePageState extends State<WelcomePage>
       height: isActive ? 20 : 6,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color:
-            isActive ? const Color(0xFF1F7D9F) : Colors.white.withOpacity(0.3),
+        color: isActive
+            ? const Color(0xFF1F7D9F)
+            : Colors.white.withValues(alpha: 0.3),
       ),
     );
   }

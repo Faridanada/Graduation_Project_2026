@@ -197,7 +197,8 @@ class _AddNewPatientState extends State<AddNewPatient> {
                       showDialog(
                         context: context,
                         barrierDismissible: false,
-                        builder: (context) => const Center(child: CircularProgressIndicator()),
+                        builder: (context) =>
+                            const Center(child: CircularProgressIndicator()),
                       );
 
                       final patientData = {
@@ -210,7 +211,8 @@ class _AddNewPatientState extends State<AddNewPatient> {
                         'treatmentPlans': _selectedTreatmentPlans,
                       };
 
-                      bool success = await ApiService.addDoctorPatient(patientData);
+                      bool success =
+                          await ApiService.addDoctorPatient(patientData);
 
                       // Hide loading indicator
                       if (context.mounted) Navigator.pop(context);
@@ -226,7 +228,8 @@ class _AddNewPatientState extends State<AddNewPatient> {
                       } else if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Failed to add patient. Check connection.'),
+                            content: Text(
+                                'Failed to add patient. Check connection.'),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -362,11 +365,11 @@ class _AddNewPatientState extends State<AddNewPatient> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF2196F3)
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
                                         color: const Color(0xFF2196F3)
-                                            .withOpacity(0.3),
+                                            .withValues(alpha: 0.3),
                                       ),
                                     ),
                                     child: Text(

@@ -135,9 +135,9 @@ class _AlertsPageState extends State<AlertsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -167,10 +167,10 @@ class _AlertsPageState extends State<AlertsPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: riskColor.withOpacity(0.2), width: 1),
+          border: Border.all(color: riskColor.withValues(alpha: 0.2), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -232,3 +232,4 @@ class _AlertsPageState extends State<AlertsPage> {
     }
   }
 }
+

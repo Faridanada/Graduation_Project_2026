@@ -303,7 +303,7 @@ class _AiReportsState extends State<AiReports> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor.withOpacity(0.1) : Colors.white,
+          color: isSelected ? activeColor.withValues(alpha: 0.1) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? activeColor : Colors.grey[300]!,
@@ -340,7 +340,7 @@ class _AiReportsState extends State<AiReports> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -632,7 +632,7 @@ class _AiReportsState extends State<AiReports> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -862,7 +862,7 @@ class LineChartPainter extends CustomPainter {
 
     // Draw light background area under the line
     final backgroundPaint = Paint()
-      ..color = const Color(0xFF95B8D1).withOpacity(0.1)
+      ..color = const Color(0xFF95B8D1).withValues(alpha: 0.1)
       ..style = PaintingStyle.fill;
 
     final path = Path();
@@ -1030,3 +1030,4 @@ class LineChartPainter extends CustomPainter {
         oldDelegate.timeframe != timeframe;
   }
 }
+

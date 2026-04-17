@@ -80,7 +80,7 @@ class StoragePage extends StatelessWidget {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange.withOpacity(0.1),
+                      backgroundColor: Colors.orange.withValues(alpha: 0.1),
                       foregroundColor: Colors.orange,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -111,7 +111,7 @@ class StoragePage extends StatelessWidget {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.withOpacity(0.1),
+                      backgroundColor: Colors.red.withValues(alpha: 0.1),
                       foregroundColor: Colors.red,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -147,7 +147,7 @@ class StoragePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -212,7 +212,7 @@ class StoragePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -224,7 +224,7 @@ class StoragePage extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(Icons.folder, color: color, size: 28),
@@ -269,3 +269,4 @@ class StoragePage extends StatelessWidget {
     );
   }
 }
+

@@ -139,10 +139,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: isRead ? null : Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+          border: isRead ? null : Border.all(color: Colors.blue.withValues(alpha: 0.3), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -155,7 +155,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(iconData, color: iconColor, size: 24),
@@ -224,3 +224,4 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 }
+

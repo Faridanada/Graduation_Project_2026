@@ -281,7 +281,7 @@ class _AppointmentsState extends State<Appointments> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -339,8 +339,8 @@ class _AppointmentsState extends State<Appointments> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: isConfirmed
-                  ? const Color.fromARGB(255, 99, 197, 150).withOpacity(0.2)
-                  : Colors.orange.withOpacity(0.2),
+                  ? const Color.fromARGB(255, 99, 197, 150).withValues(alpha: 0.2)
+                  : Colors.orange.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -396,3 +396,4 @@ class _AppointmentsState extends State<Appointments> {
     );
   }
 }
+

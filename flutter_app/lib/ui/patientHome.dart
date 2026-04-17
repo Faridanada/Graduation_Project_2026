@@ -4,7 +4,6 @@ import 'SettingsPage.dart';
 
 import 'report_wound_screen.dart';
 import 'start_exercise_screen.dart';
-import 'live_session_screen.dart';
 
 import 'FindDoctorScreen.dart';
 import '../services/api_service.dart';
@@ -172,7 +171,7 @@ class _HomeContentState extends State<_HomeContent> {
                 ),
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: const Color(0xFF4A90E2).withOpacity(0.1),
+                  backgroundColor: const Color(0xFF4A90E2).withValues(alpha: 0.1),
                   child: Text(
                     userName.isNotEmpty ? userName[0].toUpperCase() : 'P',
                     style: const TextStyle(
@@ -975,3 +974,4 @@ class _FeelingChip extends StatelessWidget {
     );
   }
 }
+

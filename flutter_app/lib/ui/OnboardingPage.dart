@@ -4,9 +4,9 @@ import 'DoctorHome.dart';
 import 'patientHome.dart';
 
 class OnboardingPage extends StatefulWidget {
-  final String userEmail;
+  final String? userEmail;
 
-  const OnboardingPage({super.key, required this.userEmail});
+  const OnboardingPage({super.key, this.userEmail});
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -23,10 +23,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _navigateToHome() async {
+    if (!mounted) return;
+
+    // If userEmail is null, they came from splash screen - go to login
+    if (widget.userEmail == null) {
+      Navigator.of(context).pushReplacementNamed('/login');
+      return;
+    }
+
+    // Otherwise they came from signup - check their role and navigate accordingly
     final profile = await ApiService.getUserProfile();
     final role = profile?['role'] ?? 'patient';
-
-    if (!mounted) return;
 
     if (role == 'doctor') {
       Navigator.of(context).pushReplacement(
@@ -98,7 +105,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Track your healing journey from day one',
+            'Comprehensive wound management',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -165,7 +172,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(height: 40),
           Text(
-            'Monitor wound healing progress',
+            'Track and manage wound conditions',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 28,
@@ -175,7 +182,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Track wound conditions with photos, \nmeasurements, and healing stages over time.',
+            'Monitor progress with photos, measurements, \nand healing milestones for better care.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -240,7 +247,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Guide your daily rehab exercises safely',
+            'Personalized rehabilitation programs',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -317,7 +324,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(height: 40),
           Text(
-            'Guided rehabilitation exercises',
+            'Create and assign exercises',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 28,
@@ -327,7 +334,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Follow personalized exercise programs \nwith video guides and progress tracking.',
+            'Assign therapy programs with video guides \nand track patient progress in real-time.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -381,7 +388,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Keep you connected with your therapist',
+            'Seamless professional collaboration',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -456,7 +463,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(height: 40),
           Text(
-            'Connect with your therapist',
+            'Communicate and collaborate',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 28,
@@ -466,7 +473,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Book appointments, chat with your therapist, \nand receive personalized rehabilitation plans.',
+            'Schedule appointments, instant messaging, \nand share reports for better care coordination.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,

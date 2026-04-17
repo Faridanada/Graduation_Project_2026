@@ -151,7 +151,7 @@ class _NotificationPreferencesPageState
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -187,10 +187,11 @@ class _NotificationPreferencesPageState
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xFF6BA5CF),
+            activeThumbColor: const Color(0xFF6BA5CF),
           ),
         ],
       ),
     );
   }
 }
+
