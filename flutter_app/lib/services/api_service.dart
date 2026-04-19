@@ -12,6 +12,7 @@ class ApiService {
       return "http://localhost:5000/api";
     }
   }
+
   static const String _tokenKey = 'jwt_token';
 
   static String? currentToken;
@@ -85,6 +86,44 @@ class ApiService {
 
     final response = await http.get(
       Uri.parse("$baseUrl/doctor/patients"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  static Future<List<dynamic>> getAllPatientsForDoctor({String? name}) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final query = (name != null && name.trim().isNotEmpty)
+        ? '?name=${Uri.encodeQueryComponent(name.trim())}'
+        : '';
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/doctor/patients/all$query"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  static Future<List<dynamic>> getAllDoctorsForDoctor({String? name}) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final query = (name != null && name.trim().isNotEmpty)
+        ? '?name=${Uri.encodeQueryComponent(name.trim())}'
+        : '';
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/patient/doctors$query"),
       headers: _headers(token),
     );
 
@@ -511,7 +550,10 @@ class ApiService {
   /// Get current user profile
   static Future<Map<String, dynamic>?> getUserProfile() async {
     final token = await _getToken();
-    if (token == null) return null;
+    if (token == null) {
+      developer.log('getUserProfile: No token available');
+      return null;
+    }
 
     try {
       final response = await http.get(
@@ -519,9 +561,17 @@ class ApiService {
         headers: _headers(token),
       );
       if (response.statusCode == 200) {
-        return jsonDecode(response.body)['user'];
+        final data = jsonDecode(response.body);
+        developer
+            .log('getUserProfile: Success - Role: ${data['user']?['role']}');
+        return data['user'];
+      } else {
+        developer.log(
+            'getUserProfile: Failed with status ${response.statusCode} - ${response.body}');
       }
-    } catch (_) {}
+    } catch (e) {
+      developer.log('getUserProfile: Exception - $e');
+    }
     return null;
   }
 

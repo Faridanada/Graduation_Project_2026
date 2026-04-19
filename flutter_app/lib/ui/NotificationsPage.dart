@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'patientHome.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -57,10 +56,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const PatientHomeScreen())),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Notifications',

@@ -386,6 +386,40 @@ class _MonitorExState extends State<MonitorEx> {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const Exoskeleton()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 74, 144, 226),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: const Icon(
+              Icons.arrow_forward_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+            label: const Text(
+              'Continue to Next Step',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Emergency stop activated')),
               );
@@ -461,8 +495,8 @@ class _MonitorExState extends State<MonitorEx> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      const Color.fromARGB(255, 87, 152, 198).withValues(alpha: 0.8),
+                  backgroundColor: const Color.fromARGB(255, 87, 152, 198)
+                      .withValues(alpha: 0.8),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -502,8 +536,8 @@ class _MonitorExState extends State<MonitorEx> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  const Color.fromARGB(255, 87, 152, 198).withValues(alpha: 0.8),
+              backgroundColor: const Color.fromARGB(255, 87, 152, 198)
+                  .withValues(alpha: 0.8),
               padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -658,4 +692,3 @@ class _MonitorExState extends State<MonitorEx> {
     );
   }
 }
-

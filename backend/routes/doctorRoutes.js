@@ -11,6 +11,7 @@ router.use(authMiddleware);
 // Routes
 router.get('/stats', doctorController.getStats);
 router.get('/patients', doctorController.getPatients);
+router.get('/patients/all', doctorController.getAllPatients);
 router.post('/patients/add', doctorController.addPatient);
 router.post('/exercises/assign', doctorController.assignExercise);
 router.get('/appointments/today', doctorController.getTodayAppointments);

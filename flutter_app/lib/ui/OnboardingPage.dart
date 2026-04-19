@@ -32,17 +32,42 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
 
     // Otherwise they came from signup - check their role and navigate accordingly
-    final profile = await ApiService.getUserProfile();
-    final role = profile?['role'] ?? 'patient';
+    try {
+      final profile = await ApiService.getUserProfile();
 
-    if (role == 'doctor') {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DoctorHome()),
-      );
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const PatientHomeScreen()),
-      );
+      if (profile == null) {
+        // If profile fetch failed, show error and go back to login
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Failed to load profile. Please log in again.')),
+          );
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+        return;
+      }
+
+      final role = profile['role'] ?? 'patient';
+
+      if (mounted) {
+        if (role == 'doctor') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const DoctorHome()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const PatientHomeScreen()),
+          );
+        }
+      }
+    } catch (e) {
+      // If an error occurs, show error and go back to login
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading home: $e')),
+        );
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     }
   }
 

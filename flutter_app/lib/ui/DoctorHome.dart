@@ -13,6 +13,7 @@ import 'AlertsPage.dart';
 import 'NotificationsPage.dart';
 import 'DoctorProfile.dart';
 import 'AddNewPatient.dart';
+import 'DoctorSearchPage.dart';
 
 /// Doctor home page - Main dashboard for healthcare professionals
 class DoctorHome extends StatefulWidget {
@@ -112,6 +113,15 @@ class _DoctorHomeState extends State<DoctorHome> {
         ),
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.search, color: Colors.grey),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DoctorSearchPage()),
+            );
+          },
+        ),
         GestureDetector(
           onTap: () {
             Navigator.push(
@@ -126,7 +136,7 @@ class _DoctorHomeState extends State<DoctorHome> {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: Icon(Icons.notifications_none,
-                    color: Colors.blue, size: 28),
+                    color: Colors.grey, size: 28),
               ),
               if (doctorStats['alerts'] != null && doctorStats['alerts'] > 0)
                 Positioned(

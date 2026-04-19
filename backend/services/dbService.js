@@ -183,6 +183,35 @@ const dbService = {
     }
   },
 
+  async getAllPatients(filters = {}) {
+    try {
+      const { name } = filters;
+      let filterExpression = "#roleAttr = :role";
+      const expressionAttributeNames = {
+        "#roleAttr": "role",
+        "#nameAttr": "name"
+      };
+      const expressionAttributeValues = { ":role": "patient" };
+
+      if (name) {
+        filterExpression += " AND contains(#nameAttr, :name)";
+        expressionAttributeValues[":name"] = name;
+      }
+
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Users",
+        FilterExpression: filterExpression,
+        ExpressionAttributeNames: expressionAttributeNames,
+        ExpressionAttributeValues: expressionAttributeValues,
+        ProjectionExpression: "id, #nameAttr, email, profileData, assignedDoctorId"
+      }));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getAllPatients):", error);
+      throw error;
+    }
+  },
+
   async getPatientDetailsAndHistory(patientId) {
     try {
       // 1. Get the patient user profile
