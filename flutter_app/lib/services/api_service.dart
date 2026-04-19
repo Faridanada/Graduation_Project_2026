@@ -5,7 +5,13 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = "http://10.0.2.2:5000/api";
+  static String get baseUrl {
+    if (io.Platform.isAndroid) {
+      return "http://10.0.2.2:5000/api";
+    } else {
+      return "http://localhost:5000/api";
+    }
+  }
   static const String _tokenKey = 'jwt_token';
 
   static String? currentToken;
