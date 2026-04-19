@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'Chats.dart';
 import 'SettingsPage.dart';
 
+import 'reminders.dart';
 import 'report_wound_screen.dart';
 import 'start_exercise_screen.dart';
+import 'improvements_screen.dart';
+import 'book_appointement.dart';
 
 import 'FindDoctorScreen.dart';
 import '../services/api_service.dart';
@@ -171,7 +174,8 @@ class _HomeContentState extends State<_HomeContent> {
                 ),
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: const Color(0xFF4A90E2).withValues(alpha: 0.1),
+                  backgroundColor:
+                      const Color(0xFF4A90E2).withValues(alpha: 0.1),
                   child: Text(
                     userName.isNotEmpty ? userName[0].toUpperCase() : 'P',
                     style: const TextStyle(
@@ -461,113 +465,122 @@ class _HomeContentState extends State<_HomeContent> {
             const SizedBox(height: 24),
 
             /// REMINDERS CARD
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 20,
-                    offset: Offset(0, 8),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: const [
-                      Icon(Icons.notifications_rounded,
-                          color: Color(0xFFFFC107), size: 22),
-                      SizedBox(width: 10),
-                      Text(
-                        "Reminders",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.notifications_rounded,
+                            color: Color(0xFFFFC107), size: 22),
+                        SizedBox(width: 10),
+                        Text(
+                          "Reminders",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Spacer(),
-                      Icon(Icons.arrow_forward_ios,
-                          size: 16, color: Color(0xFF7A8194)),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  if (reminders.isNotEmpty)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F7FC),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Column(
-                        children: reminders.asMap().entries.map((entry) {
-                          final idx = entry.key;
-                          final reminder = entry.value;
-                          final isLast = idx == reminders.length - 1;
+                        Spacer(),
+                        Icon(Icons.arrow_forward_ios,
+                            size: 16, color: Color(0xFF7A8194)),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    if (reminders.isNotEmpty)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F7FC),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Column(
+                          children: reminders.asMap().entries.map((entry) {
+                            final idx = entry.key;
+                            final reminder = entry.value;
+                            final isLast = idx == reminders.length - 1;
 
-                          IconData iconData = Icons.medication_rounded;
-                          Color iconColor = Colors.orange;
+                            IconData iconData = Icons.medication_rounded;
+                            Color iconColor = Colors.orange;
 
-                          if (reminder['type'] == 'therapy') {
-                            iconData = Icons.ac_unit;
-                            iconColor = Colors.blue;
-                          } else if (reminder['type'] == 'general') {
-                            iconData = Icons.water_drop;
-                            iconColor = Colors.lightBlue;
-                          }
+                            if (reminder['type'] == 'therapy') {
+                              iconData = Icons.ac_unit;
+                              iconColor = Colors.blue;
+                            } else if (reminder['type'] == 'general') {
+                              iconData = Icons.water_drop;
+                              iconColor = Colors.lightBlue;
+                            }
 
-                          return Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF4A90E2),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Icon(iconData, color: iconColor),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        reminder['text'] ?? '',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Color(0xFF1C1F2E),
+                            return Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 16),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF4A90E2),
+                                          shape: BoxShape.circle,
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 12),
+                                      Icon(iconData, color: iconColor),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          reminder['text'] ?? '',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xFF1C1F2E),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              if (!isLast)
-                                const Divider(
-                                  height: 1,
-                                  thickness: 1,
-                                  color: Color(0xFFE3E9F4),
-                                ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                    )
-                  else
-                    const Center(
-                        child: Text("No reminders for now.",
-                            style: TextStyle(color: Colors.grey))),
-                ],
+                                if (!isLast)
+                                  const Divider(
+                                    height: 1,
+                                    thickness: 1,
+                                    color: Color(0xFFE3E9F4),
+                                  ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      )
+                    else
+                      const Center(
+                          child: Text("No reminders for now.",
+                              style: TextStyle(color: Colors.grey))),
+                  ],
+                ),
               ),
             ),
-
             const SizedBox(height: 24),
 
             /// ================= RECOVERY PLAN =================
@@ -743,57 +756,71 @@ class _HomeContentState extends State<_HomeContent> {
             const SizedBox(height: 24),
 
             /// ================= YOUR IMPROVEMENT =================
-            _whiteCard(
-              child: Row(
-                children: const [
-                  Icon(Icons.bar_chart_rounded, color: Color(0xFF4A90E2)),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Your Improvement",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
+            GestureDetector(
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const ImprovementScreen())),
+              child: _whiteCard(
+                child: Row(
+                  children: const [
+                    Icon(Icons.bar_chart_rounded, color: Color(0xFF4A90E2)),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "Your Improvement",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
-                  ),
-                  Icon(Icons.arrow_forward_ios, size: 16),
-                ],
+                    Icon(Icons.arrow_forward_ios, size: 16),
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 24),
 
             /// ================= BOOK APPOINTMENT =================
-            _whiteCard(
-              child: Row(
-                children: const [
-                  Icon(Icons.event_available_rounded, color: Color(0xFF4CAF50)),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Book Appointment",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BookAppointmentScreen(),
+                ),
+              ),
+              child: _whiteCard(
+                child: Row(
+                  children: const [
+                    Icon(Icons.event_available_rounded, color: Color(0xFF4CAF50)),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Book Appointment",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "Schedule a new appointment with your doctor",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF7A8194),
+                          SizedBox(height: 4),
+                          Text(
+                            "Schedule a new appointment with your doctor",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF7A8194),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Icon(Icons.arrow_forward_ios, size: 16),
-                ],
+                    Icon(Icons.arrow_forward_ios, size: 16),
+                  ],
+                ),
               ),
             ),
 
@@ -974,4 +1001,3 @@ class _FeelingChip extends StatelessWidget {
     );
   }
 }
-
