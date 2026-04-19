@@ -241,7 +241,8 @@ const dbService = {
 
       // Fetch real high-risk/unread alert count
       const notifications = await this.getNotificationsForUser(doctorId);
-      const alertsCount = notifications.filter(n => !n.isRead).length;
+      // Exclude connection requests from the "Alerts" count as per user preference
+      const alertsCount = notifications.filter(n => !n.isRead && n.title !== "New Connection Request").length;
 
       // Fetch pending reviews count from Wounds table
       const woundsData = await ddbDocClient.send(new ScanCommand({
@@ -470,6 +471,14 @@ const dbService = {
         TableName: "Requests",
         Item: newRequest
       }));
+
+      // Notify the doctor about the new request
+      await this.createNotification(
+        doctorId,
+        "New Connection Request",
+        `Patient ${patientName} wants to connect with you.`
+      );
+
       return newRequest;
     } catch (error) {
       console.error("DynamoDB error (createRequest):", error);

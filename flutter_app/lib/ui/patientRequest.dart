@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'SettingsPage.dart';
 import 'NotificationsPage.dart';
+import 'DoctorHome.dart';
+import 'Chats.dart';
+import 'DoctorProfile.dart';
 import '../services/api_service.dart';
 
 class PatientRequest extends StatefulWidget {
@@ -13,6 +16,33 @@ class PatientRequest extends StatefulWidget {
 class _PatientRequestState extends State<PatientRequest> {
   List<Map<String, dynamic>> requests = [];
   bool isLoading = true;
+  int _selectedNavIndex = 0; // Pushed from Home dashboard context
+
+  void _onNavTap(int index) {
+    if (index == 0) {
+      // Navigate to Home dashboard
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DoctorHome()),
+      );
+    } else if (index == 1) {
+      // Navigate to Chats
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Chats()),
+      );
+    } else if (index == 2) {
+      // Navigate to Profile
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DoctorProfile()),
+      );
+    }
+
+    setState(() {
+      _selectedNavIndex = index;
+    });
+  }
 
   @override
   void initState() {
@@ -299,10 +329,16 @@ class _PatientRequestState extends State<PatientRequest> {
 
   Widget _buildBottomNavBar() {
     return BottomNavigationBar(
+      currentIndex: 0, // Index 0 is Home, but we'll make it appear unselected
+      onTap: _onNavTap,
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,
-      selectedItemColor: const Color(0xFF95B8D1),
+      selectedItemColor: Colors.grey,
       unselectedItemColor: Colors.grey,
+      showSelectedLabels: true,
+      showUnselectedLabels: true,
+      selectedLabelStyle: const TextStyle(color: Colors.grey),
+      unselectedLabelStyle: const TextStyle(color: Colors.grey),
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),

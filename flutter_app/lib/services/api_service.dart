@@ -157,6 +157,35 @@ class ApiService {
     return response.statusCode == 201 || response.statusCode == 200;
   }
 
+  static Future<Map<String, dynamic>?> getPatientDetails(String patientId) async {
+    final token = await _getToken();
+    if (token == null) return null;
+
+    if (patientId.trim().isEmpty) {
+      print("Error: API getPatientDetails called with empty patientId");
+      return null;
+    }
+
+    final url = "$baseUrl/doctor/patients/$patientId";
+    print("Calling API: $url");
+    
+    final response = await http.get(
+      Uri.parse(url),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded['data'] is Map<String, dynamic>) {
+        return decoded['data'];
+      } else {
+        print("Error: Expected Map for patient details but got ${decoded['data'].runtimeType}");
+        return null;
+      }
+    }
+    return null;
+  }
+
   static Future<List<dynamic>> getDoctorRequests() async {
     final token = await _getToken();
     if (token == null) return [];

@@ -6,7 +6,12 @@ import 'SettingsPage.dart';
 import 'NotificationsPage.dart';
 
 class Chats extends StatefulWidget {
-  const Chats({Key? key}) : super(key: key);
+  final bool showNavBar;
+
+  const Chats({
+    Key? key,
+    this.showNavBar = true,
+  }) : super(key: key);
 
   @override
   State<Chats> createState() => _ChatsState();
@@ -86,7 +91,7 @@ class _ChatsState extends State<Chats> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Search patients...',
+                hintText: 'Search chats...',
                 hintStyle: TextStyle(
                   color: Colors.grey[500],
                   fontSize: 16,
@@ -147,7 +152,7 @@ class _ChatsState extends State<Chats> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
+      bottomNavigationBar: widget.showNavBar ? _buildBottomNavBar() : null,
     );
   }
 

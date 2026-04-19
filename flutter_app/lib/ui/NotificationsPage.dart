@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'patientRequest.dart';
+import 'Chats.dart';
+import 'ManageWounds.dart';
+import 'ActivePatientsPage.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -78,13 +82,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
           : _notifications.isEmpty
               ? _buildEmptyState()
               : SafeArea(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: _notifications.length,
-                    itemBuilder: (context, index) {
-                      final notif = _notifications[index];
-                      return _buildNotificationCard(notif);
-                    },
+                  child: RefreshIndicator(
+                    onRefresh: _fetchNotifications,
+                    child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(20),
+                      itemCount: _notifications.length,
+                      itemBuilder: (context, index) {
+                        final notif = _notifications[index];
+                        return _buildNotificationCard(notif);
+                      },
+                    ),
                   ),
                 ),
     );
@@ -132,6 +140,31 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return GestureDetector(
       onTap: () {
         if (!isRead) _markAsRead(notif['id']);
+
+        // Navigate based on notification type
+        if (type.contains('Connection Request')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PatientRequest()),
+          );
+        } else if (type.contains('Message')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const Chats(showNavBar: true),
+            ),
+          );
+        } else if (type.contains('Wound')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ManageWounds()),
+          );
+        } else if (type.contains('Exercise') || type.contains('Recovery')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ActivePatientsPage()),
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),

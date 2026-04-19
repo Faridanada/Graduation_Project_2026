@@ -13,6 +13,7 @@ import 'AlertsPage.dart';
 import 'NotificationsPage.dart';
 import 'DoctorProfile.dart';
 import 'AddNewPatient.dart';
+import 'PatientProfilePage.dart';
 
 /// Doctor home page - Main dashboard for healthcare professionals
 class DoctorHome extends StatefulWidget {
@@ -75,20 +76,24 @@ class _DoctorHomeState extends State<DoctorHome> {
       backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              _buildStatusOverview(),
-              const SizedBox(height: 28),
-              _buildRemindersSection(),
-              const SizedBox(height: 28),
-              _buildPatientsSection(),
-              const SizedBox(height: 28),
-              _buildActivitiesSection(),
-              const SizedBox(height: 32),
-            ],
+        child: RefreshIndicator(
+          onRefresh: _loadDashboardData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                _buildStatusOverview(),
+                const SizedBox(height: 28),
+                _buildRemindersSection(),
+                const SizedBox(height: 28),
+                _buildPatientsSection(),
+                const SizedBox(height: 28),
+                _buildActivitiesSection(),
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
       ),
@@ -116,14 +121,20 @@ class _DoctorHomeState extends State<DoctorHome> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const NotificationsPage()),
-            );
+            ).then((_) => _loadDashboardData());
           },
           child: Stack(
             alignment: Alignment.center,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Icon(Icons.notifications_none, color: Colors.blue, size: 28),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Icon(
+                  Icons.notifications_none,
+                  color: (doctorStats['alerts'] != null && doctorStats['alerts'] > 0)
+                      ? Colors.blue
+                      : Colors.grey,
+                  size: 28,
+                ),
               ),
               if (doctorStats['alerts'] != null && doctorStats['alerts'] > 0)
                 Positioned(
@@ -541,6 +552,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                 ...patientsList.map((patient) {
                   // Map backend data format to local format
                   final mappedPatient = {
+                    'id': patient['id'] ?? patient['_id'] ?? '',
                     'name': patient['name'] ?? 'Unknown',
                     'age': patient['profileData']?['age']?.toString() ?? 'N/A',
                     'progress': '0', // Not yet tracked in backend
@@ -562,125 +574,138 @@ class _DoctorHomeState extends State<DoctorHome> {
   }
 
   Widget _buildPatientCard(Map<String, dynamic> patient) {
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PatientProfilePage(
+              patientId: patient['id'] ?? patient['_id'] ?? '',
+              patientName: patient['name'] ?? 'Unknown',
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Profile section with avatar and checkmark
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor:
-                    const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-                child: Text(
-                  patient['name'].substring(0, 1),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+        );
+      },
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Profile section with avatar and checkmark
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor:
+                      const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                  child: Text(
+                    patient['name'].substring(0, 1),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color:
-                      const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(12),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color:
+                        const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 16,
+                    color: Colors.teal[500],
+                  ),
                 ),
-                child: Icon(
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Name
+            Text(
+              patient['name'],
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+
+            // Age
+            Text(
+              'Age ${patient['age']}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Progress percentage
+            Text(
+              '${patient['progress']}%',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+
+            // Progress bar
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: (double.tryParse(patient['progress'].toString()) ?? 0) / 100,
+                minHeight: 6,
+                backgroundColor: Colors.grey[200],
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  patient['statusColor'],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Status
+            Row(
+              children: [
+                Icon(
                   Icons.check_circle,
-                  size: 16,
-                  color: Colors.teal[500],
+                  size: 14,
+                  color: patient['statusColor'],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Name
-          Text(
-            patient['name'],
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-          ),
-
-          // Age
-          Text(
-            'Age ${patient['age']}',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Progress percentage
-          Text(
-            '${patient['progress']}%',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-
-          // Progress bar
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: int.parse(patient['progress']) / 100,
-              minHeight: 6,
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                patient['statusColor'],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Status
-          Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                size: 14,
-                color: patient['statusColor'],
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  patient['status'],
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: patient['statusColor'],
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    patient['status'],
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: patient['statusColor'],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1279,6 +1304,7 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
       if (mounted) {
         setState(() {
           _patients = fetched.map((p) => {
+            'id': p['id'] ?? p['_id'] ?? '',
             'name': p['name'] ?? 'Unknown',
             'age': p['age'] ?? 0,
             'progress': 0, // Mock for now
@@ -1436,117 +1462,130 @@ class _AllPatientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PatientProfilePage(
+              patientId: patient['id'] ?? patient['_id'] ?? '',
+              patientName: patient['name'] ?? 'Unknown',
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor:
-                    const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-                child: Text(
-                  (patient['name'] as String).substring(0, 1),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor:
+                      const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                  child: Text(
+                    (patient['name'] as String).substring(0, 1),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color:
-                      const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(12),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color:
+                        const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 16,
+                    color: Colors.teal[500],
+                  ),
                 ),
-                child: Icon(
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              patient['name'] as String,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+            Text(
+              'Age ${patient['age']}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '${patient['progress']}%',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: (double.tryParse(patient['progress'].toString()) ?? 0) / 100,
+                minHeight: 6,
+                backgroundColor: Colors.grey[200],
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  patient['statusColor'] as Color,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
                   Icons.check_circle,
-                  size: 16,
-                  color: Colors.teal[500],
+                  size: 14,
+                  color: patient['statusColor'] as Color,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            patient['name'] as String,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-          ),
-          Text(
-            'Age ${patient['age']}',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '${patient['progress']}%',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: (patient['progress'] as int) / 100,
-              minHeight: 6,
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                patient['statusColor'] as Color,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                size: 14,
-                color: patient['statusColor'] as Color,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  patient['status'] as String,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: patient['statusColor'] as Color,
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    patient['status'] as String,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: patient['statusColor'] as Color,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

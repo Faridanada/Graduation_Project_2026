@@ -21,7 +21,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
   final List<Widget> _pages = const [
     _HomeContent(),
-    Chats(),
+    Chats(showNavBar: false),
     SettingsPage(),
   ];
 

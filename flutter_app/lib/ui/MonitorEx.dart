@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'SettingsPage.dart';
 import 'NotificationsPage.dart';
 import 'Exoskeleton.dart';
+import 'Chats.dart';
+import 'DoctorProfile.dart';
+import 'DoctorHome.dart';
 
 class MonitorEx extends StatefulWidget {
   final String patientName;
@@ -17,8 +21,71 @@ class MonitorEx extends StatefulWidget {
   State<MonitorEx> createState() => _MonitorExState();
 }
 
-class _MonitorExState extends State<MonitorEx> {
+class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMixin {
   bool _isPaused = false;
+  bool _isMonitoring = false;
+  int _selectedNavIndex = 0;
+  int _repsCompleted = 0;
+  int _repsTotal = 20;
+  double _accuracy = 0.0;
+  String _painLevel = 'Low';
+  int _secondsElapsed = 0;
+  Timer? _sessionTimer;
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _sessionTimer?.cancel();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  void _toggleMonitoring() {
+    setState(() {
+      _isMonitoring = !_isMonitoring;
+      if (_isMonitoring) {
+        _isPaused = false;
+        _startSimulation();
+      } else {
+        _stopSimulation();
+      }
+    });
+  }
+
+  void _startSimulation() {
+    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!_isPaused) {
+        setState(() {
+          _secondsElapsed++;
+          // Simulated rep increment every 5-8 seconds
+          if (_secondsElapsed % 6 == 0 && _repsCompleted < _repsTotal) {
+            _repsCompleted++;
+            _accuracy = 85.0 + (5.0 * (1.0 - (1.0 / _repsCompleted))); // Fluctuating accuracy
+          }
+        });
+      }
+    });
+  }
+
+  void _stopSimulation() {
+    _sessionTimer?.cancel();
+    _sessionTimer = null;
+  }
+
+  String _formatTime(int seconds) {
+    int mins = seconds ~/ 60;
+    int secs = seconds % 60;
+    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,16 +173,29 @@ class _MonitorExState extends State<MonitorEx> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 99, 197, 150),
+                color: _isMonitoring
+                    ? const Color.fromARGB(255, 239, 68, 68) // RED when LIVE
+                    : const Color.fromARGB(255, 99, 197, 150), // GREEN when READY
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.circle, size: 8, color: Colors.white),
-                  SizedBox(width: 6),
+                  if (_isMonitoring)
+                    AnimatedBuilder(
+                      animation: _pulseController,
+                      builder: (context, child) {
+                        return Opacity(
+                          opacity: _pulseController.value,
+                          child: const Icon(Icons.circle, size: 8, color: Colors.white),
+                        );
+                      },
+                    )
+                  else
+                    const Icon(Icons.circle, size: 8, color: Colors.white),
+                  const SizedBox(width: 6),
                   Text(
-                    'LIVE',
-                    style: TextStyle(
+                    _isMonitoring ? 'LIVE' : 'READY',
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -134,7 +214,7 @@ class _MonitorExState extends State<MonitorEx> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                'Timer: 05:32',
+                'Timer: ${_formatTime(_secondsElapsed)}',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
@@ -150,25 +230,77 @@ class _MonitorExState extends State<MonitorEx> {
           width: double.infinity,
           height: 250,
           decoration: BoxDecoration(
+            color: Colors.grey[100],
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[300]!, width: 1),
           ),
           clipBehavior: Clip.hardEdge,
-          child: Image.asset(
-            'assets/images/Exercise.png',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: Colors.grey[200],
-                child: const Center(
-                  child: Icon(
-                    Icons.video_camera_back,
-                    size: 48,
-                    color: Colors.grey,
+          child: _isMonitoring
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.person, size: 80, color: Colors.grey[400]),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Simulating Video Stream...',
+                        style: TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
+                      ),
+                    ],
                   ),
+                )
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(color: Colors.black.withOpacity(0.05)),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AnimatedBuilder(
+                            animation: _pulseController,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: 1.0 + (_pulseController.value * 0.1),
+                                child: Opacity(
+                                  opacity: 0.5 + (_pulseController.value * 0.5),
+                                  child: Icon(
+                                    Icons.videocam_off_outlined,
+                                    size: 60,
+                                    color: Colors.blue[300],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'WAITING FOR SIGNAL',
+                            style: TextStyle(
+                              color: Colors.blue[300],
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: _toggleMonitoring,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue[400],
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                            ),
+                            child: const Text(
+                              'START MONITORING',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -217,13 +349,13 @@ class _MonitorExState extends State<MonitorEx> {
                 height: 160,
                 child: _buildMetricCard(
                   label: 'Reps',
-                  value: '12 / 20',
+                  value: '$_repsCompleted / $_repsTotal',
                   valueColor: const Color.fromARGB(255, 87, 152, 198),
                   showCircle: true,
                   textColor: Colors.white,
-                  progress: 0.6,
-                  status: 'On Track',
-                  statusColor: const Color.fromARGB(255, 87, 152, 198),
+                  progress: _repsTotal > 0 ? _repsCompleted / _repsTotal : 0.0,
+                  status: _repsCompleted >= _repsTotal ? 'Goal Reached' : 'In Progress',
+                  statusColor: _repsCompleted >= _repsTotal ? Colors.green : const Color.fromARGB(255, 87, 152, 198),
                   hasWarning: false,
                 ),
               ),
@@ -234,15 +366,15 @@ class _MonitorExState extends State<MonitorEx> {
                 height: 160,
                 child: _buildMetricCard(
                   label: 'Accuracy',
-                  value: '87%',
+                  value: '${_accuracy.toStringAsFixed(0)}%',
                   valueColor: const Color.fromARGB(255, 87, 152, 198),
                   showCircle: false,
                   textColor: Colors.black,
                   fontSize: 21,
-                  progress: 0.87,
-                  status: 'On Track',
-                  statusColor: const Color.fromARGB(255, 87, 152, 198),
-                  hasWarning: false,
+                  progress: _accuracy / 100,
+                  status: _accuracy > 80 ? 'High' : (_accuracy > 50 ? 'Moderate' : 'Low'),
+                  statusColor: _accuracy > 80 ? Colors.green : Colors.orange,
+                  hasWarning: _accuracy < 50 && _isMonitoring,
                 ),
               ),
             ),
@@ -252,14 +384,14 @@ class _MonitorExState extends State<MonitorEx> {
                 height: 160,
                 child: _buildMetricCard(
                   label: 'Pain Level',
-                  value: 'Low',
+                  value: _painLevel,
                   valueColor: const Color.fromARGB(255, 99, 197, 150),
                   showCircle: true,
                   textColor: Colors.white,
-                  progress: 0.3,
-                  status: 'Needs Attention',
-                  statusColor: const Color.fromARGB(255, 239, 68, 68),
-                  hasWarning: true,
+                  progress: 0.3, // Static pain progress for now
+                  status: 'Reported: $_painLevel',
+                  statusColor: _painLevel == 'Low' ? Colors.green : Colors.red,
+                  hasWarning: _painLevel != 'Low',
                   statusFontSize: 11,
                 ),
               ),
@@ -382,113 +514,119 @@ class _MonitorExState extends State<MonitorEx> {
   Widget _buildStartMonitoringButton() {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Emergency stop activated')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 239, 68, 68),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+        if (_isMonitoring) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                _toggleMonitoring();
+                _secondsElapsed = 0;
+                _repsCompleted = 0;
+                _accuracy = 0.0;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Emergency stop activated! Session Terminated.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 239, 68, 68),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
-            ),
-            icon: const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.white,
-              size: 22,
-            ),
-            label: const Text(
-              'Emergency Stop',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+              icon: const Icon(
+                Icons.report_problem,
                 color: Colors.white,
-                fontFamily: 'Poppins',
+                size: 22,
+              ),
+              label: const Text(
+                'EMERGENCY STOP',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontFamily: 'Poppins',
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Session ended')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE8EFF5),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                ),
-                icon: const Icon(Icons.stop_circle,
-                    color: Colors.black, size: 20),
-                label: const Text(
-                  'End Session',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _isPaused = !_isPaused;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        _isPaused ? 'Session paused' : 'Session resumed',
-                      ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    _toggleMonitoring();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Session ended successfully')),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE8EFF5),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(13),
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      const Color.fromARGB(255, 87, 152, 198).withOpacity(0.8),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(13),
                   ),
-                ),
-                icon: Icon(
-                  _isPaused
-                      ? Icons.play_circle_filled
-                      : Icons.pause_circle_filled,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                label: Text(
-                  _isPaused ? 'Resume' : 'Pause',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontFamily: 'Poppins',
+                  icon: const Icon(Icons.stop_circle, color: Colors.black, size: 20),
+                  label: const Text(
+                    'End Session',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      fontFamily: 'Poppins',
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _isPaused = !_isPaused;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          _isPaused ? 'Session paused' : 'Session resumed',
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 87, 152, 198).withOpacity(0.8),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                  ),
+                  icon: Icon(
+                    _isPaused ? Icons.play_circle_filled : Icons.pause_circle_filled,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  label: Text(
+                    _isPaused ? 'Resume' : 'Pause',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
@@ -502,16 +640,14 @@ class _MonitorExState extends State<MonitorEx> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  const Color.fromARGB(255, 87, 152, 198).withOpacity(0.8),
+              backgroundColor: const Color.fromARGB(255, 87, 152, 198).withOpacity(0.8),
               padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            icon: const Icon(Icons.accessibility_new,
-                color: Colors.white, size: 22),
+            icon: const Icon(Icons.accessibility_new, color: Colors.white, size: 22),
             label: const Text(
               'Assist Patient Exoskeleton',
               style: TextStyle(
@@ -641,6 +777,35 @@ class _MonitorExState extends State<MonitorEx> {
       backgroundColor: Colors.white,
       selectedItemColor: const Color(0xFF95B8D1),
       unselectedItemColor: Colors.grey,
+      currentIndex: _selectedNavIndex,
+      onTap: (index) {
+        setState(() {
+          _selectedNavIndex = index;
+        });
+        if (index == 0) {
+          // Home - Navigate back home or pop
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const DoctorHome()),
+            );
+          }
+        } else if (index == 1) {
+          // Chats
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const Chats()),
+          );
+        } else if (index == 2) {
+          // Profile
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const DoctorProfile()),
+          );
+        }
+      },
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
