@@ -26,6 +26,18 @@ const doctorController = {
         }
     },
 
+    // GET /api/doctor/patients/all
+    async getAllPatients(req, res) {
+        try {
+            const { name } = req.query;
+            const patients = await dbService.getAllPatients({ name });
+            res.json({ statusCode: 200, data: patients });
+        } catch (error) {
+            console.error('Error fetching all patients:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error fetching all patients' });
+        }
+    },
+
     // GET /api/doctor/availability
     async getAvailability(req, res) {
         try {
