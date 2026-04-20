@@ -4,6 +4,7 @@ import '../widgets/appointment_card.dart';
 import '../widgets/action_card.dart';
 import 'chats_screen.dart';
 import 'profile_screen.dart';
+import '../../../ui/FindDoctorScreen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({super.key});
@@ -70,10 +71,10 @@ class _HomeContent extends StatelessWidget {
               const SizedBox(height: 30),
 
               /// Top Bar
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'FLEXIO',
                     style: TextStyle(
                       fontSize: 22,
@@ -83,9 +84,23 @@ class _HomeContent extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      Icon(Icons.notifications_none_rounded),
-                      SizedBox(width: 20),
-                      Icon(Icons.settings_outlined),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.search_rounded,
+                          color: AppColors.primaryBlue,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const FindDoctorScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Icon(Icons.notifications_none_rounded),
+                      const SizedBox(width: 20),
+                      const Icon(Icons.settings_outlined),
                     ],
                   )
                 ],

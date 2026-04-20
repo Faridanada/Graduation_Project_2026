@@ -94,7 +94,7 @@ class _FindDoctorScreenState extends State<FindDoctorScreen> {
                           children: [
                             CircleAvatar(
                               radius: 30,
-                              backgroundColor: const Color(0xFF4A90E2).withOpacity(0.1),
+                              backgroundColor: const Color(0xFF4A90E2).withValues(alpha: 0.1),
                               child: Text(
                                 name[0].toUpperCase(),
                                 style: const TextStyle(
@@ -152,3 +152,4 @@ class _FindDoctorScreenState extends State<FindDoctorScreen> {
     );
   }
 }
+

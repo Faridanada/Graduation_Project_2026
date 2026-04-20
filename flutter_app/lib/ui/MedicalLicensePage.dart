@@ -195,7 +195,7 @@ class _MedicalLicensePageState extends State<MedicalLicensePage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border(left: BorderSide(color: statusColor, width: 4)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,3 +228,4 @@ class _MedicalLicensePageState extends State<MedicalLicensePage> {
     );
   }
 }
+

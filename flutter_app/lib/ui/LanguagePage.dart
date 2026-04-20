@@ -129,7 +129,7 @@ class _LanguagePageState extends State<LanguagePage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF6BA5CF).withOpacity(0.1)
+              ? const Color(0xFF6BA5CF).withValues(alpha: 0.1)
               : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: isSelected
@@ -138,14 +138,14 @@ class _LanguagePageState extends State<LanguagePage> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF6BA5CF).withOpacity(0.1),
+                    color: const Color(0xFF6BA5CF).withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -200,3 +200,4 @@ class _LanguagePageState extends State<LanguagePage> {
     );
   }
 }
+

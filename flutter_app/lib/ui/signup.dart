@@ -5,8 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
-import 'OnboardingPage.dart';
 import 'TermsAndConditions.dart';
+import 'DoctorHome.dart';
+import 'patientHome.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -317,10 +318,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     // NEW: Check if email is already in use
-    final isEmailTaken = await ApiService.checkEmailUsage(emailController.text.trim());
+    final isEmailTaken =
+        await ApiService.checkEmailUsage(emailController.text.trim());
     if (isEmailTaken) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This email is already registered. Please use another or log in.')),
+        const SnackBar(
+            content: Text(
+                'This email is already registered. Please use another or log in.')),
       );
       return false;
     }
@@ -369,8 +373,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ageController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('Please complete gender, date of birth, and age'),
+          content: Text('Please complete gender, date of birth, and age'),
         ),
       );
       return false;
@@ -549,14 +552,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
         if (!mounted) return;
 
-        // Take Patient directly to Onboarding
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => OnboardingPage(
-              userEmail: emailController.text.trim(),
+        // Navigate to appropriate home based on role
+        final role = profileData['role'] ?? 'patient';
+        if (role == 'doctor') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const DoctorHome(),
             ),
-          ),
-        );
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const PatientHomeScreen(),
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

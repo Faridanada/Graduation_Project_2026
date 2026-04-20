@@ -103,11 +103,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey[300]),
+          Icon(Icons.notifications_off_outlined,
+              size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
             'No notifications yet',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -122,10 +126,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget _buildNotificationCard(Map<String, dynamic> notif) {
     final bool isRead = notif['isRead'] ?? false;
     final String type = notif['title'] ?? '';
-    
+
     IconData iconData = Icons.notifications;
     Color iconColor = Colors.blue;
-    
+
     if (type.contains('Message')) {
       iconData = Icons.mail_outline;
       iconColor = Colors.orange;
@@ -172,10 +176,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: isRead ? null : Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+          border: isRead
+              ? null
+              : Border.all(color: Colors.blue.withValues(alpha: 0.3), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -188,7 +194,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(iconData, color: iconColor, size: 24),
@@ -206,7 +212,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           notif['title'] ?? 'Notification',
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
+                            fontWeight:
+                                isRead ? FontWeight.w600 : FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),
@@ -215,7 +222,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         Container(
                           width: 8,
                           height: 8,
-                          decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                              color: Colors.blue, shape: BoxShape.circle),
                         ),
                     ],
                   ),
@@ -248,7 +256,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       final date = DateTime.parse(dateStr);
       final now = DateTime.now();
       final diff = now.difference(date);
-      
+
       if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
       if (diff.inHours < 24) return '${diff.inHours}h ago';
       return '${diff.inDays}d ago';

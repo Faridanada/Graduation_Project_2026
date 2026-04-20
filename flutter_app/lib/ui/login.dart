@@ -545,7 +545,7 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
       // Backend currently returns resetToken in the response for dev purposes
       if (res['data']['resetToken'] != null) {
         // print or pre-fill for development testing
-        print("Dev Token: ${res['data']['resetToken']}");
+        debugPrint("Dev Token: ${res['data']['resetToken']}");
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['data']['message'] ?? 'Token sent!')),

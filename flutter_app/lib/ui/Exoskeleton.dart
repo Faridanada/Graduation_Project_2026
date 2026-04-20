@@ -171,7 +171,7 @@ class _ExoskeletonState extends State<Exoskeleton> {
         border: Border.all(color: Colors.grey[300]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -218,15 +218,15 @@ class _ExoskeletonState extends State<Exoskeleton> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF95B8D1).withOpacity(0.5),
-            const Color(0xFF95B8D1).withOpacity(0.1),
+            const Color(0xFF95B8D1).withValues(alpha: 0.5),
+            const Color(0xFF95B8D1).withValues(alpha: 0.1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF95B8D1).withOpacity(0.3),
+          color: const Color(0xFF95B8D1).withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -264,7 +264,7 @@ class _ExoskeletonState extends State<Exoskeleton> {
               backgroundColor: Colors.white,
               valueColor: AlwaysStoppedAnimation<Color>(
                 isExample
-                    ? const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6)
+                    ? const Color.fromRGBO(128, 155, 206, 1).withValues(alpha: 0.6)
                     : const Color(0xFF95B8D1),
               ),
             ),
@@ -309,7 +309,7 @@ class _ExoskeletonState extends State<Exoskeleton> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -322,7 +322,7 @@ class _ExoskeletonState extends State<Exoskeleton> {
                 fontSize: 20,
                 fontWeight: isExample ? FontWeight.w500 : FontWeight.bold,
                 color: isExample
-                    ? Colors.grey[400]!.withOpacity(0.5)
+                    ? Colors.grey[400]!.withValues(alpha: 0.5)
                     : const Color(0xFF95B8D1),
               ),
             ),
@@ -629,3 +629,4 @@ class _ExoskeletonState extends State<Exoskeleton> {
     );
   }
 }
+

@@ -33,7 +33,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
     try {
       final profile = await ApiService.getUserProfile() ?? {};
       final stats = await ApiService.getDoctorStats();
-      
+
       if (mounted) {
         setState(() {
           userProfile = profile;
@@ -116,7 +116,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -147,9 +147,11 @@ class _DoctorProfileState extends State<DoctorProfile> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  (userProfile['role'] ?? '').toString().toUpperCase(),
+                                  (userProfile['role'] ?? '')
+                                      .toString()
+                                      .toUpperCase(),
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withValues(alpha: 0.9),
                                     fontSize: 14,
                                   ),
                                 ),
@@ -157,7 +159,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                                 Text(
                                   userProfile['email'] ?? '',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -180,7 +182,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: Offset(0, 5),
                     ),
@@ -264,15 +266,23 @@ class _DoctorProfileState extends State<DoctorProfile> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: isLoading 
-                          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                          : _buildStatCard('${doctorStats['activePatients'] ?? 0}', 'Active Patients'),
+                      child: isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                  color: Colors.white))
+                          : _buildStatCard(
+                              '${doctorStats['activePatients'] ?? 0}',
+                              'Active Patients'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: isLoading 
-                          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                          : _buildStatCard('${doctorStats['todaySessions'] ?? 0}', 'Total Sessions'),
+                      child: isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                  color: Colors.white))
+                          : _buildStatCard(
+                              '${doctorStats['todaySessions'] ?? 0}',
+                              'Total Sessions'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -296,10 +306,10 @@ class _DoctorProfileState extends State<DoctorProfile> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(15),
                       border: Border.all(
-                        color: Colors.red.withOpacity(0.3),
+                        color: Colors.red.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -389,7 +399,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF6BA5CF).withOpacity(0.1),
+                color: const Color(0xFF6BA5CF).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -429,34 +439,36 @@ class _DoctorProfileState extends State<DoctorProfile> {
 
   Widget _buildStatCard(String value, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+      height: 64,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             value,
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 0),
           Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               color: Colors.grey[600],
             ),
           ),

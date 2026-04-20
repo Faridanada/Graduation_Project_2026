@@ -183,7 +183,7 @@ class _PatientRequestState extends State<PatientRequest> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -202,7 +202,7 @@ class _PatientRequestState extends State<PatientRequest> {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5798C6).withOpacity(0.2),
+                  color: const Color(0xFF5798C6).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(25),
                 ),
                 child: Center(
@@ -356,3 +356,4 @@ class _PatientRequestState extends State<PatientRequest> {
     );
   }
 }
+
