@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'MonitorEx.dart';
 import 'patientRequest.dart';
 import 'AiReports.dart';
 import 'ManageWounds.dart';
@@ -46,7 +45,7 @@ class _DoctorHomeState extends State<DoctorHome> {
       final stats = await ApiService.getDoctorStats();
       final patients = await ApiService.getDoctorPatients();
       final appointments = await ApiService.getDoctorTodayAppointments();
-      
+
       if (mounted) {
         setState(() {
           doctorStats = stats;
@@ -120,7 +119,8 @@ class _DoctorHomeState extends State<DoctorHome> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const NotificationsPage()),
+              MaterialPageRoute(
+                  builder: (context) => const NotificationsPage()),
             ).then((_) => _loadDashboardData());
           },
           child: Stack(
@@ -130,7 +130,8 @@ class _DoctorHomeState extends State<DoctorHome> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Icon(
                   Icons.notifications_none,
-                  color: (doctorStats['alerts'] != null && doctorStats['alerts'] > 0)
+                  color: (doctorStats['alerts'] != null &&
+                          doctorStats['alerts'] > 0)
                       ? Colors.blue
                       : Colors.grey,
                   size: 28,
@@ -141,15 +142,20 @@ class _DoctorHomeState extends State<DoctorHome> {
                   right: 8,
                   top: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.red,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    constraints:
+                        const BoxConstraints(minWidth: 16, minHeight: 16),
                     child: Text(
                       '${doctorStats['alerts']}',
-                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -290,15 +296,15 @@ class _DoctorHomeState extends State<DoctorHome> {
               ),
               GestureDetector(
                 onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => RemindersDetailsPage(
-                          todayAppointments: todayAppointments,
-                          doctorStats: doctorStats,
-                        ),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RemindersDetailsPage(
+                        todayAppointments: todayAppointments,
+                        doctorStats: doctorStats,
                       ),
-                    );
+                    ),
+                  );
                 },
                 child: const Text(
                   'See All >',
@@ -344,14 +350,17 @@ class _DoctorHomeState extends State<DoctorHome> {
                         const SizedBox(height: 8),
                         if (todayAppointments.isNotEmpty)
                           ...todayAppointments.map((apt) {
-                            final timeTitle = '${apt['time'] ?? '??:??'} · ${apt['patientName'] ?? 'Patient'}';
-                            return _buildReminderItem(timeTitle, apt['id'] ?? 'apt_${apt['time']}', false);
+                            final timeTitle =
+                                '${apt['time'] ?? '??:??'} · ${apt['patientName'] ?? 'Patient'}';
+                            return _buildReminderItem(timeTitle,
+                                apt['id'] ?? 'apt_${apt['time']}', false);
                           })
                         else
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 6),
                             child: Text('No appointments today.',
-                                style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                style: TextStyle(
+                                    color: Colors.grey, fontSize: 13)),
                           ),
                       ],
                     ),
@@ -371,12 +380,16 @@ class _DoctorHomeState extends State<DoctorHome> {
                         ),
                         const SizedBox(height: 8),
                         if ((doctorStats['pendingReviews'] ?? 0) > 0)
-                          _buildReminderItem('Review ${doctorStats['pendingReviews']} Pending Exercises', 'ex_reviews', false)
+                          _buildReminderItem(
+                              'Review ${doctorStats['pendingReviews']} Pending Exercises',
+                              'ex_reviews',
+                              false)
                         else
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 6),
                             child: Text('No pending tasks.',
-                                style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                style: TextStyle(
+                                    color: Colors.grey, fontSize: 13)),
                           ),
                       ],
                     ),
@@ -557,7 +570,8 @@ class _DoctorHomeState extends State<DoctorHome> {
                     'age': patient['profileData']?['age']?.toString() ?? 'N/A',
                     'progress': '0', // Not yet tracked in backend
                     'status': 'New',
-                    'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                    'statusColor':
+                        const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
                   };
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
@@ -673,7 +687,8 @@ class _DoctorHomeState extends State<DoctorHome> {
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
-                value: (double.tryParse(patient['progress'].toString()) ?? 0) / 100,
+                value: (double.tryParse(patient['progress'].toString()) ?? 0) /
+                    100,
                 minHeight: 6,
                 backgroundColor: Colors.grey[200],
                 valueColor: AlwaysStoppedAnimation<Color>(
@@ -734,10 +749,10 @@ class _DoctorHomeState extends State<DoctorHome> {
             childAspectRatio: 1.3,
             children: [
               _buildActivityTile(
-                label: 'Monitor Exercise',
+                label: 'Assist Patients',
                 icon: Icons.favorite,
                 color: Colors.blue[200],
-                route: const MonitorEx(),
+                route: const PatientRequest(),
               ),
               _buildActivityTile(
                 label: 'Appointments',
@@ -1013,7 +1028,8 @@ class RemindersDetailsPage extends StatelessWidget {
               _InfoCard(
                 children: [
                   _NoteRow(
-                    text: '${doctorStats['alerts']} critical alerts require response.',
+                    text:
+                        '${doctorStats['alerts']} critical alerts require response.',
                   ),
                 ],
               ),
@@ -1303,14 +1319,17 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
       final fetched = await ApiService.getDoctorPatients();
       if (mounted) {
         setState(() {
-          _patients = fetched.map((p) => {
-            'id': p['id'] ?? p['_id'] ?? '',
-            'name': p['name'] ?? 'Unknown',
-            'age': p['age'] ?? 0,
-            'progress': 0, // Mock for now
-            'status': 'On Track',
-            'statusColor': const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-          }).toList();
+          _patients = fetched
+              .map((p) => {
+                    'id': p['id'] ?? p['_id'] ?? '',
+                    'name': p['name'] ?? 'Unknown',
+                    'age': p['age'] ?? 0,
+                    'progress': 0, // Mock for now
+                    'status': 'On Track',
+                    'statusColor':
+                        const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                  })
+              .toList();
           isLoading = false;
         });
       }
@@ -1393,33 +1412,33 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
             ),
           ),
           Expanded(
-            child: isLoading 
-              ? const Center(child: CircularProgressIndicator())
-              : patients.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No patients found',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w600,
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : patients.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No patients found',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    : GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.76,
+                        ),
+                        itemCount: patients.length,
+                        itemBuilder: (context, index) {
+                          return _AllPatientCard(patient: patients[index]);
+                        },
                       ),
-                    ),
-                  )
-                : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.76,
-                    ),
-                    itemCount: patients.length,
-                    itemBuilder: (context, index) {
-                      return _AllPatientCard(patient: patients[index]);
-                    },
-                  ),
           ),
         ],
       ),
@@ -1553,7 +1572,8 @@ class _AllPatientCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
-                value: (double.tryParse(patient['progress'].toString()) ?? 0) / 100,
+                value: (double.tryParse(patient['progress'].toString()) ?? 0) /
+                    100,
                 minHeight: 6,
                 backgroundColor: Colors.grey[200],
                 valueColor: AlwaysStoppedAnimation<Color>(
