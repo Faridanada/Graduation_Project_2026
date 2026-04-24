@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../services/api_service.dart';
+import 'NotificationsPage.dart';
+import 'SettingsPage.dart';
+import 'patientHome.dart';
+
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -9,39 +14,59 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   int selectedTab = 0;
+  bool isLoading = true;
+  int unreadNotifs = 0;
 
-  final List<Map<String, dynamic>> sessions = [
-    {
-      "date": "10 Feb 2026",
-      "title": "Knee Flexion",
-      "duration": "12 min",
-      "status": "Improved",
-    },
-    {
-      "date": "08 Feb 2026",
-      "title": "Balance Training",
-      "duration": "15 min",
-      "status": "Stable",
-    },
-    {
-      "date": "05 Feb 2026",
-      "title": "Shoulder Rotation",
-      "duration": "10 min",
-      "status": "Needs Work",
-    },
-    {
-      "date": "02 Feb 2026",
-      "title": "Stretching Routine",
-      "duration": "18 min",
-      "status": "Improved",
-    },
-    {
-      "date": "02 Feb 2026",
-      "title": "Stretching Routine",
-      "duration": "18 min",
-      "status": "Improved",
-    },
-  ];
+  List<Map<String, dynamic>> sessions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHistory();
+  }
+
+  Future<void> _fetchHistory() async {
+    try {
+      final data = await ApiService.getPatientExercises();
+      final stats = await ApiService.getPatientDashboardStats();
+      int unread = stats['unreadNotifications'] ?? 0;
+      
+      List<Map<String, dynamic>> mapped = data.map((e) {
+        // Map completions to status logic
+        int total = e['repsTotal'] ?? 10;
+        int completed = e['repsCompleted'] ?? 0;
+        
+        String status = "Stable";
+        if (completed >= total) status = "Improved";
+        else if (completed > 0) status = "Needs Work";
+        else status = "Needs Work";
+
+        String dateStr = e['dateAssigned'] ?? e['createdAt'] ?? '';
+        String shortDate = dateStr.length > 10 ? dateStr.substring(0, 10) : dateStr;
+
+        return {
+          "date": shortDate,
+          "title": e['title'] ?? 'Exercise',
+          "duration": "${e['estimatedTimeMin'] ?? 10} min",
+          "status": status,
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          sessions = mapped;
+          unreadNotifs = unread;
+          isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
 
   List<Map<String, dynamic>> get filteredSessions {
     if (selectedTab == 1) {
@@ -64,9 +89,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               /// HEADER
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back),
                   ),
                   const Spacer(),
                   const Text(
@@ -74,25 +99,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
-                  Stack(
-                    children: [
-                      const Icon(Icons.notifications_none),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
+                  IconButton(
+                    icon: Badge(
+                      isLabelVisible: unreadNotifs > 0,
+                      label: Text('$unreadNotifs'),
+                      child: const Icon(Icons.notifications_outlined),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                      ).then((_) => _fetchHistory());
+                    },
                   ),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.settings),
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SettingsPage()),
+                      );
+                    },
+                  ),
                 ],
               ),
 
@@ -129,20 +157,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
               /// LIST
               Expanded(
-                child: ListView.builder(
-                  itemCount: filteredSessions.length,
-                  itemBuilder: (context, index) {
-                    final item = filteredSessions[index];
-                    return _sessionCard(item);
-                  },
-                ),
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : filteredSessions.isEmpty
+                        ? const Center(child: Text("No history available yet", style: TextStyle(color: Colors.grey)))
+                        : ListView.builder(
+                            itemCount: filteredSessions.length,
+                            itemBuilder: (context, index) {
+                              final item = filteredSessions[index];
+                              return _sessionCard(item);
+                            },
+                          ),
               ),
             ],
           ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
+        selectedItemColor: Colors.black54,
+        unselectedItemColor: Colors.black54,
+        showUnselectedLabels: true,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PatientHomeScreen()));
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chats"),

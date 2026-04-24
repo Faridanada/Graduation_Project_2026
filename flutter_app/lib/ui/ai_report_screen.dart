@@ -1,8 +1,77 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-class AiReportScreen extends StatelessWidget {
+import '../services/api_service.dart';
+import 'NotificationsPage.dart';
+import 'SettingsPage.dart';
+import 'patientHome.dart';
+
+class AiReportScreen extends StatefulWidget {
   const AiReportScreen({super.key});
+
+  @override
+  State<AiReportScreen> createState() => _AiReportScreenState();
+}
+
+class _AiReportScreenState extends State<AiReportScreen> {
+  bool isLoading = true;
+  double progressScore = 0.0;
+  String trendMessage = "+ 0% improvement from last week";
+  Color trendColor = Colors.grey;
+  List<double> weeklyProgress = [0, 0, 0, 0, 0, 0];
+  int unreadNotifs = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
+
+  Future<void> _fetchStats() async {
+    try {
+      final stats = await ApiService.getPatientDashboardStats();
+      double score = 0.0;
+
+      if (stats['exerciseStats'] != null) {
+        int total = stats['exerciseStats']['total'] ?? 0;
+        int completed = stats['exerciseStats']['completed'] ?? 0;
+        if (total > 0) score = completed / total;
+      }
+
+      String tMsg = "";
+      Color tCol = Colors.grey;
+      if (score > 0.8) {
+        tMsg = "+ 5% improvement from last week";
+        tCol = Colors.green;
+      } else if (score > 0.5) {
+        tMsg = "Steady progress maintained";
+        tCol = Colors.blue;
+      } else {
+        tMsg = "Requires more consistent sessions";
+        tCol = Colors.orange;
+      }
+
+      List<double> wp = [0, 0, 0, 0, 0, 0];
+      if (stats['weeklyProgress'] != null) {
+        wp = List<double>.from(stats['weeklyProgress'].map((x) => x.toDouble()));
+      }
+      
+      int unread = stats['unreadNotifications'] ?? 0;
+
+      if (mounted) {
+        setState(() {
+          progressScore = score;
+          trendMessage = tMsg;
+          trendColor = tCol;
+          weeklyProgress = wp;
+          unreadNotifs = unread;
+          isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,25 +110,32 @@ class AiReportScreen extends StatelessWidget {
                     const Spacer(),
                     Row(
                       children: [
-                        Stack(
-                          children: [
-                            const Icon(Icons.notifications_none),
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Badge(
+                              isLabelVisible: unreadNotifs > 0,
+                              label: Text('$unreadNotifs'),
+                              child: const Icon(Icons.notifications_outlined),
                             ),
-                          ],
-                        ),
-                        const SizedBox(width: 10),
-                        const Icon(Icons.settings),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const NotificationsPage()),
+                              ).then((_) => _fetchStats());
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.settings),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SettingsPage()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                       ],
                     ),
                   ],
@@ -86,16 +162,16 @@ class AiReportScreen extends StatelessWidget {
                           alignment: Alignment.center,
                           children: [
                             CircularProgressIndicator(
-                              value: 0.82,
+                              value: progressScore,
                               strokeWidth: 8,
                               backgroundColor: Colors.grey.shade200,
                               valueColor: const AlwaysStoppedAnimation(
                                 Colors.blue,
                               ),
                             ),
-                            const Text(
-                              "82%",
-                              style: TextStyle(
+                            Text(
+                              isLoading ? "..." : "${(progressScore * 100).toInt()}%",
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
@@ -118,13 +194,10 @@ class AiReportScreen extends StatelessWidget {
                                 fontSize: 16,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            const Text("You are progressing well!"),
-                            const SizedBox(height: 6),
-                            const Text(
-                              "+ 5% improvement from last week",
+                            Text(
+                              trendMessage,
                               style: TextStyle(
-                                color: Colors.green,
+                                color: trendColor,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -152,30 +225,23 @@ class AiReportScreen extends StatelessWidget {
                         child: Stack(
                           children: [
                             Positioned.fill(
-                              child: CustomPaint(painter: _LinePainter()),
+                              child: CustomPaint(painter: _DynamicLinePainter(weeklyProgress)),
                             ),
-                            const Positioned(
+                            Positioned(
                               right: 0,
                               top: 10,
                               child: Text(
-                                "92%",
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                isLoading ? "..." : "${(progressScore * 100).toInt()}%",
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("Tue"),
-                          Text("Wed"),
-                          Text("Thu"),
-                          Text("Fri"),
-                          Text("Sat"),
-                          Text("Sun"),
-                        ],
+                        children: _getLast6Days().map((day) => Text(day, style: const TextStyle(fontSize: 12))).toList(),
                       ),
                     ],
                   ),
@@ -193,9 +259,10 @@ class AiReportScreen extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
-                      _alertCard("Mild fatigue detected during last session"),
-                      const SizedBox(height: 10),
-                      _alertCard("Slight inconsistency in exercise timing"),
+                      const Text(
+                        "No alerts at this time.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     ],
                   ),
                 ),
@@ -212,11 +279,10 @@ class AiReportScreen extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
-                      _recommendationCard(
-                        "Stretch 5 minutes before starting exercises",
+                      const Text(
+                        "No recommendations at this time.",
+                        style: TextStyle(color: Colors.grey),
                       ),
-                      const SizedBox(height: 10),
-                      _recommendationCard("Maintain consistent session timing"),
                     ],
                   ),
                 ),
@@ -253,13 +319,21 @@ class AiReportScreen extends StatelessWidget {
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chats"),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        selectedItemColor: Colors.black54,
+        unselectedItemColor: Colors.black54,
+        showUnselectedLabels: true,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PatientHomeScreen()));
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chats"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+        ],
+      ),
       ),
     );
   }
@@ -317,40 +391,52 @@ class AiReportScreen extends StatelessWidget {
       ),
     );
   }
+  List<String> _getLast6Days() {
+    final now = DateTime.now();
+    return List.generate(6, (i) {
+      final d = now.subtract(Duration(days: 5 - i));
+      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      return days[d.weekday - 1];
+    });
+  }
 }
 
 /// 📈 LINE CHART
-class _LinePainter extends CustomPainter {
+class _DynamicLinePainter extends CustomPainter {
+  final List<double> data;
+  _DynamicLinePainter(this.data);
+
   @override
   void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
     final line = Paint()
       ..color = Colors.blue.shade200
-      ..strokeWidth = 2;
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
 
     final dot = Paint()..color = Colors.blue;
 
-    final points = [
-      Offset(0, size.height * 0.7),
-      Offset(size.width * 0.2, size.height * 0.68),
-      Offset(size.width * 0.4, size.height * 0.66),
-      Offset(size.width * 0.6, size.height * 0.63),
-      Offset(size.width * 0.8, size.height * 0.6),
-      Offset(size.width, size.height * 0.58),
-    ];
+    List<Offset> points = [];
+    double stepX = size.width / (data.length - 1);
+    for (int i = 0; i < data.length; i++) {
+       double padding = size.height * 0.2;
+       double h = size.height - (padding * 2);
+       double y = (size.height - padding) - (data[i] * h);
+       points.add(Offset(stepX * i, y));
+    }
 
     final path = Path()..moveTo(points[0].dx, points[0].dy);
-
-    for (var p in points) {
-      path.lineTo(p.dx, p.dy);
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].dx, points[i].dy);
     }
 
     canvas.drawPath(path, line);
-
     for (var p in points) {
       canvas.drawCircle(p, 4, dot);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DynamicLinePainter oldDelegate) => true;
 }

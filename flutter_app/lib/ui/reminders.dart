@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'patientHome.dart';
+import '../services/api_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -11,23 +12,32 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  bool medicationTaken = false;
-
-  int remainingMinutes = 20;
+  bool isLoading = true;
+  List<dynamic> remindersList = [];
   Timer? timer;
 
   @override
   void initState() {
     super.initState();
+    _fetchReminders();
+  }
 
-    /// ⏱ REAL-TIME COUNTDOWN
-    timer = Timer.periodic(const Duration(seconds: 60), (timer) {
-      if (remainingMinutes > 0) {
+  Future<void> _fetchReminders() async {
+    try {
+      final fetchedReminders = await ApiService.getPatientReminders();
+      if (mounted) {
         setState(() {
-          remainingMinutes--;
+          remindersList = fetchedReminders;
+          isLoading = false;
         });
       }
-    });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -65,348 +75,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                     const SizedBox(width: 10),
                     const Text(
-                      "Notifications",
+                      "Reminders",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Spacer(),
-                    Stack(
-                      children: [
-                        const Icon(Icons.notifications_none),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Text(
-                              "1",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.settings),
                   ],
                 ),
 
                 const SizedBox(height: 20),
 
-                /// 🔔 NEXT REMINDER (UPDATED)
-                _glassCard(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.notifications, color: Colors.blue),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Next Reminder in $remainingMinutes min",
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              "💊 Medication at 09:00 AM",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                const Text(
-                  "TODAY",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-
-                const SizedBox(height: 10),
-
-                /// 💊 MEDICATION
-                Dismissible(
-                  key: const Key("medication"),
-                  background: _swipeBg(Colors.green, Icons.check),
-                  secondaryBackground: _swipeBg(Colors.red, Icons.delete),
-                  onDismissed: (_) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Notification dismissed")),
-                    );
-                  },
-                  child: _glassCard(
+                if (isLoading)
+                  const Center(child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: CircularProgressIndicator(),
+                  ))
+                else if (remindersList.isEmpty)
+                  Center(
                     child: Column(
                       children: [
-                        Row(
-                          children: [
-                            const CircleAvatar(
-                              backgroundColor: Color(0xFFFFF3C4),
-                              child: Icon(
-                                Icons.medication,
-                                color: Colors.orange,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Medication Reminder",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    "Take your morning medication",
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Text("09:00 AM"),
-                          ],
-                        ),
-                        const Divider(),
-                        Row(
-                          children: [
-                            _statusDot(Colors.orange),
-                            const SizedBox(width: 6),
-                            _chip("Pending", Colors.orange),
-                            const Spacer(),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  medicationTaken = true;
-                                });
-                              },
-                              child: Text(
-                                medicationTaken ? "Taken" : "Mark as Taken",
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
+                        const SizedBox(height: 50),
+                        Icon(Icons.check_circle_outline, size: 80, color: Colors.grey[300]),
+                        const SizedBox(height: 16),
+                        const Text("No reminders at the moment!", 
+                          style: TextStyle(color: Colors.grey, fontSize: 16)),
                       ],
                     ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                /// 🏋️ EXERCISE (UPDATED)
-                _glassCard(
-                  child: Column(
-                    children: [
-                      Row(
-                        children: const [
-                          CircleAvatar(
-                            backgroundColor: Color(0xFFE6D8FF),
-                            child: Icon(Icons.fitness_center),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Exercise Session",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  "Knee Flexion — Passive Mode",
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text("09:00 AM"),
-                        ],
-                      ),
-
-                      const Divider(),
-
-                      /// ✅ FIXED LAYOUT
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          /// LEFT SIDE
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: const [
-                                  Icon(Icons.access_time, size: 16),
-                                  SizedBox(width: 5),
-                                  Text("15 min | Due Today"),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-
-                              /// 👇 PASSIVE MODE
-                              Row(
-                                children: [
-                                  _statusDot(Color.fromARGB(255, 28, 230, 71)),
-                                  const SizedBox(width: 6),
-                                  _chip(
-                                    "Passive",
-                                    const Color.fromARGB(255, 28, 230, 71),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-
-                          const Spacer(),
-
-                          /// BUTTON
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                            onPressed: () {},
-                            child: const Text(
-                              "Start Now",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// UPCOMING
-                const Text(
-                  "UPCOMING",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-
-                const SizedBox(height: 10),
-
-                _glassCard(
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        backgroundColor: Color(0xFFDCE8FF),
-                        child: Icon(Icons.directions_walk),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Activity Reminder",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              "Walk for 20 minutes",
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        children: [
-                          const Text("15 min"),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              _statusDot(Colors.orange),
-                              const SizedBox(width: 4),
-                              _chip("Upcoming", Colors.orange),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// COMPLETED
-                const Text(
-                  "COMPLETED",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-
-                const SizedBox(height: 10),
-
-                _glassCard(
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        backgroundColor: Color(0xFFFFF3C4),
-                        child: Icon(Icons.medication),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Medication Reminder",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              "Take your morning medication",
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        children: [
-                          const Text("09:00 AM"),
-                          Row(
-                            children: [
-                              _statusDot(Colors.green),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.check,
-                                color: Colors.green,
-                                size: 18,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                  )
+                else
+                  ...remindersList.map((reminder) => _buildReminderCard(reminder)),
+                
               ],
             ),
           ),
@@ -414,10 +113,71 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
         /// NAV BAR
         bottomNavigationBar: BottomNavigationBar(
-          items: [
+          selectedItemColor: Colors.black54, // Dull color so it doesn't look "lit up"
+          unselectedItemColor: Colors.black54,
+          showUnselectedLabels: true,
+          onTap: (index) {
+            if (index == 0) {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PatientHomeScreen()));
+            } else if (index == 1) {
+              // Ignore or route to chats
+            } else if (index == 2) {
+              // Ignore or route to profile
+            }
+          },
+          items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
             BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chats"),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReminderCard(dynamic reminder) {
+    String title = reminder['title'] ?? 'Reminder';
+    String message = reminder['message'] ?? 'You have a new reminder.';
+    String time = reminder['time'] ?? 'Today';
+    bool completed = reminder['completed'] == true;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _glassCard(
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: completed ? Colors.green[100] : Colors.blue[100],
+              child: Icon(
+                completed ? Icons.check : Icons.notification_important,
+                color: completed ? Colors.green : Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message,
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(time, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 6),
+                _chip(completed ? "Done" : "Pending", completed ? Colors.green : Colors.orange),
+              ],
+            ),
           ],
         ),
       ),

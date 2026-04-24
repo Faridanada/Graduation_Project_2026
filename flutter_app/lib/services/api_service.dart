@@ -322,6 +322,36 @@ class ApiService {
     return [];
   }
 
+  static Future<List<dynamic>> getPatientExercises() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/patient/exercises"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? [];
+    }
+    return [];
+  }
+
+  static Future<Map<String, dynamic>> getPatientDashboardStats() async {
+    final token = await _getToken();
+    if (token == null) return {};
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/patient/stats"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? {};
+    }
+    return {};
+  }
+
   static Future<Map<String, dynamic>?> getPatientNextAppointment() async {
     final token = await _getToken();
     if (token == null) return null;

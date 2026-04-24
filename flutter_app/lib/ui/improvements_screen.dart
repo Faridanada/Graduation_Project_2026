@@ -3,9 +3,75 @@ import 'package:flutter/material.dart';
 import 'ai_report_screen.dart';
 import 'history_screen.dart';
 import 'real_time_data_page.dart';
+import 'NotificationsPage.dart';
+import 'SettingsPage.dart';
 
-class ImprovementScreen extends StatelessWidget {
+import '../services/api_service.dart';
+
+class ImprovementScreen extends StatefulWidget {
   const ImprovementScreen({super.key});
+
+  @override
+  State<ImprovementScreen> createState() => _ImprovementScreenState();
+}
+
+class _ImprovementScreenState extends State<ImprovementScreen> {
+  bool isLoading = true;
+  double progressScore = 0.0;
+  String latestExerciseTitle = "No History Yet";
+  String latestExerciseTime = "";
+  List<double> weeklyProgress = [0, 0, 0, 0, 0, 0];
+  int unreadNotifs = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      final stats = await ApiService.getPatientDashboardStats();
+      final exercises = await ApiService.getPatientExercises();
+
+      double score = 0.0;
+      if (stats['exerciseStats'] != null) {
+        int total = stats['exerciseStats']['total'] ?? 0;
+        int completed = stats['exerciseStats']['completed'] ?? 0;
+        if (total > 0) {
+          score = completed / total;
+        }
+      }
+
+      String exTitle = "No History Yet";
+      String exTime = "";
+      if (exercises.isNotEmpty) {
+        final latest = exercises[0];
+        exTitle = latest['title'] ?? 'Exercise';
+        exTime = '${latest['estimatedTimeMin'] ?? 10} min';
+      }
+
+      List<double> wp = [0, 0, 0, 0, 0, 0];
+      if (stats['weeklyProgress'] != null) {
+        wp = List<double>.from(stats['weeklyProgress'].map((x) => x.toDouble()));
+      }
+      
+      int unread = stats['unreadNotifications'] ?? 0;
+
+      if (mounted) {
+        setState(() {
+          progressScore = score;
+          latestExerciseTitle = exTitle;
+          latestExerciseTime = exTime;
+          weeklyProgress = wp;
+          unreadNotifs = unread;
+          isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,29 +108,32 @@ class ImprovementScreen extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    Row(
-                      children: [
-                        Stack(
-                          children: [
-                            const Icon(Icons.notifications_none),
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Badge(
+                              isLabelVisible: unreadNotifs > 0,
+                              label: Text('$unreadNotifs'),
+                              child: const Icon(Icons.notifications_outlined),
                             ),
-                          ],
-                        ),
-                        const SizedBox(width: 10),
-                        const Icon(Icons.settings),
-                      ],
-                    ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const NotificationsPage()),
+                              ).then((_) => _fetchData());
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.settings),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SettingsPage()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                   ],
                 ),
 
@@ -89,16 +158,16 @@ class ImprovementScreen extends StatelessWidget {
                             alignment: Alignment.center,
                             children: [
                               CircularProgressIndicator(
-                                value: 0.82,
+                                value: progressScore,
                                 strokeWidth: 8,
                                 backgroundColor: Colors.grey.shade200,
                                 valueColor: const AlwaysStoppedAnimation(
                                   Colors.blue,
                                 ),
                               ),
-                              const Text(
-                                "82%",
-                                style: TextStyle(
+                              Text(
+                                isLoading ? "..." : "${(progressScore * 100).toInt()}%",
+                                style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,
                                 ),
@@ -123,11 +192,6 @@ class ImprovementScreen extends StatelessWidget {
                               ),
                               SizedBox(height: 6),
                               Text("Recovery Score"),
-                              SizedBox(height: 6),
-                              Text(
-                                "+5% improvement from last week",
-                                style: TextStyle(color: Colors.green),
-                              ),
                             ],
                           ),
                         ),
@@ -154,31 +218,23 @@ class ImprovementScreen extends StatelessWidget {
                   child: _glassCard(
                     child: Row(
                       children: [
-                        const CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            "https://i.pravatar.cc/150?img=3",
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 "History",
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
                               ),
-                              SizedBox(height: 4),
-                              Text("Knee Flexion"),
-                              Text("12 min", style: TextStyle(fontSize: 12)),
+                              const SizedBox(height: 4),
+                              Text(latestExerciseTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text(latestExerciseTime, style: const TextStyle(fontSize: 12)),
                             ],
                           ),
                         ),
-                        _chip("Improved", Colors.blue),
-                        const SizedBox(width: 6),
                         const Icon(Icons.chevron_right),
                       ],
                     ),
@@ -210,41 +266,6 @@ class ImprovementScreen extends StatelessWidget {
                             Icon(Icons.chevron_right),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF4FF),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            children: [
-                              const Text(
-                                "98",
-                                style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Text("BPM"),
-                              const Spacer(),
-                              Column(
-                                children: const [
-                                  Icon(Icons.show_chart, color: Colors.blue),
-                                  SizedBox(height: 4),
-                                  Text("4 kcal",
-                                      style: TextStyle(fontSize: 11)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          "Normal range",
-                          style: TextStyle(fontSize: 12),
-                        ),
                       ],
                     ),
                   ),
@@ -264,42 +285,28 @@ class ImprovementScreen extends StatelessWidget {
 
                       const SizedBox(height: 20),
 
-                      /// CLEAN FIGMA STYLE GRAPH
                       SizedBox(
                         height: 100,
                         child: Stack(
                           children: [
-                            /// LINE
                             Positioned.fill(
-                              child: CustomPaint(painter: _SimpleLinePainter()),
+                              child: CustomPaint(painter: _DynamicLinePainter(weeklyProgress)),
                             ),
-
-                            /// RIGHT LABEL
                             Positioned(
                               right: 0,
                               top: 10,
-                              child: const Text(
-                                "92%",
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                              child: Text(
+                                isLoading ? "..." : "${(progressScore * 100).toInt()}%",
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 10),
-
-                      /// DAYS
-                      const Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("Tue"),
-                          Text("Wed"),
-                          Text("Thu"),
-                          Text("Fri"),
-                          Text("Sat"),
-                          Text("Sun"),
-                        ],
+                        children: _getLast6Days().map((day) => Text(day, style: const TextStyle(fontSize: 12))).toList(),
                       ),
                     ],
                   ),
@@ -346,12 +353,25 @@ class ImprovementScreen extends StatelessWidget {
       child: Text(text, style: TextStyle(color: color, fontSize: 11)),
     );
   }
+
+  List<String> _getLast6Days() {
+    final now = DateTime.now();
+    return List.generate(6, (i) {
+      final d = now.subtract(Duration(days: 5 - i));
+      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      return days[d.weekday - 1];
+    });
+  }
 }
 
-/// ✨ NEW CLEAN LINE (FIGMA STYLE)
-class _SimpleLinePainter extends CustomPainter {
+class _DynamicLinePainter extends CustomPainter {
+  final List<double> data;
+  _DynamicLinePainter(this.data);
+
   @override
   void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+    
     final linePaint = Paint()
       ..color = Colors.blue.shade200
       ..strokeWidth = 2
@@ -359,28 +379,26 @@ class _SimpleLinePainter extends CustomPainter {
 
     final dotPaint = Paint()..color = Colors.blue;
 
-    final points = [
-      Offset(0, size.height * 0.7),
-      Offset(size.width * 0.2, size.height * 0.68),
-      Offset(size.width * 0.4, size.height * 0.66),
-      Offset(size.width * 0.6, size.height * 0.63),
-      Offset(size.width * 0.8, size.height * 0.6),
-      Offset(size.width, size.height * 0.58),
-    ];
-
-    final path = Path()..moveTo(points[0].dx, points[0].dy);
-
-    for (var p in points) {
-      path.lineTo(p.dx, p.dy);
+    List<Offset> points = [];
+    double stepX = size.width / (data.length - 1);
+    for (int i = 0; i < data.length; i++) {
+       double padding = size.height * 0.2;
+       double h = size.height - (padding * 2);
+       double y = (size.height - padding) - (data[i] * h);
+       points.add(Offset(stepX * i, y));
     }
 
+    final path = Path()..moveTo(points[0].dx, points[0].dy);
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].dx, points[i].dy);
+    }
+    
     canvas.drawPath(path, linePaint);
-
     for (var p in points) {
       canvas.drawCircle(p, 4, dotPaint);
     }
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+  bool shouldRepaint(_DynamicLinePainter oldDelegate) => true;
 }

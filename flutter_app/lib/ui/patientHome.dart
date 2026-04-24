@@ -80,6 +80,7 @@ class _HomeContentState extends State<_HomeContent> {
   List<dynamic> todayExercises = [];
   List<dynamic> reminders = [];
   Map<String, dynamic>? nextAppointment;
+  int unreadNotifs = 0;
 
   @override
   void initState() {
@@ -95,6 +96,8 @@ class _HomeContentState extends State<_HomeContent> {
       final exercises = await ApiService.getPatientTodayExercises();
       final fetchedReminders = await ApiService.getPatientReminders();
       final appointment = await ApiService.getPatientNextAppointment();
+      final stats = await ApiService.getPatientDashboardStats();
+      int unread = stats['unreadNotifications'] ?? 0;
 
       if (mounted) {
         setState(() {
@@ -104,6 +107,7 @@ class _HomeContentState extends State<_HomeContent> {
           todayExercises = exercises;
           reminders = fetchedReminders;
           nextAppointment = appointment;
+          unreadNotifs = unread;
           isLoading = false;
         });
       }
@@ -142,14 +146,18 @@ class _HomeContentState extends State<_HomeContent> {
                     IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      icon: const Icon(Icons.notifications_none_rounded, size: 26),
+                    icon: Badge(
+                      isLabelVisible: unreadNotifs > 0,
+                      label: Text('$unreadNotifs'),
+                      child: const Icon(Icons.notifications_outlined, size: 28),
+                    ),
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const NotificationsPage(),
                           ),
-                        );
+                        ).then((_) => _loadDashboardData());
                       },
                     ),
                     const SizedBox(width: 18),

@@ -167,14 +167,38 @@ const patientController = {
 
       // 3. Fetch unread notifications
       const notifications = await dbService.getNotificationsForUser(patientId);
-      const unreadNotifs = notifications.filter(n => !n.isRead).length;
+      const unreadNotifs = notifications.filter(n => n.isRead === false || n.isRead === "false" || n.isRead === undefined).length;
+
+      // 4. Calculate Weekly Progress (last 6 days)
+      const allExercises = await dbService.getAllExercisesForPatient(patientId);
+      let weeklyProgress = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+      const todayDate = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(todayDate.getDate() - i);
+        const dayStr = d.toISOString().split('T')[0];
+        
+        const dayExs = allExercises.filter(ex => {
+          const exDate = new Date(ex.dateAssigned || ex.createdAt);
+          return exDate.toISOString().split('T')[0] === dayStr;
+        });
+
+        if (dayExs.length > 0) {
+          const comps = dayExs.reduce((sum, ex) => sum + (ex.repsCompleted >= (ex.repsTotal || 1) ? 1 : 0), 0);
+          weeklyProgress[5 - i] = comps / dayExs.length;
+        } else {
+          // Carry over previous day's score if none assigned
+          weeklyProgress[5 - i] = (i < 5) ? weeklyProgress[5 - i - 1] : 0;
+        }
+      }
 
       res.json({
         statusCode: 200,
         data: {
           exerciseStats,
           nextAppointment: nextAppt,
-          unreadNotifications: unreadNotifs
+          unreadNotifications: unreadNotifs,
+          weeklyProgress
         }
       });
     } catch (error) {

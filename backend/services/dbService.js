@@ -632,6 +632,7 @@ const dbService = {
 
   async markNotificationRead(notifId) {
     try {
+      console.log(`[dbService] Marking notification ${notifId} as read.`);
       await ddbDocClient.send(new UpdateCommand({
         TableName: "Notifications",
         Key: { id: notifId },
@@ -639,36 +640,42 @@ const dbService = {
         ExpressionAttributeValues: { ":t": true }
       }));
     } catch (error) {
-      console.warn("[markNotificationRead skipped]:", error.message || error);
+      console.warn("[markNotificationRead error]:", error.message || error);
     }
   },
 
   async markAllNotificationsRead(userId) {
+    console.log(`[dbService] Marking all notifications as read for user: ${userId}`);
     try {
-      // Fetch all unread notifications for the user
+      // Fetch all notifications for the user
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Notifications",
-        FilterExpression: "userId = :uid AND isRead = :f",
-        ExpressionAttributeValues: { ":uid": userId, ":f": false }
+        FilterExpression: "userId = :uid",
+        ExpressionAttributeValues: { ":uid": userId }
       }));
 
-      const unreadNotifs = data.Items || [];
+      const allNotifs = data.Items || [];
+      const unreadNotifs = allNotifs.filter(n => !n.isRead || n.isRead === "false");
+      
+      console.log(`[dbService] Found ${unreadNotifs.length} unread notifications out of ${allNotifs.length} total for user ${userId}`);
+
       if (unreadNotifs.length === 0) return true;
 
-      // Update all to true
+      // Update all unread to true
       const promises = unreadNotifs.map(notif => 
         ddbDocClient.send(new UpdateCommand({
           TableName: "Notifications",
           Key: { id: notif.id },
           UpdateExpression: "SET isRead = :t",
           ExpressionAttributeValues: { ":t": true }
-        }))
+        })).catch(err => console.error(`Error updating notification ${notif.id}:`, err))
       );
 
       await Promise.all(promises);
+      console.log(`[dbService] Successfully marked ${unreadNotifs.length} notifications as read.`);
       return true;
     } catch (error) {
-      console.warn("[markAllNotificationsRead skipped]:", error.message || error);
+      console.error("[markAllNotificationsRead error]:", error);
       return false;
     }
   },
