@@ -4,6 +4,8 @@ import 'NotificationsPage.dart';
 import 'DoctorHome.dart';
 import 'Chats.dart';
 import 'DoctorProfile.dart';
+import 'MonitorEx.dart';
+import 'ActivePatientsPage.dart';
 import '../services/api_service.dart';
 
 class PatientRequest extends StatefulWidget {
@@ -59,7 +61,8 @@ class _PatientRequestState extends State<PatientRequest> {
     });
   }
 
-  Future<void> _handleResponse(String requestId, bool accept, String doctorName) async {
+  Future<void> _handleResponse(
+      String requestId, bool accept, String doctorName) async {
     // Optimistic UI update or loading spinner can go here
     showDialog(
       context: context,
@@ -68,14 +71,16 @@ class _PatientRequestState extends State<PatientRequest> {
     );
 
     final success = await ApiService.respondToDoctorRequest(requestId, accept);
-    
+
     if (context.mounted) Navigator.pop(context); // hide loading
 
     if (success) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(accept ? 'Responded to $doctorName' : 'Dismissed $doctorName\'s request'),
+            content: Text(accept
+                ? 'Responded to $doctorName'
+                : 'Dismissed $doctorName\'s request'),
             backgroundColor: accept ? Colors.green : Colors.grey,
           ),
         );
@@ -95,6 +100,20 @@ class _PatientRequestState extends State<PatientRequest> {
     return requests;
   }
 
+  void _goToMonitorExercise() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const MonitorEx()),
+    );
+  }
+
+  void _goToActivePatients() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ActivePatientsPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,9 +127,28 @@ class _PatientRequestState extends State<PatientRequest> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : requests.isEmpty
-                      ? const Center(child: Text("No requests found"))
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "No requests found",
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                "You can still open Monitor Exercise directly.",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        )
                       : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 16),
                           itemCount: filteredRequests.length,
                           itemBuilder: (context, index) {
                             return Padding(
@@ -119,6 +157,44 @@ class _PatientRequestState extends State<PatientRequest> {
                             );
                           },
                         ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _goToMonitorExercise,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF5798C6),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.fitness_center),
+                      label: const Text('Go to Monitor Exercise'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _goToActivePatients,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.people_outline),
+                      label: const Text('View Active Patients'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -172,7 +248,6 @@ class _PatientRequestState extends State<PatientRequest> {
   }
 
   Widget _buildRequestCard(Map<String, dynamic> request) {
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -273,7 +348,8 @@ class _PatientRequestState extends State<PatientRequest> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    _handleResponse(request['id'] ?? 'req_1', true, request['patientName'] ?? 'Unknown');
+                    _handleResponse(request['id'] ?? 'req_1', true,
+                        request['patientName'] ?? 'Unknown');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5798C6),
@@ -297,7 +373,8 @@ class _PatientRequestState extends State<PatientRequest> {
               const SizedBox(width: 12),
               OutlinedButton(
                 onPressed: () {
-                  _handleResponse(request['id'] ?? 'req_1', false, request['patientName'] ?? 'Unknown');
+                  _handleResponse(request['id'] ?? 'req_1', false,
+                      request['patientName'] ?? 'Unknown');
                 },
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
@@ -307,8 +384,8 @@ class _PatientRequestState extends State<PatientRequest> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 12, horizontal: 20),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 ),
                 child: const Text(
                   'Dismiss',
@@ -329,7 +406,7 @@ class _PatientRequestState extends State<PatientRequest> {
 
   Widget _buildBottomNavBar() {
     return BottomNavigationBar(
-      currentIndex: 0, // Index 0 is Home, but we'll make it appear unselected
+      currentIndex: _selectedNavIndex,
       onTap: _onNavTap,
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,
@@ -356,4 +433,3 @@ class _PatientRequestState extends State<PatientRequest> {
     );
   }
 }
-
