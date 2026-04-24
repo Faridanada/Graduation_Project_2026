@@ -209,6 +209,18 @@ const patientController = {
     }
   },
 
+  // PUT /api/patient/notifications/read-all
+  async markAllNotificationsRead(req, res) {
+    try {
+      const patientId = req.user.id;
+      await dbService.markAllNotificationsRead(patientId);
+      res.json({ statusCode: 200, message: 'All notifications marked as read' });
+    } catch (error) {
+      console.error('Error marking all notifications read:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error marking all notifications' });
+    }
+  },
+
   // GET /api/patient/doctors
   async getAllDoctors(req, res) {
     try {

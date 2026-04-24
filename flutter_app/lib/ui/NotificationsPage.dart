@@ -51,6 +51,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
     } catch (_) {}
   }
 
+  Future<void> _markAllAsRead() async {
+    try {
+      await ApiService.markAllNotificationsRead();
+      if (mounted) {
+        setState(() {
+          for (var i = 0; i < _notifications.length; i++) {
+            _notifications[i]['isRead'] = true;
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,6 +84,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.done_all, color: Colors.blue),
+            tooltip: 'Mark all as read',
+            onPressed: () {
+              if (_notifications.any((n) => !(n['isRead'] ?? false))) {
+                _markAllAsRead();
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.blue),
             onPressed: _fetchNotifications,

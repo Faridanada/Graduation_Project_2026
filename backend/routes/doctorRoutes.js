@@ -27,6 +27,7 @@ router.get('/wounds', woundController.getDoctorWounds);
 
 // Notifications for doctor
 router.get('/notifications', notifController.getNotifications);
+router.put('/notifications/read-all', doctorController.markAllNotificationsRead);
 router.put('/notifications/:id/read', notifController.markAsRead);
 
 // Availability for doctor

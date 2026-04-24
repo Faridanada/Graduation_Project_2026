@@ -168,6 +168,15 @@ const doctorController = {
                 await dbService.linkPatientToDoctor(updatedRequest.patientId, updatedRequest.doctorId);
                 // Hard delete the request from DynamoDB so it is completely removed
                 await dbService.deleteRequest(requestId);
+                
+                // Notify the patient
+                const doctorProfile = await dbService.getUserById(updatedRequest.doctorId);
+                const docName = doctorProfile?.name || 'Your doctor';
+                await dbService.createNotification(
+                    updatedRequest.patientId,
+                    "Connection Accepted",
+                    `Dr. ${docName.replace('Dr. ', '')} has accepted your request. You can now message them.`
+                );
             }
 
             res.json({ statusCode: 200, data: updatedRequest, message: 'Request accepted' });
@@ -217,6 +226,18 @@ const doctorController = {
             res.json({ statusCode: 200, message: 'Notification marked as read' });
         } catch (error) {
             console.error('Error marking notification read:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error' });
+        }
+    },
+
+    // PUT /api/doctor/notifications/read-all
+    async markAllNotificationsRead(req, res) {
+        try {
+            const userId = req.user.id;
+            await dbService.markAllNotificationsRead(userId);
+            res.json({ statusCode: 200, message: 'All notifications marked as read' });
+        } catch (error) {
+            console.error('Error marking all notifications read:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error' });
         }
     }

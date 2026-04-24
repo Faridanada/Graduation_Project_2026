@@ -28,6 +28,7 @@ router.get('/reminders', patientController.getReminders);
 
 // Notifications
 router.get('/notifications', patientController.getNotifications);
+router.put('/notifications/read-all', patientController.markAllNotificationsRead);
 router.put('/notifications/:id/read', patientController.markNotificationRead);
 
 // Doctor discovery & requests

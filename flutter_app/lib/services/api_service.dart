@@ -279,6 +279,21 @@ class ApiService {
     return [];
   }
 
+  static Future<Map<String, dynamic>?> getMyDoctor() async {
+    final token = await _getToken();
+    if (token == null) return null;
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/patient/doctor"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'];
+    }
+    return null;
+  }
+
   static Future<bool> sendPatientRequest(String doctorId) async {
     final token = await _getToken();
     if (token == null) return false;
@@ -435,13 +450,17 @@ class ApiService {
 
   // --- NOTIFICATION ENDPOINTS ---
 
-  /// Doctor fetches their notifications.
   static Future<List<dynamic>> getNotifications() async {
     final token = await _getToken();
     if (token == null) return [];
 
+    // Check user profile for role to determine correct endpoint
+    final profile = await getUserProfile();
+    final role = profile?['role'] ?? 'patient';
+    final endpoint = role == 'doctor' ? 'doctor' : 'patient';
+
     final response = await http.get(
-      Uri.parse('$baseUrl/doctor/notifications'),
+      Uri.parse('$baseUrl/$endpoint/notifications'),
       headers: _headers(token),
     );
     if (response.statusCode == 200) {
@@ -455,8 +474,27 @@ class ApiService {
     final token = await _getToken();
     if (token == null) return;
 
+    final profile = await getUserProfile();
+    final role = profile?['role'] ?? 'patient';
+    final endpoint = role == 'doctor' ? 'doctor' : 'patient';
+
     await http.put(
-      Uri.parse('$baseUrl/doctor/notifications/$notifId/read'),
+      Uri.parse('$baseUrl/$endpoint/notifications/$notifId/read'),
+      headers: _headers(token),
+    );
+  }
+
+  /// Mark all notifications as read.
+  static Future<void> markAllNotificationsRead() async {
+    final token = await _getToken();
+    if (token == null) return;
+
+    final profile = await getUserProfile();
+    final role = profile?['role'] ?? 'patient';
+    final endpoint = role == 'doctor' ? 'doctor' : 'patient';
+
+    await http.put(
+      Uri.parse('$baseUrl/$endpoint/notifications/read-all'),
       headers: _headers(token),
     );
   }

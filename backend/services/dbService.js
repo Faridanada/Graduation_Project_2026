@@ -643,6 +643,36 @@ const dbService = {
     }
   },
 
+  async markAllNotificationsRead(userId) {
+    try {
+      // Fetch all unread notifications for the user
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Notifications",
+        FilterExpression: "userId = :uid AND isRead = :f",
+        ExpressionAttributeValues: { ":uid": userId, ":f": false }
+      }));
+
+      const unreadNotifs = data.Items || [];
+      if (unreadNotifs.length === 0) return true;
+
+      // Update all to true
+      const promises = unreadNotifs.map(notif => 
+        ddbDocClient.send(new UpdateCommand({
+          TableName: "Notifications",
+          Key: { id: notif.id },
+          UpdateExpression: "SET isRead = :t",
+          ExpressionAttributeValues: { ":t": true }
+        }))
+      );
+
+      await Promise.all(promises);
+      return true;
+    } catch (error) {
+      console.warn("[markAllNotificationsRead skipped]:", error.message || error);
+      return false;
+    }
+  },
+
   async sendMessage(senderId, receiverId, messageText) {
     try {
       const newMessage = {
@@ -661,12 +691,25 @@ const dbService = {
         Item: newMessage
       }));
 
-      // Trigger automatic notification for the receiver
-      await this.createNotification(
-        receiverId, 
-        "New Message", 
-        "You have received a new message."
-      );
+      // To minimize spam, check if there's already an unread New Message notification
+      const unreadData = await ddbDocClient.send(new ScanCommand({
+        TableName: "Notifications",
+        FilterExpression: "userId = :uid AND title = :title AND isRead = :f",
+        ExpressionAttributeValues: { 
+          ":uid": receiverId,
+          ":title": "New Message",
+          ":f": false
+        }
+      }));
+
+      // Only create a new notification if they don't already have an unread "New Message" alert
+      if (!unreadData.Items || unreadData.Items.length === 0) {
+        await this.createNotification(
+          receiverId, 
+          "New Message", 
+          "You have received a new message."
+        );
+      }
 
       return newMessage;
     } catch (error) {

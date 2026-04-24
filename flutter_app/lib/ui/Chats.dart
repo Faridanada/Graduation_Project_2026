@@ -3,6 +3,7 @@ import '../services/api_service.dart';
 import 'ConversationScreen.dart';
 import 'DoctorProfile.dart';
 import 'SettingsPage.dart';
+import 'NewChatScreen.dart';
 import 'NotificationsPage.dart';
 
 class Chats extends StatefulWidget {
@@ -170,6 +171,17 @@ class _ChatsState extends State<Chats> {
       ),
       centerTitle: false,
       actions: [
+        IconButton(
+          icon: const Icon(Icons.add, color: Colors.white, size: 24),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NewChatScreen(),
+              ),
+            );
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.notifications_none,
               color: Colors.white, size: 24),

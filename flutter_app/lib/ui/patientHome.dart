@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'Chats.dart';
 import 'SettingsPage.dart';
+import 'NotificationsPage.dart';
 
 import 'reminders.dart';
 import 'report_wound_screen.dart';
@@ -10,6 +11,7 @@ import 'book_appointement.dart';
 
 import 'FindDoctorScreen.dart';
 import '../services/api_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({super.key});
@@ -136,10 +138,34 @@ class _HomeContentState extends State<_HomeContent> {
                   ),
                 ),
                 Row(
-                  children: const [
-                    Icon(Icons.notifications_none_rounded, size: 26),
-                    SizedBox(width: 18),
-                    Icon(Icons.settings_outlined, size: 26),
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.notifications_none_rounded, size: 26),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationsPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 18),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.settings_outlined, size: 26),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsPage(),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 )
               ],
@@ -191,45 +217,59 @@ class _HomeContentState extends State<_HomeContent> {
             const SizedBox(height: 24),
 
             /// EMERGENCY CARD
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF5B5B), Color(0xFFE53935)],
+            GestureDetector(
+              onTap: () async {
+                final Uri phoneUri = Uri(scheme: 'tel', path: '112'); // Or '911' based on region
+                if (await canLaunchUrl(phoneUri)) {
+                  await launchUrl(phoneUri);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not launch phone dialer')),
+                    );
+                  }
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF5B5B), Color(0xFFE53935)],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33E53935),
+                      blurRadius: 18,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33E53935),
-                    blurRadius: 18,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.phone, color: Colors.white, size: 22),
-                      SizedBox(width: 8),
-                      Text(
-                        "Emergency Call",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    "Contact emergency support",
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.phone, color: Colors.white, size: 22),
+                        SizedBox(width: 8),
+                        Text(
+                          "Emergency Call",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      "Contact emergency support",
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
             ),
 
