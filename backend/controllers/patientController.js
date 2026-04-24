@@ -148,6 +148,22 @@ const patientController = {
     }
   },
 
+  // POST /api/patient/reminders
+  async createReminder(req, res) {
+    try {
+      const patientId = req.user.id;
+      const { text, type } = req.body;
+      if (!text) {
+        return res.status(400).json({ statusCode: 400, message: 'Reminder text is required' });
+      }
+      const newReminder = await dbService.createReminder(patientId, text, type);
+      res.status(201).json({ statusCode: 201, data: newReminder, message: 'Reminder created successfully' });
+    } catch (error) {
+      console.error('Error creating reminder:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error creating reminder' });
+    }
+  },
+
   // GET /api/patient/stats
   // Returns summary stats for the dashboard
   async getDashboardStats(req, res) {

@@ -1,10 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import 'package:intl/intl.dart';
+import '../services/api_service.dart';
 import 'appointment_confirmed_screen.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
-  const BookAppointmentScreen({super.key});
+  final Map<String, dynamic>? doctor;
+
+  const BookAppointmentScreen({super.key, this.doctor});
 
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
@@ -13,34 +17,136 @@ class BookAppointmentScreen extends StatefulWidget {
 class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   DateTime currentMonth = DateTime.now();
   DateTime selectedDate = DateTime.now();
-
-  String selectedTime = "10:00 AM";
+  String? selectedTime;
+  
+  bool _isLoadingAvailability = true;
+  bool _isSubmitting = false;
+  Map<String, dynamic> _availabilityMap = {};
+  List<String> _availableSlots = [];
 
   final ScrollController _timeScroll = ScrollController();
-
-  final List<String> todaySlots = [
-    "4:30 PM",
-    "9:00 AM",
-    "10:00 AM",
-    "11:30 AM",
-    "14:00",
-  ];
 
   @override
   void initState() {
     super.initState();
+    _fetchDoctorAvailability();
+  }
 
-    /// 🔹 Auto scroll to selected slot
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final index = todaySlots.indexOf(selectedTime);
-      if (index != -1) {
-        _timeScroll.animateTo(
-          index * 90,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        );
+  Future<void> _fetchDoctorAvailability() async {
+    if (widget.doctor == null) {
+      if (mounted) setState(() => _isLoadingAvailability = false);
+      return;
+    }
+
+    final doctorId = widget.doctor!['id'] ?? widget.doctor!['_id'];
+    if (doctorId == null) {
+      if (mounted) setState(() => _isLoadingAvailability = false);
+      return;
+    }
+
+    try {
+      final availabilityData = await ApiService.getDoctorAvailability(doctorId.toString());
+      final Map<String, dynamic> availMap = {};
+      for (var item in availabilityData) {
+        availMap[item['day']] = item;
+      }
+
+      if (mounted) {
+        setState(() {
+          _availabilityMap = availMap;
+          _isLoadingAvailability = false;
+          _generateSlotsForSelectedDate();
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingAvailability = false);
+    }
+  }
+
+  void _generateSlotsForSelectedDate() {
+    final dayName = DateFormat('EEEE').format(selectedDate);
+    final rules = _availabilityMap[dayName];
+    
+    setState(() {
+      _availableSlots = [];
+      selectedTime = null;
+
+      if (rules != null && rules['isAvailable'] == true) {
+        final startStr = rules['startTime']?.toString() ?? '09:00 AM';
+        final endStr = rules['endTime']?.toString() ?? '05:00 PM';
+        
+        try {
+          final startTime = _parseTimeString(startStr);
+          final endTime = _parseTimeString(endStr);
+
+          DateTime current = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, startTime.hour, startTime.minute);
+          final DateTime endDateTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, endTime.hour, endTime.minute);
+
+          // Generate 30-min slots
+          while (current.isBefore(endDateTime)) {
+            _availableSlots.add(DateFormat('hh:mm a').format(current));
+            current = current.add(const Duration(minutes: 30));
+          }
+        } catch (_) {}
       }
     });
+  }
+
+  TimeOfDay _parseTimeString(String timeStr) {
+    int h = 9, m = 0;
+    try {
+      final parts = timeStr.trim().split(' ');
+      final timeParts = parts[0].split(':');
+      h = int.parse(timeParts[0]);
+      m = int.parse(timeParts[1]);
+      if (parts.length > 1) {
+        final ampm = parts[1].toUpperCase();
+        if (ampm == 'PM' && h != 12) h += 12;
+        if (ampm == 'AM' && h == 12) h = 0;
+      }
+    } catch (_) {}
+    return TimeOfDay(hour: h, minute: m);
+  }
+
+  Future<void> _handleConfirm() async {
+    if (selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a time slot")),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final doctorId = widget.doctor!['id'] ?? widget.doctor!['_id'];
+    final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
+
+    final success = await ApiService.createAppointment(
+      doctorId: doctorId.toString(),
+      date: formattedDate,
+      time: selectedTime!,
+      type: 'Consultation',
+      notes: 'Booked via mobile app',
+    );
+
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+      if (success) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AppointmentConfirmedScreen(
+              date: DateFormat('EEEE, MMMM d').format(selectedDate),
+              time: selectedTime!,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to book appointment. Please try again.")),
+        );
+      }
+    }
   }
 
   /// 🔹 Generate calendar days
@@ -98,377 +204,258 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-
-              /// 🔹 RECOMMENDED
-              glassBox(
-                Column(
+        child: _isLoadingAvailability
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "✨ Recommended for you",
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const Divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                "Thursday – 10:00 AM",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                "Based on your schedule",
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: const StadiumBorder(),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 10,
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const AppointmentConfirmedScreen(
-                                  date: "Thursday, April 17",
-                                  time: "10:00 AM",
-                                ),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            "Confirm Instantly",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// 🔹 TIME SLOTS
-              glassBox(
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Pick a time that works for you",
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Text("Today"),
-                        const SizedBox(width: 10),
-
-                        /// 🔥 ONE LINE SCROLL
-                        Expanded(
-                          child: SingleChildScrollView(
-                            controller: _timeScroll,
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: todaySlots.map((slot) {
-                                final isSelected = slot == selectedTime;
-
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      selectedTime = slot;
-                                    });
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 250),
-                                    margin: const EdgeInsets.only(right: 10),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? Colors.blue
-                                          : Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      slot,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: isSelected
-                                            ? Colors.white
-                                            : Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    const Row(
-                      children: [
-                        Text("Fri   9:00 AM"),
-                        SizedBox(width: 8),
-                        Text(
-                          "Last slot",
-                          style: TextStyle(color: Colors.orange),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// 🔹 CALENDAR
-              glassBox(
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// HEADER
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.calendar_today, size: 18),
-                            SizedBox(width: 8),
-                            Text(
-                              "Choose another date",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
+                    /// 🔹 DOCTOR INFO
+                    if (widget.doctor != null)
+                      glassBox(
                         Row(
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: () {
-                                setState(() {
-                                  currentMonth = DateTime(
-                                    currentMonth.year,
-                                    currentMonth.month - 1,
-                                  );
-                                });
-                              },
+                            CircleAvatar(
+                              radius: 25,
+                              backgroundColor: Colors.blue.shade100,
+                              child: Text(
+                                widget.doctor!['name']?[0] ?? 'D',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ),
-                            Text("${currentMonth.year}-${currentMonth.month}"),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right),
-                              onPressed: () {
-                                setState(() {
-                                  currentMonth = DateTime(
-                                    currentMonth.year,
-                                    currentMonth.month + 1,
-                                  );
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    /// WEEK DAYS
-                    Row(
-                      children:
-                          ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-                              .map(
-                                (e) => Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      e,
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    /// GRID
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: days.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 7,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 8,
-                        childAspectRatio: 1,
-                      ),
-                      itemBuilder: (_, i) {
-                        final day = days[i];
-                        if (day == 0) return const SizedBox();
-
-                        final isSelected = day == selectedDate.day;
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedDate = DateTime(
-                                currentMonth.year,
-                                currentMonth.month,
-                                day,
-                              );
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 250),
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.blue : Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "$day",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Colors.black,
-                                  ),
+                                  widget.doctor!['name'] ?? 'Doctor',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
-                                const SizedBox(height: 4),
-
-                                /// 🔹 DOT
-                                Container(
-                                  height: 5,
-                                  width: 5,
-                                  decoration: BoxDecoration(
-                                    color: day % 3 == 0
-                                        ? Colors.green
-                                        : day % 4 == 0
-                                            ? Colors.orange
-                                            : Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
+                                Text(
+                                  widget.doctor!['profileData']?['specialty'] ?? 'Physiotherapist',
+                                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                                 ),
                               ],
                             ),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    /// LEGEND
-                    const Row(
-                      children: [
-                        Icon(Icons.circle, size: 10, color: Colors.green),
-                        Text(" Available"),
-                        SizedBox(width: 10),
-                        Icon(Icons.circle, size: 10, color: Colors.orange),
-                        Text(" Limited"),
-                        SizedBox(width: 10),
-                        Icon(Icons.circle, size: 10, color: Colors.red),
-                        Text(" Full"),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// 🔹 SESSION
-              glassBox(
-                Row(
-                  children: const [
-                    CircleAvatar(radius: 20, backgroundColor: Colors.purple),
-                    SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "In-Clinic Session",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          "Thu, Apr 11 - 10:00 AM",
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// 🔹 BUTTON
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue, // 🔵 BLUE
-                    foregroundColor: Colors.white, // ⚪ TEXT
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: const StadiumBorder(), // 💊 rounded
-                    elevation: 0,
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AppointmentConfirmedScreen(
-                          date:
-                              "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                          time: selectedTime,
+                          ],
                         ),
                       ),
-                    );
-                  },
-                  child: const Text(
-                    "Confirm Appointment",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+
+                    const SizedBox(height: 20),
+
+                    /// 🔹 TIME SLOTS
+                    glassBox(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Available times for this date",
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 12),
+                          if (_availableSlots.isEmpty)
+                            const Text("No slots available for this day", style: TextStyle(color: Colors.grey))
+                          else
+                            SingleChildScrollView(
+                              controller: _timeScroll,
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: _availableSlots.map((slot) {
+                                  final isSelected = slot == selectedTime;
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedTime = slot;
+                                      });
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 250),
+                                      margin: const EdgeInsets.only(right: 10),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? Colors.blue : Colors.white,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        slot,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected ? Colors.white : Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    /// 🔹 CALENDAR
+                    glassBox(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// HEADER
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Choose a date",
+                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.chevron_left),
+                                    onPressed: () {
+                                      setState(() {
+                                        currentMonth = DateTime(currentMonth.year, currentMonth.month - 1);
+                                      });
+                                    },
+                                  ),
+                                  Text(DateFormat('MMM yyyy').format(currentMonth)),
+                                  IconButton(
+                                    icon: const Icon(Icons.chevron_right),
+                                    onPressed: () {
+                                      setState(() {
+                                        currentMonth = DateTime(currentMonth.year, currentMonth.month + 1);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          /// WEEK DAYS
+                          Row(
+                            children: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                                .map((e) => Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          e,
+                                          style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600, fontSize: 12),
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          /// GRID
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: days.length,
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 7,
+                              mainAxisSpacing: 8,
+                              crossAxisSpacing: 8,
+                              childAspectRatio: 1,
+                            ),
+                            itemBuilder: (_, i) {
+                              final day = days[i];
+                              if (day == 0) return const SizedBox();
+
+                              final date = DateTime(currentMonth.year, currentMonth.month, day);
+                              final isSelected = day == selectedDate.day && currentMonth.month == selectedDate.month && currentMonth.year == selectedDate.year;
+                              final isPast = date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+                              final dayName = DateFormat('EEEE').format(date);
+                              final hasAvailability = _availabilityMap[dayName]?['isAvailable'] == true;
+
+                              return GestureDetector(
+                                onTap: isPast
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          selectedDate = date;
+                                          _generateSlotsForSelectedDate();
+                                        });
+                                      },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? Colors.blue : Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: isSelected ? null : Border.all(color: Colors.grey.shade200),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        "$day",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: isPast
+                                              ? Colors.grey.shade300
+                                              : isSelected
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                        ),
+                                      ),
+                                      if (!isPast && hasAvailability)
+                                        Container(
+                                          margin: const EdgeInsets.only(top: 2),
+                                          height: 4,
+                                          width: 4,
+                                          decoration: BoxDecoration(
+                                            color: isSelected ? Colors.white : Colors.green,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    /// 🔹 BUTTON
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: const StadiumBorder(),
+                          elevation: 0,
+                        ),
+                        onPressed: (_isSubmitting || selectedTime == null) ? null : _handleConfirm,
+                        child: _isSubmitting
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text(
+                                "Confirm Appointment",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
       ),
     );
   }

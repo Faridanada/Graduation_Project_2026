@@ -8,6 +8,7 @@ import 'report_wound_screen.dart';
 import 'start_exercise_screen.dart';
 import 'improvements_screen.dart';
 import 'book_appointement.dart';
+import 'BookAppointments.dart';
 
 import 'FindDoctorScreen.dart';
 import '../services/api_service.dart';
@@ -80,6 +81,7 @@ class _HomeContentState extends State<_HomeContent> {
   List<dynamic> todayExercises = [];
   List<dynamic> reminders = [];
   Map<String, dynamic>? nextAppointment;
+  Map<String, dynamic>? myDoctor;
   int unreadNotifs = 0;
 
   @override
@@ -98,6 +100,7 @@ class _HomeContentState extends State<_HomeContent> {
       final appointment = await ApiService.getPatientNextAppointment();
       final stats = await ApiService.getPatientDashboardStats();
       int unread = stats['unreadNotifications'] ?? 0;
+      final doctor = await ApiService.getMyDoctor();
 
       if (mounted) {
         setState(() {
@@ -108,6 +111,7 @@ class _HomeContentState extends State<_HomeContent> {
           reminders = fetchedReminders;
           nextAppointment = appointment;
           unreadNotifs = unread;
+          myDoctor = doctor;
           isLoading = false;
         });
       }
@@ -767,24 +771,30 @@ class _HomeContentState extends State<_HomeContent> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 18, vertical: 9),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF6FA8F6),
-                                      Color(0xFF4A90E2)
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(22),
+                              GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const BookAppoint()),
                                 ),
-                                child: const Text(
-                                  "View Details",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 18, vertical: 9),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF6FA8F6),
+                                        Color(0xFF4A90E2)
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(22),
+                                  ),
+                                  child: const Text(
+                                    "View Details",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -836,7 +846,7 @@ class _HomeContentState extends State<_HomeContent> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const BookAppointmentScreen(),
+                  builder: (context) => BookAppointmentScreen(doctor: myDoctor),
                 ),
               ),
               child: _whiteCard(

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class AppointmentConfirmedScreen extends StatefulWidget {
   final String date;
@@ -148,18 +149,34 @@ class _AppointmentConfirmedScreenState
                     children: [
                       /// 🔔 Reminder Button
                       GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            reminderSet = true;
-                          });
+                        onTap: () async {
+                          if (reminderSet) return;
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Reminder set successfully ✅"),
-                              backgroundColor: Colors.green,
-                              duration: Duration(seconds: 2),
-                            ),
+                          final success = await ApiService.createReminder(
+                            "Appointment on ${widget.date} at ${widget.time}",
+                            "general",
                           );
+
+                          if (success && mounted) {
+                            setState(() {
+                              reminderSet = true;
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Reminder set successfully ✅"),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          } else if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Failed to set reminder ❌"),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         },
                         child: Row(
                           children: [
@@ -188,12 +205,15 @@ class _AppointmentConfirmedScreenState
                       const SizedBox(height: 8),
 
                       /// 🏠 Back Home
-                      Row(
-                        children: const [
-                          Icon(Icons.home_outlined),
-                          SizedBox(width: 10),
-                          Text("Back to Home"),
-                        ],
+                      GestureDetector(
+                        onTap: () => Navigator.popUntil(context, (route) => route.isFirst),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.home_outlined),
+                            SizedBox(width: 10),
+                            Text("Back to Home"),
+                          ],
+                        ),
                       ),
                     ],
                   ),

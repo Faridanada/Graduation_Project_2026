@@ -25,6 +25,7 @@ router.get('/doctor', patientController.getMyDoctor);
 
 // Reminders
 router.get('/reminders', patientController.getReminders);
+router.post('/reminders', patientController.createReminder);
 
 // Notifications
 router.get('/notifications', patientController.getNotifications);

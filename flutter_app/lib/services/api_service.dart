@@ -382,6 +382,19 @@ class ApiService {
     return [];
   }
 
+  static Future<bool> createReminder(String text, String type) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/patient/reminders"),
+      headers: _headers(token),
+      body: jsonEncode({"text": text, "type": type}),
+    );
+
+    return response.statusCode == 201;
+  }
+
   // --- WOUND ENDPOINTS ---
 
   /// Patient submits a wound report. [imageFile] is optional.

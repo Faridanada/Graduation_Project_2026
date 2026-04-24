@@ -50,20 +50,21 @@ class _BookAppointState extends State<BookAppoint> {
   }
 
   List<Map<String, dynamic>> get filteredAppointments {
-    final now = DateTime(2026, 2, 12);
-    final weekEnd = now.add(const Duration(days: 6));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekEnd = today.add(const Duration(days: 6));
 
     if (selectedFilter == 'Today') {
       return allAppointments
           .where((apt) =>
-              apt['date'].year == now.year &&
-              apt['date'].month == now.month &&
-              apt['date'].day == now.day)
+              apt['date'].year == today.year &&
+              apt['date'].month == today.month &&
+              apt['date'].day == today.day)
           .toList();
     } else if (selectedFilter == 'Week') {
       return allAppointments
           .where((apt) =>
-              apt['date'].isAfter(now.subtract(const Duration(days: 1))) &&
+              apt['date'].isAfter(today.subtract(const Duration(days: 1))) &&
               apt['date'].isBefore(weekEnd.add(const Duration(days: 1))))
           .toList();
     } else {
@@ -75,7 +76,7 @@ class _BookAppointState extends State<BookAppoint> {
   }
 
   String getFormattedDate() {
-    final now = DateTime(2026, 2, 12);
+    final now = DateTime.now();
     return DateFormat('d MMM yyyy').format(now);
   }
 
@@ -83,9 +84,10 @@ class _BookAppointState extends State<BookAppoint> {
     if (selectedFilter == 'Today') {
       return 'Today, ${getFormattedDate()}';
     } else if (selectedFilter == 'Week') {
-      final now = DateTime(2026, 2, 12);
-      final weekEnd = now.add(const Duration(days: 6));
-      return 'Week of ${DateFormat('d MMM').format(now)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final weekEnd = today.add(const Duration(days: 6));
+      return 'Week of ${DateFormat('d MMM').format(today)} - ${DateFormat('d MMM yyyy').format(weekEnd)}';
     } else {
       return 'Upcoming Appointments';
     }
@@ -289,7 +291,7 @@ class _BookAppointState extends State<BookAppoint> {
   }
 
   Widget _buildAppointmentCard(Map<String, dynamic> appointment) {
-    final now = DateTime(2026, 2, 12);
+    final now = DateTime.now();
     final isToday = appointment['date'].year == now.year &&
         appointment['date'].month == now.month &&
         appointment['date'].day == now.day;

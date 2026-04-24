@@ -408,6 +408,26 @@ const dbService = {
     }
   },
 
+  async createReminder(patientId, text, type = 'general') {
+    try {
+      const newReminder = {
+        id: `rem_${Date.now()}`,
+        patientId,
+        text,
+        type,
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Reminders",
+        Item: newReminder
+      }));
+      return newReminder;
+    } catch (error) {
+      console.error("DynamoDB error (createReminder):", error);
+      throw error;
+    }
+  },
+
   async getRequests(doctorId) {
     try {
       const data = await ddbDocClient.send(new ScanCommand({
