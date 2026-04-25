@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 
 class Exoskeleton extends StatefulWidget {
-  const Exoskeleton({Key? key}) : super(key: key);
+  final String patientName;
+  final String exerciseTitle;
+  final int? initialMinDegree;
+  final int? initialMaxDegree;
+
+  const Exoskeleton({
+    Key? key,
+    this.patientName = 'Selected Patient',
+    this.exerciseTitle = 'Passive Exercise Monitoring',
+    this.initialMinDegree,
+    this.initialMaxDegree,
+  }) : super(key: key);
 
   @override
   State<Exoskeleton> createState() => _ExoskeletonState();
@@ -15,6 +26,13 @@ class _ExoskeletonState extends State<Exoskeleton> {
   String _elapsedTime = '03:24';
   double _progress = 0.53;
   bool _isPaused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _minDegree = widget.initialMinDegree;
+    _maxDegree = widget.initialMaxDegree;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +82,38 @@ class _ExoskeletonState extends State<Exoskeleton> {
               ),
               const SizedBox(height: 24),
 
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Patient: ${widget.patientName}',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Exercise: ${widget.exerciseTitle}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // Set Min/Max Value with input
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -71,13 +121,17 @@ class _ExoskeletonState extends State<Exoskeleton> {
                   _buildDegreeInput(
                     label: 'Set Min Value',
                     value: _minDegree,
-                    onTap: () => _showDegreeInputDialog(isMin: true),
+                    onTapManual: () => _showDegreeInputDialog(isMin: true),
+                    onIncrement: () => _adjustDegree(isMin: true, delta: 1),
+                    onDecrement: () => _adjustDegree(isMin: true, delta: -1),
                   ),
                   const SizedBox(width: 60),
                   _buildDegreeInput(
                     label: 'Set Max Value',
                     value: _maxDegree,
-                    onTap: () => _showDegreeInputDialog(isMin: false),
+                    onTapManual: () => _showDegreeInputDialog(isMin: false),
+                    onIncrement: () => _adjustDegree(isMin: false, delta: 1),
+                    onDecrement: () => _adjustDegree(isMin: false, delta: -1),
                   ),
                 ],
               ),
@@ -264,7 +318,8 @@ class _ExoskeletonState extends State<Exoskeleton> {
               backgroundColor: Colors.white,
               valueColor: AlwaysStoppedAnimation<Color>(
                 isExample
-                    ? const Color.fromRGBO(128, 155, 206, 1).withValues(alpha: 0.6)
+                    ? const Color.fromRGBO(128, 155, 206, 1)
+                        .withValues(alpha: 0.6)
                     : const Color(0xFF95B8D1),
               ),
             ),
@@ -277,28 +332,30 @@ class _ExoskeletonState extends State<Exoskeleton> {
   Widget _buildDegreeInput({
     required String label,
     required int? value,
-    required VoidCallback onTap,
+    required VoidCallback onTapManual,
+    required VoidCallback onIncrement,
+    required VoidCallback onDecrement,
   }) {
     // Show example values: 0° for min, 90° for max
     final exampleValue = label.contains('Min') ? '0' : '90';
     final displayText = value == null ? '$exampleValue°' : '$value°';
     final isExample = value == null;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
           ),
-          const SizedBox(height: 8),
-          Container(
-            width: 100,
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTapManual,
+          child: Container(
+            width: 110,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -327,9 +384,72 @@ class _ExoskeletonState extends State<Exoskeleton> {
               ),
             ),
           ),
-        ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildAdjustButton(icon: Icons.remove, onPressed: onDecrement),
+            const SizedBox(width: 8),
+            _buildAdjustButton(icon: Icons.add, onPressed: onIncrement),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdjustButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: 38,
+      height: 38,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          padding: EdgeInsets.zero,
+          side: const BorderSide(color: Color(0xFF95B8D1)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Icon(icon, size: 18, color: const Color(0xFF95B8D1)),
       ),
     );
+  }
+
+  void _adjustDegree({required bool isMin, required int delta}) {
+    final current = (isMin ? _minDegree : _maxDegree) ?? (isMin ? 0 : 90);
+    final next = (current + delta).clamp(0, 180);
+    _setDegree(isMin: isMin, value: next);
+  }
+
+  void _setDegree({required bool isMin, required int value}) {
+    final minCandidate = isMin ? value : (_minDegree ?? 0);
+    final maxCandidate = isMin ? (_maxDegree ?? 180) : value;
+
+    if (minCandidate > maxCandidate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isMin
+                ? 'Minimum degree cannot be greater than maximum degree.'
+                : 'Maximum degree cannot be less than minimum degree.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      if (isMin) {
+        _minDegree = value;
+      } else {
+        _maxDegree = value;
+      }
+    });
   }
 
   void _showDegreeInputDialog({required bool isMin}) {
@@ -382,13 +502,7 @@ class _ExoskeletonState extends State<Exoskeleton> {
               onPressed: () {
                 final value = int.tryParse(controller.text);
                 if (value != null && value >= 0 && value <= 180) {
-                  setState(() {
-                    if (isMin) {
-                      _minDegree = value;
-                    } else {
-                      _maxDegree = value;
-                    }
-                  });
+                  _setDegree(isMin: isMin, value: value);
                   Navigator.of(context).pop();
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -629,4 +743,3 @@ class _ExoskeletonState extends State<Exoskeleton> {
     );
   }
 }
-

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'MonitorEx.dart';
+import 'ExoskeletonDegreeSetupPage.dart';
 
 class PatientExerciseMonitorList extends StatefulWidget {
   const PatientExerciseMonitorList({Key? key}) : super(key: key);
@@ -98,7 +98,7 @@ class _PatientExerciseMonitorListState
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => MonitorEx(
+                              builder: (_) => ExoskeletonDegreeSetupPage(
                                 patientName: name,
                                 exerciseTitle: 'Passive Exercise Monitoring',
                               ),
@@ -174,7 +174,8 @@ class _PatientExerciseMonitorListState
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => MonitorEx(
+                                      builder: (_) =>
+                                          ExoskeletonDegreeSetupPage(
                                         patientName: name,
                                         exerciseTitle:
                                             'Passive Exercise Monitoring',

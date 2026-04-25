@@ -4,8 +4,7 @@ import 'NotificationsPage.dart';
 import 'DoctorHome.dart';
 import 'Chats.dart';
 import 'DoctorProfile.dart';
-import 'MonitorEx.dart';
-import 'ActivePatientsPage.dart';
+import 'ExoskeletonDegreeSetupPage.dart';
 import '../services/api_service.dart';
 
 class PatientRequest extends StatefulWidget {
@@ -18,7 +17,32 @@ class PatientRequest extends StatefulWidget {
 class _PatientRequestState extends State<PatientRequest> {
   List<Map<String, dynamic>> requests = [];
   bool isLoading = true;
+  bool _usingDummyData = false;
   int _selectedNavIndex = 0; // Pushed from Home dashboard context
+
+  List<Map<String, dynamic>> _buildDummyRequests() {
+    final now = DateTime.now();
+    return [
+      {
+        'id': 'dummy_req_1',
+        'patientName': 'Sara Ahmed',
+        'createdAt': now.subtract(const Duration(days: 1)).toIso8601String(),
+        'isDummy': true,
+      },
+    ];
+  }
+
+  void _openExoskeletonSetup(String patientName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExoskeletonDegreeSetupPage(
+          patientName: patientName,
+          exerciseTitle: 'Passive Exercise Monitoring',
+        ),
+      ),
+    );
+  }
 
   void _onNavTap(int index) {
     if (index == 0) {
@@ -54,15 +78,55 @@ class _PatientRequestState extends State<PatientRequest> {
 
   Future<void> _loadRequests() async {
     setState(() => isLoading = true);
-    final fetched = await ApiService.getDoctorRequests();
-    setState(() {
-      requests = List<Map<String, dynamic>>.from(fetched);
-      isLoading = false;
-    });
+    try {
+      final fetched = await ApiService.getDoctorRequests();
+      final parsed = List<Map<String, dynamic>>.from(fetched);
+
+      setState(() {
+        if (parsed.isEmpty) {
+          requests = _buildDummyRequests();
+          _usingDummyData = true;
+        } else {
+          requests = [parsed.first];
+          _usingDummyData = false;
+        }
+        isLoading = false;
+      });
+    } catch (_) {
+      setState(() {
+        requests = _buildDummyRequests();
+        _usingDummyData = true;
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> _handleResponse(
       String requestId, bool accept, String doctorName) async {
+    final isDummyRequest = requests.any(
+      (r) => (r['id'] ?? '').toString() == requestId && r['isDummy'] == true,
+    );
+
+    if (isDummyRequest) {
+      setState(() {
+        requests.removeWhere((r) => (r['id'] ?? '').toString() == requestId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            accept
+                ? 'Dummy response sent to $doctorName'
+                : 'Dummy request for $doctorName dismissed',
+          ),
+          backgroundColor: accept ? Colors.green : Colors.grey,
+        ),
+      );
+      if (accept) {
+        _openExoskeletonSetup(doctorName);
+      }
+      return;
+    }
+
     // Optimistic UI update or loading spinner can go here
     showDialog(
       context: context,
@@ -85,7 +149,11 @@ class _PatientRequestState extends State<PatientRequest> {
           ),
         );
       }
-      _loadRequests(); // Refresh the list
+      if (accept) {
+        _openExoskeletonSetup(doctorName);
+      } else {
+        _loadRequests(); // Refresh the list after dismissal
+      }
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -100,20 +168,6 @@ class _PatientRequestState extends State<PatientRequest> {
     return requests;
   }
 
-  void _goToMonitorExercise() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const MonitorEx()),
-    );
-  }
-
-  void _goToActivePatients() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ActivePatientsPage()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,7 +180,7 @@ class _PatientRequestState extends State<PatientRequest> {
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : requests.isEmpty
+                  : filteredRequests.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -138,63 +192,43 @@ class _PatientRequestState extends State<PatientRequest> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                "You can still open Monitor Exercise directly.",
-                                textAlign: TextAlign.center,
-                              ),
                             ],
                           ),
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
-                          itemCount: filteredRequests.length,
+                          itemCount: filteredRequests.length +
+                              (_usingDummyData ? 1 : 0),
                           itemBuilder: (context, index) {
+                            if (_usingDummyData && index == 0) {
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF5798C6)
+                                      .withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text(
+                                  'Using dummy patient requests for testing.',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF2F4D63),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final requestIndex =
+                                _usingDummyData ? index - 1 : index;
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 16),
-                              child: _buildRequestCard(filteredRequests[index]),
+                              child: _buildRequestCard(
+                                  filteredRequests[requestIndex]),
                             );
                           },
                         ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _goToMonitorExercise,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF5798C6),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: const Icon(Icons.fitness_center),
-                      label: const Text('Go to Monitor Exercise'),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _goToActivePatients,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: const Icon(Icons.people_outline),
-                      label: const Text('View Active Patients'),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),

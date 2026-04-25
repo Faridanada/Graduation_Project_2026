@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'MonitorEx.dart';
+import 'ExoskeletonDegreeSetupPage.dart';
 import 'ConversationScreen.dart';
 import 'AssignExerciseScreen.dart';
 
@@ -18,7 +18,8 @@ class PatientProfilePage extends StatefulWidget {
   State<PatientProfilePage> createState() => _PatientProfilePageState();
 }
 
-class _PatientProfilePageState extends State<PatientProfilePage> with SingleTickerProviderStateMixin {
+class _PatientProfilePageState extends State<PatientProfilePage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   Map<String, dynamic>? _patientData;
   bool _isLoading = true;
@@ -35,7 +36,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
       if (mounted) setState(() => _isLoading = false);
       return;
     }
-    
+
     setState(() => _isLoading = true);
     try {
       final data = await ApiService.getPatientDetails(widget.patientId);
@@ -55,7 +56,6 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
       }
     }
   }
-
 
   @override
   void dispose() {
@@ -79,9 +79,10 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
   Widget _buildContent() {
     final profile = _patientData!['profile'] ?? {};
     final profileData = profile['profileData'] ?? {};
-    
-    final injuryType = profile['injuryType'] ?? profileData['injuryType'] ?? 'General Patient';
-    
+
+    final injuryType =
+        profile['injuryType'] ?? profileData['injuryType'] ?? 'General Patient';
+
     return CustomScrollView(
       slivers: [
         // Premium Header
@@ -107,17 +108,24 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
                     backgroundColor: Colors.white.withOpacity(0.2),
                     child: Text(
                       widget.patientName[0].toUpperCase(),
-                      style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     widget.patientName,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
                   ),
                   Text(
                     injuryType,
-                    style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.9)),
+                    style: TextStyle(
+                        fontSize: 16, color: Colors.white.withOpacity(0.9)),
                   ),
                 ],
               ),
@@ -165,7 +173,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
     );
   }
 
-  Widget _buildInfoSection(Map<String, dynamic> profile, Map<String, dynamic> profileData) {
+  Widget _buildInfoSection(
+      Map<String, dynamic> profile, Map<String, dynamic> profileData) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -176,28 +185,32 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildInfoItem('Age', '${profile['age'] ?? profileData['age'] ?? 'N/A'}'),
-          _buildInfoItem('Weight', '${profile['weight'] ?? profileData['weight'] ?? '-'} kg'),
-          _buildInfoItem('Phone', '${profile['phone'] ?? profileData['phone'] ?? 'N/A'}'),
+          _buildInfoItem(
+              'Age', '${profile['age'] ?? profileData['age'] ?? 'N/A'}'),
+          _buildInfoItem('Weight',
+              '${profile['weight'] ?? profileData['weight'] ?? '-'} kg'),
+          _buildInfoItem(
+              'Phone', '${profile['phone'] ?? profileData['phone'] ?? 'N/A'}'),
         ],
       ),
     );
   }
-
 
   Widget _buildInfoItem(String label, String value) {
     return Column(
       children: [
         Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        Text(value,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
   Widget _buildHistoryTab() {
     final exercises = _patientData!['exercises'] as List? ?? [];
-    if (exercises.isEmpty) return const Center(child: Text('No exercise history.'));
+    if (exercises.isEmpty)
+      return const Center(child: Text('No exercise history.'));
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -208,7 +221,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 12),
           color: Colors.grey[50],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
             leading: const Icon(Icons.fitness_center, color: Color(0xFF6BA5CF)),
             title: Text(ex['title'] ?? 'Exercise'),
@@ -222,7 +236,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
 
   Widget _buildAppointmentsTab() {
     final appointments = _patientData!['appointments'] as List? ?? [];
-    if (appointments.isEmpty) return const Center(child: Text('No upcoming appointments.'));
+    if (appointments.isEmpty)
+      return const Center(child: Text('No upcoming appointments.'));
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -233,7 +248,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 12),
           color: Colors.grey[50],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
             leading: const Icon(Icons.calendar_today, color: Colors.orange),
             title: Text(apt['type'] ?? 'Appointment'),
@@ -241,12 +257,18 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: (apt['status'] == 'completed' ? Colors.green : Colors.blue).withOpacity(0.1),
+                color:
+                    (apt['status'] == 'completed' ? Colors.green : Colors.blue)
+                        .withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 apt['status'] ?? 'Pending',
-                style: TextStyle(fontSize: 10, color: (apt['status'] == 'completed' ? Colors.green : Colors.blue)),
+                style: TextStyle(
+                    fontSize: 10,
+                    color: (apt['status'] == 'completed'
+                        ? Colors.green
+                        : Colors.blue)),
               ),
             ),
           ),
@@ -260,7 +282,12 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5))
+        ],
       ),
       child: Row(
         children: [
@@ -285,7 +312,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
                 backgroundColor: const Color(0xFF6BA5CF),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -296,9 +324,9 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MonitorEx(
+                    builder: (context) => ExoskeletonDegreeSetupPage(
                       patientName: widget.patientName,
-                      exerciseTitle: "Session Monitoring",
+                      exerciseTitle: 'Session Monitoring',
                     ),
                   ),
                 );
@@ -309,7 +337,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> with SingleTick
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: const BorderSide(color: Color(0xFF6BA5CF)),
                 foregroundColor: const Color(0xFF6BA5CF),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
