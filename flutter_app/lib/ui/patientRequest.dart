@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'SettingsPage.dart';
-import 'NotificationsPage.dart';
 import 'DoctorHome.dart';
 import 'Chats.dart';
 import 'DoctorProfile.dart';
-import 'ExoskeletonDegreeSetupPage.dart';
 import '../services/api_service.dart';
 
 class PatientRequest extends StatefulWidget {
@@ -17,32 +14,7 @@ class PatientRequest extends StatefulWidget {
 class _PatientRequestState extends State<PatientRequest> {
   List<Map<String, dynamic>> requests = [];
   bool isLoading = true;
-  bool _usingDummyData = false;
   int _selectedNavIndex = 0; // Pushed from Home dashboard context
-
-  List<Map<String, dynamic>> _buildDummyRequests() {
-    final now = DateTime.now();
-    return [
-      {
-        'id': 'dummy_req_1',
-        'patientName': 'Sara Ahmed',
-        'createdAt': now.subtract(const Duration(days: 1)).toIso8601String(),
-        'isDummy': true,
-      },
-    ];
-  }
-
-  void _openExoskeletonSetup(String patientName) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ExoskeletonDegreeSetupPage(
-          patientName: patientName,
-          exerciseTitle: 'Passive Exercise Monitoring',
-        ),
-      ),
-    );
-  }
 
   void _onNavTap(int index) {
     if (index == 0) {
@@ -83,19 +55,12 @@ class _PatientRequestState extends State<PatientRequest> {
       final parsed = List<Map<String, dynamic>>.from(fetched);
 
       setState(() {
-        if (parsed.isEmpty) {
-          requests = _buildDummyRequests();
-          _usingDummyData = true;
-        } else {
-          requests = [parsed.first];
-          _usingDummyData = false;
-        }
+        requests = parsed;
         isLoading = false;
       });
     } catch (_) {
       setState(() {
-        requests = _buildDummyRequests();
-        _usingDummyData = true;
+        requests = [];
         isLoading = false;
       });
     }
@@ -103,30 +68,6 @@ class _PatientRequestState extends State<PatientRequest> {
 
   Future<void> _handleResponse(
       String requestId, bool accept, String doctorName) async {
-    final isDummyRequest = requests.any(
-      (r) => (r['id'] ?? '').toString() == requestId && r['isDummy'] == true,
-    );
-
-    if (isDummyRequest) {
-      setState(() {
-        requests.removeWhere((r) => (r['id'] ?? '').toString() == requestId);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            accept
-                ? 'Dummy response sent to $doctorName'
-                : 'Dummy request for $doctorName dismissed',
-          ),
-          backgroundColor: accept ? Colors.green : Colors.grey,
-        ),
-      );
-      if (accept) {
-        _openExoskeletonSetup(doctorName);
-      }
-      return;
-    }
-
     // Optimistic UI update or loading spinner can go here
     showDialog(
       context: context,
@@ -139,20 +80,18 @@ class _PatientRequestState extends State<PatientRequest> {
     if (context.mounted) Navigator.pop(context); // hide loading
 
     if (success) {
+      setState(() {
+        requests.removeWhere((r) => (r['id'] ?? '').toString() == requestId);
+      });
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(accept
-                ? 'Responded to $doctorName'
+                ? 'Accepted $doctorName\'s request'
                 : 'Dismissed $doctorName\'s request'),
             backgroundColor: accept ? Colors.green : Colors.grey,
           ),
         );
-      }
-      if (accept) {
-        _openExoskeletonSetup(doctorName);
-      } else {
-        _loadRequests(); // Refresh the list after dismissal
       }
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -198,34 +137,11 @@ class _PatientRequestState extends State<PatientRequest> {
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
-                          itemCount: filteredRequests.length +
-                              (_usingDummyData ? 1 : 0),
+                          itemCount: filteredRequests.length,
                           itemBuilder: (context, index) {
-                            if (_usingDummyData && index == 0) {
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF5798C6)
-                                      .withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Text(
-                                  'Using dummy patient requests for testing.',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF2F4D63),
-                                  ),
-                                ),
-                              );
-                            }
-
-                            final requestIndex =
-                                _usingDummyData ? index - 1 : index;
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 16),
-                              child: _buildRequestCard(
-                                  filteredRequests[requestIndex]),
+                              child: _buildRequestCard(filteredRequests[index]),
                             );
                           },
                         ),
@@ -239,7 +155,8 @@ class _PatientRequestState extends State<PatientRequest> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF95B8D1),
+      backgroundColor: Colors.white,
+      iconTheme: const IconThemeData(color: Colors.black),
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -251,33 +168,12 @@ class _PatientRequestState extends State<PatientRequest> {
         'Patient Requests',
         style: TextStyle(
           color: Colors.black,
-          fontSize: 20,
+          fontSize: 22,
           fontWeight: FontWeight.bold,
           fontFamily: 'Poppins',
         ),
       ),
       centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const NotificationsPage()),
-            );
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SettingsPage()),
-            );
-          },
-        ),
-      ],
     );
   }
 

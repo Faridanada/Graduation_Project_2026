@@ -38,9 +38,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
     await _loadProfile();
     await _fetchMessages();
     setState(() => _isLoading = false);
-    
+
     // Start polling every 3 seconds
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _fetchMessages());
+    _pollTimer =
+        Timer.periodic(const Duration(seconds: 3), (_) => _fetchMessages());
   }
 
   Future<void> _loadProfile() async {
@@ -54,7 +55,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Future<void> _fetchMessages() async {
     if (widget.receiverId == null) return;
-    
+
     final fetchedMessages = await ApiService.getChatHistory(widget.receiverId!);
     if (mounted) {
       setState(() {
@@ -75,7 +76,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     if (text.isEmpty || widget.receiverId == null) return;
 
     _messageController.clear();
-    
+
     // Optimistic UI update (optional, but let's just wait for API for simplicity in this flow)
     final success = await ApiService.sendChatMessage(widget.receiverId!, text);
     if (success) {
@@ -83,7 +84,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send message'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Failed to send message'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -94,10 +97,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 14, 93, 146),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
@@ -118,7 +122,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
             Text(
               widget.name,
               style: const TextStyle(
-                color: Colors.white,
+                color: Colors.black,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -126,7 +130,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           ],
         ),
       ),
-      body: _isLoading 
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
@@ -140,7 +144,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           ),
                         )
                       : ListView.builder(
-                          reverse: false, // History is already sorted chronologically
+                          reverse:
+                              false, // History is already sorted chronologically
                           padding: const EdgeInsets.all(16),
                           itemCount: messages.length,
                           itemBuilder: (context, index) {
@@ -148,7 +153,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                             final isSentByMe = msg['senderId'] == currentUserId;
 
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
                               child: Row(
                                 mainAxisAlignment: isSentByMe
                                     ? MainAxisAlignment.end
@@ -171,7 +177,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                   ],
                                   Container(
                                     constraints: BoxConstraints(
-                                      maxWidth: MediaQuery.of(context).size.width * 0.65,
+                                      maxWidth:
+                                          MediaQuery.of(context).size.width *
+                                              0.65,
                                     ),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 16,
@@ -184,14 +192,16 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: isSentByMe 
-                                          ? CrossAxisAlignment.end 
+                                      crossAxisAlignment: isSentByMe
+                                          ? CrossAxisAlignment.end
                                           : CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           msg['messageText'] ?? '',
                                           style: TextStyle(
-                                            color: isSentByMe ? Colors.white : Colors.black,
+                                            color: isSentByMe
+                                                ? Colors.white
+                                                : Colors.black,
                                             fontSize: 14,
                                           ),
                                         ),
@@ -199,7 +209,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                         Text(
                                           _formatTime(msg['createdAt']),
                                           style: TextStyle(
-                                            color: isSentByMe ? Colors.white70 : Colors.black45,
+                                            color: isSentByMe
+                                                ? Colors.white70
+                                                : Colors.black45,
                                             fontSize: 10,
                                           ),
                                         ),

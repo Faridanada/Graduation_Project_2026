@@ -13,6 +13,7 @@ import 'NotificationsPage.dart';
 import 'DoctorProfile.dart';
 import 'AddNewPatient.dart';
 import 'PatientProfilePage.dart';
+import 'PatientExerciseMonitorList.dart';
 
 /// Doctor home page - Main dashboard for healthcare professionals
 class DoctorHome extends StatefulWidget {
@@ -23,6 +24,7 @@ class DoctorHome extends StatefulWidget {
 }
 
 class _DoctorHomeState extends State<DoctorHome> {
+  static const double _topStatCardHeight = 96;
   // UI State Management
   final Set<String> selectedAppointments = {};
   final Set<String> selectedExercises = {};
@@ -106,15 +108,21 @@ class _DoctorHomeState extends State<DoctorHome> {
       backgroundColor: Colors.white,
       elevation: 0.5,
       shadowColor: Colors.grey.withOpacity(0.1),
-      title: const Text(
+      title: Text(
         'FLEXIO',
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: Colors.black,
         ),
       ),
       actions: [
+        // Search button
+        IconButton(
+          icon: const Icon(Icons.search, size: 28),
+          color: Colors.black,
+          onPressed: _openSearchPage,
+        ),
         GestureDetector(
           onTap: () {
             Navigator.push(
@@ -130,10 +138,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Icon(
                   Icons.notifications_none,
-                  color: (doctorStats['alerts'] != null &&
-                          doctorStats['alerts'] > 0)
-                      ? Colors.blue
-                      : Colors.grey,
+                  color: Colors.black,
                   size: 28,
                 ),
               ),
@@ -165,7 +170,8 @@ class _DoctorHomeState extends State<DoctorHome> {
         ),
         // Settings button
         IconButton(
-          icon: const Icon(Icons.settings_outlined, color: Colors.grey),
+          icon: const Icon(Icons.settings_outlined),
+          color: Colors.black,
           onPressed: () {
             Navigator.push(
               context,
@@ -177,62 +183,83 @@ class _DoctorHomeState extends State<DoctorHome> {
     );
   }
 
+  void _openSearchPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DoctorSearchPage()),
+    );
+  }
+
   Widget _buildStatusOverview() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ActivePatientsPage()),
-                );
-              },
-              child: _buildStatusCard(
-                'Active Patients',
-                isLoading ? '-' : '${doctorStats['activePatients'] ?? 0}',
-                const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
-                Icons.people_outline,
+      child: SizedBox(
+        height: _topStatCardHeight,
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ActivePatientsPage()),
+                  );
+                },
+                child: SizedBox(
+                  height: _topStatCardHeight,
+                  child: _buildStatusCard(
+                    'Active Patients',
+                    isLoading ? '-' : '${doctorStats['activePatients'] ?? 0}',
+                    const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                    Icons.people_outline,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TodaysSessionsPage()),
-                );
-              },
-              child: _buildStatusCard(
-                'Today\'s Sessions',
-                isLoading ? '-' : '${doctorStats['todaySessions'] ?? 0}',
-                const Color.fromRGBO(149, 184, 209, 1).withOpacity(0.6),
-                Icons.check_circle_outline,
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const TodaysSessionsPage()),
+                  );
+                },
+                child: SizedBox(
+                  height: _topStatCardHeight,
+                  child: _buildStatusCard(
+                    'Today\'s Sessions',
+                    isLoading ? '-' : '${doctorStats['todaySessions'] ?? 0}',
+                    const Color.fromRGBO(149, 184, 209, 1).withOpacity(0.6),
+                    Icons.check_circle_outline,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AlertsPage()),
-                );
-              },
-              child: _buildStatusCard(
-                'Alerts',
-                isLoading ? '-' : '${doctorStats['alerts'] ?? 0}',
-                const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
-                Icons.warning_outlined,
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AlertsPage()),
+                  );
+                },
+                child: SizedBox(
+                  height: _topStatCardHeight,
+                  child: _buildStatusCard(
+                    'Alerts',
+                    isLoading ? '-' : '${doctorStats['alerts'] ?? 0}',
+                    const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
+                    Icons.warning_outlined,
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -244,30 +271,29 @@ class _DoctorHomeState extends State<DoctorHome> {
     IconData icon,
   ) {
     return Container(
-      height: 140,
-      padding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(minHeight: _topStatCardHeight),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.black54, size: 24),
-          const Spacer(),
+          Icon(icon, color: Colors.black54, size: 18),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 13.5,
+              fontSize: 11,
               color: Colors.black54,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
@@ -752,7 +778,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                 label: 'Assist Patients',
                 icon: Icons.favorite,
                 color: Colors.blue[200],
-                route: const PatientRequest(),
+                route: const PatientExerciseMonitorList(),
               ),
               _buildActivityTile(
                 label: 'Appointments',
@@ -909,6 +935,219 @@ class _DoctorHomeState extends State<DoctorHome> {
           _selectedNavIndex = index;
         });
       },
+    );
+  }
+}
+
+class DoctorSearchPage extends StatefulWidget {
+  const DoctorSearchPage({Key? key}) : super(key: key);
+
+  @override
+  State<DoctorSearchPage> createState() => _DoctorSearchPageState();
+}
+
+class _DoctorSearchPageState extends State<DoctorSearchPage> {
+  final TextEditingController _searchController = TextEditingController();
+  int _tabIndex = 0; // 0 = doctors, 1 = patients
+  bool _isLoading = false;
+  List<dynamic> _results = [];
+
+  Future<void> _search() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _results = [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _results = [];
+    });
+
+    try {
+      final fetched = _tabIndex == 0
+          ? await ApiService.getAllDoctorsForDoctor(name: query)
+          : await ApiService.getAllPatientsForDoctor(name: query);
+
+      if (mounted) {
+        setState(() {
+          _results = fetched;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _results = [];
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: const Text(
+          'Search',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            ToggleButtons(
+              isSelected: [_tabIndex == 0, _tabIndex == 1],
+              onPressed: (index) {
+                setState(() {
+                  _tabIndex = index;
+                  _results = [];
+                });
+              },
+              children: const [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('Doctors'),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('Patients'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onSubmitted: (_) => _search(),
+                    decoration: InputDecoration(
+                      hintText: _tabIndex == 0
+                          ? 'Search doctors by name'
+                          : 'Search patients by name',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 14),
+                  ),
+                  onPressed: _search,
+                  child: const Icon(Icons.search),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _results.isEmpty
+                      ? Center(
+                          child: Text(
+                            _searchController.text.trim().isEmpty
+                                ? 'Type a name to search.'
+                                : 'No results found.',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: _results.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (_, index) {
+                            final item = _results[index];
+                            final title =
+                                item['name'] ?? item['fullname'] ?? 'Unknown';
+                            final subtitle = _tabIndex == 0
+                                ? (item['specialty'] ?? 'No specialty')
+                                : (item['age'] != null
+                                    ? 'Age ${item['age']}'
+                                    : 'Patient');
+
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.black12,
+                                child: Text(
+                                  title.toString().isNotEmpty
+                                      ? title.toString()[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(color: Colors.black),
+                                ),
+                              ),
+                              title: Text(title),
+                              subtitle: Text(subtitle),
+                              trailing: const Icon(Icons.arrow_forward_ios,
+                                  size: 14, color: Colors.black54),
+                              onTap: () {
+                                if (_tabIndex == 1) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PatientProfilePage(
+                                        patientId:
+                                            item['id'] ?? item['_id'] ?? '',
+                                        patientName: item['name'] ?? 'Patient',
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      title: Text(title),
+                                      content: Text(
+                                        'Specialty: ${item['specialty'] ?? 'N/A'}\nEmail: ${item['email'] ?? 'N/A'}',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text('Close'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              },
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

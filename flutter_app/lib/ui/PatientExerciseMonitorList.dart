@@ -55,6 +55,7 @@ class _PatientExerciseMonitorListState
           'Patients - Monitor Exercise',
           style: TextStyle(
             color: Colors.black,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
         ),

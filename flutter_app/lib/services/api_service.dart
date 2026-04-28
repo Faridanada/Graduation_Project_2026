@@ -5,6 +5,25 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
+  static dynamic _normalizeJsonValue(dynamic value) {
+    if (value is Map) {
+      return Map<String, dynamic>.fromEntries(
+        value.entries.map(
+          (entry) => MapEntry(
+            entry.key.toString(),
+            _normalizeJsonValue(entry.value),
+          ),
+        ),
+      );
+    }
+
+    if (value is List) {
+      return value.map(_normalizeJsonValue).toList();
+    }
+
+    return value;
+  }
+
   static String get baseUrl {
     if (io.Platform.isAndroid) {
       return "http://10.0.2.2:5000/api";
@@ -90,7 +109,9 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'] ?? [];
+      final decoded = jsonDecode(response.body);
+      final data = decoded['data'] ?? [];
+      return _normalizeJsonValue(data) as List<dynamic>;
     }
     return [];
   }
@@ -109,7 +130,9 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'] ?? [];
+      final decoded = jsonDecode(response.body);
+      final data = decoded['data'] ?? [];
+      return _normalizeJsonValue(data) as List<dynamic>;
     }
     return [];
   }
@@ -128,7 +151,9 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'] ?? [];
+      final decoded = jsonDecode(response.body);
+      final data = decoded['data'] ?? [];
+      return _normalizeJsonValue(data) as List<dynamic>;
     }
     return [];
   }
@@ -143,7 +168,9 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'] ?? [];
+      final decoded = jsonDecode(response.body);
+      final data = decoded['data'] ?? [];
+      return _normalizeJsonValue(data) as List<dynamic>;
     }
     return [];
   }
@@ -203,7 +230,8 @@ class ApiService {
     return response.statusCode == 201 || response.statusCode == 200;
   }
 
-  static Future<Map<String, dynamic>?> getPatientDetails(String patientId) async {
+  static Future<Map<String, dynamic>?> getPatientDetails(
+      String patientId) async {
     final token = await _getToken();
     if (token == null) return null;
 
@@ -214,7 +242,7 @@ class ApiService {
 
     final url = "$baseUrl/doctor/patients/$patientId";
     print("Calling API: $url");
-    
+
     final response = await http.get(
       Uri.parse(url),
       headers: _headers(token),
@@ -222,12 +250,14 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
-      if (decoded['data'] is Map<String, dynamic>) {
-        return decoded['data'];
-      } else {
-        print("Error: Expected Map for patient details but got ${decoded['data'].runtimeType}");
-        return null;
+      final data = decoded['data'];
+      if (data is Map) {
+        return _normalizeJsonValue(data) as Map<String, dynamic>;
       }
+
+      print(
+          "Error: Expected Map for patient details but got ${data.runtimeType}");
+      return null;
     }
     return null;
   }
@@ -242,7 +272,9 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'] ?? [];
+      final decoded = jsonDecode(response.body);
+      final data = decoded['data'] ?? [];
+      return _normalizeJsonValue(data) as List<dynamic>;
     }
     return [];
   }

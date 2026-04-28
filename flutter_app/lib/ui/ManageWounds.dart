@@ -42,15 +42,17 @@ class _ManageWoundsState extends State<ManageWounds> {
     });
     try {
       final wounds = await ApiService.getDoctorWounds();
-      if (mounted) setState(() {
-        _wounds = wounds;
-        _isLoading = false;
-      });
+      if (mounted)
+        setState(() {
+          _wounds = wounds;
+          _isLoading = false;
+        });
     } catch (e) {
-      if (mounted) setState(() {
-        _error = 'Failed to load wound reports.';
-        _isLoading = false;
-      });
+      if (mounted)
+        setState(() {
+          _error = 'Failed to load wound reports.';
+          _isLoading = false;
+        });
     }
   }
 
@@ -71,7 +73,8 @@ class _ManageWoundsState extends State<ManageWounds> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F5FB),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF95B8D1),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -89,8 +92,7 @@ class _ManageWoundsState extends State<ManageWounds> {
             const SizedBox(width: 10),
             if (_unreadCount > 0)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE53935),
                   borderRadius: BorderRadius.circular(12),
@@ -114,18 +116,17 @@ class _ManageWoundsState extends State<ManageWounds> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_error!,
-                          style: const TextStyle(color: Colors.red)),
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                          onPressed: _loadWounds,
-                          child: const Text('Retry')),
+                          onPressed: _loadWounds, child: const Text('Retry')),
                     ],
                   ),
                 )
               : RefreshIndicator(
                   onRefresh: _loadWounds,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ── FILTER CHIPS ──────────────────────────────────
                       Padding(
@@ -179,8 +180,7 @@ class _ManageWoundsState extends State<ManageWounds> {
           boxShadow: [
             if (!selected)
               BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 4)
+                  color: Colors.black.withValues(alpha: 0.06), blurRadius: 4)
           ],
         ),
         child: Text(
@@ -203,8 +203,7 @@ class _ManageWoundsState extends State<ManageWounds> {
     final patientName = wound['patientName'] ?? 'Patient';
     final woundArea =
         wound['notes']?['woundArea'] ?? wound['woundArea'] ?? 'Unknown area';
-    final painLevel =
-        wound['notes']?['painLevel'] ?? wound['painLevel'] ?? '-';
+    final painLevel = wound['notes']?['painLevel'] ?? wound['painLevel'] ?? '-';
     final createdAt = wound['createdAt'] as String? ?? '';
     final dateStr =
         createdAt.length >= 10 ? createdAt.substring(0, 10) : createdAt;
@@ -215,9 +214,7 @@ class _ManageWoundsState extends State<ManageWounds> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isNew
-                ? const Color(0xFFE53935)
-                : Colors.grey.shade200,
+            color: isNew ? const Color(0xFFE53935) : Colors.grey.shade200,
             width: isNew ? 1.8 : 1.0,
           ),
           boxShadow: [
@@ -242,8 +239,7 @@ class _ManageWoundsState extends State<ManageWounds> {
                       ? Image.network(
                           'http://10.0.2.2:5000$imagePath',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _noImageBox(woundArea),
+                          errorBuilder: (_, __, ___) => _noImageBox(woundArea),
                         )
                       : _noImageBox(woundArea),
 
@@ -381,13 +377,11 @@ class _ManageWoundsState extends State<ManageWounds> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.healing_rounded,
-                color: Colors.grey.shade400, size: 36),
+            Icon(Icons.healing_rounded, color: Colors.grey.shade400, size: 36),
             const SizedBox(height: 4),
             Text(label,
                 textAlign: TextAlign.center,
-                style:
-                    TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
           ],
         ),
       ),

@@ -37,7 +37,8 @@ class _ChatsState extends State<Chats> {
         setState(() {
           chatList = fetched.map((c) {
             String initials = '';
-            if (c['otherUserName'] != null && (c['otherUserName'] as String).isNotEmpty) {
+            if (c['otherUserName'] != null &&
+                (c['otherUserName'] as String).isNotEmpty) {
               final names = (c['otherUserName'] as String).trim().split(' ');
               if (names.length >= 2) {
                 initials = (names[0][0] + names[1][0]).toUpperCase();
@@ -68,7 +69,7 @@ class _ChatsState extends State<Chats> {
       final dt = DateTime.parse(iso).toLocal();
       final now = DateTime.now();
       final diff = now.difference(dt);
-      
+
       if (diff.inMinutes < 1) return 'Just now';
       if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
       if (diff.inHours < 24) return '${diff.inHours} hours ago';
@@ -86,9 +87,9 @@ class _ChatsState extends State<Chats> {
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          // Search bar with blue background
+          // Search bar on white background
           Container(
-            color: const Color(0xFF6BA5CF),
+            color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: TextField(
               decoration: InputDecoration(
@@ -102,7 +103,15 @@ class _ChatsState extends State<Chats> {
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFF6BA5CF)),
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -140,7 +149,8 @@ class _ChatsState extends State<Chats> {
                                         name: chat['name'],
                                         initials: chat['initials'],
                                         message: chat['message'],
-                                        receiverId: chat['userId'], // Ensure receiverId is passed
+                                        receiverId: chat[
+                                            'userId'], // Ensure receiverId is passed
                                       ),
                                     ),
                                   );
@@ -159,12 +169,13 @@ class _ChatsState extends State<Chats> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF6BA5CF),
+      backgroundColor: Colors.white,
+      iconTheme: const IconThemeData(color: Colors.black),
       elevation: 0,
       title: const Text(
         'Chats',
         style: TextStyle(
-          color: Colors.white,
+          color: Colors.black,
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
@@ -172,7 +183,7 @@ class _ChatsState extends State<Chats> {
       centerTitle: false,
       actions: [
         IconButton(
-          icon: const Icon(Icons.add, color: Colors.white, size: 24),
+          icon: const Icon(Icons.add, color: Colors.black, size: 24),
           onPressed: () {
             Navigator.push(
               context,
@@ -184,7 +195,7 @@ class _ChatsState extends State<Chats> {
         ),
         IconButton(
           icon: const Icon(Icons.notifications_none,
-              color: Colors.white, size: 24),
+              color: Colors.black, size: 24),
           onPressed: () {
             Navigator.push(
               context,
@@ -194,7 +205,7 @@ class _ChatsState extends State<Chats> {
           },
         ),
         IconButton(
-          icon: const Icon(Icons.settings, color: Colors.white, size: 24),
+          icon: const Icon(Icons.settings, color: Colors.black, size: 24),
           onPressed: () {
             Navigator.push(
               context,

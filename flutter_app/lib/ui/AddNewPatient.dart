@@ -47,6 +47,7 @@ class _AddNewPatientState extends State<AddNewPatient> {
           'Add New Patient',
           style: TextStyle(
             color: Colors.black,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
         ),

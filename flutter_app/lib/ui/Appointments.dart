@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'SettingsPage.dart';
-import 'NotificationsPage.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 
@@ -30,8 +28,12 @@ class _AppointmentsState extends State<Appointments> {
         setState(() {
           allAppointments = data.map((apt) {
             String statusValue = apt['status'] ?? 'pending';
-            String uiStatus = (statusValue == 'completed' || statusValue == 'upcoming' || statusValue == 'Confirmed') ? 'Confirmed' : 'Pending';
-            
+            String uiStatus = (statusValue == 'completed' ||
+                    statusValue == 'upcoming' ||
+                    statusValue == 'Confirmed')
+                ? 'Confirmed'
+                : 'Pending';
+
             return {
               'time': apt['time'] ?? '12:00 PM',
               'name': apt['patientName'] ?? apt['doctorName'] ?? 'Unknown',
@@ -133,44 +135,45 @@ class _AppointmentsState extends State<Appointments> {
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ListView.builder(
-                  itemCount: filteredAppointments.length,
-                  itemBuilder: (context, index) {
-                    final appointment = filteredAppointments[index];
-                    bool showDateLabel = false;
+                        itemCount: filteredAppointments.length,
+                        itemBuilder: (context, index) {
+                          final appointment = filteredAppointments[index];
+                          bool showDateLabel = false;
 
-                    // Show date label for non-today appointments
-                    if (selectedFilter != 'Today') {
-                      if (index == 0 ||
-                          filteredAppointments[index - 1]['date'].day !=
-                              appointment['date'].day) {
-                        showDateLabel = true;
-                      }
-                    }
+                          // Show date label for non-today appointments
+                          if (selectedFilter != 'Today') {
+                            if (index == 0 ||
+                                filteredAppointments[index - 1]['date'].day !=
+                                    appointment['date'].day) {
+                              showDateLabel = true;
+                            }
+                          }
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (showDateLabel) ...[
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8, top: 8),
-                            child: Text(
-                              DateFormat('EEEE, d MMMM')
-                                  .format(appointment['date']),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                                fontFamily: 'Poppins',
-                              ),
-                            ),
-                          ),
-                        ],
-                        _buildAppointmentCard(appointment),
-                        const SizedBox(height: 12),
-                      ],
-                    );
-                  },
-                ),
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (showDateLabel) ...[
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(bottom: 8, top: 8),
+                                  child: Text(
+                                    DateFormat('EEEE, d MMMM')
+                                        .format(appointment['date']),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              _buildAppointmentCard(appointment),
+                              const SizedBox(height: 12),
+                            ],
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -182,7 +185,8 @@ class _AppointmentsState extends State<Appointments> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF95B8D1),
+      backgroundColor: Colors.white,
+      iconTheme: const IconThemeData(color: Colors.black),
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -194,33 +198,12 @@ class _AppointmentsState extends State<Appointments> {
         'Appointments',
         style: TextStyle(
           color: Colors.black,
-          fontSize: 20,
+          fontSize: 22,
           fontWeight: FontWeight.bold,
           fontFamily: 'Poppins',
         ),
       ),
       centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const NotificationsPage()),
-            );
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SettingsPage()),
-            );
-          },
-        ),
-      ],
     );
   }
 
@@ -339,7 +322,8 @@ class _AppointmentsState extends State<Appointments> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: isConfirmed
-                  ? const Color.fromARGB(255, 99, 197, 150).withValues(alpha: 0.2)
+                  ? const Color.fromARGB(255, 99, 197, 150)
+                      .withValues(alpha: 0.2)
                   : Colors.orange.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -396,4 +380,3 @@ class _AppointmentsState extends State<Appointments> {
     );
   }
 }
-

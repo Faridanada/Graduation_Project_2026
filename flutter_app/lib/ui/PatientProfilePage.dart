@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'ExoskeletonDegreeSetupPage.dart';
 import 'ConversationScreen.dart';
-import 'AssignExerciseScreen.dart';
 
 class PatientProfilePage extends StatefulWidget {
   final String patientId;
@@ -42,7 +41,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
       final data = await ApiService.getPatientDetails(widget.patientId);
       if (mounted) {
         setState(() {
-          _patientData = data;
+          _patientData = data == null ? null : Map<String, dynamic>.from(data);
           _isLoading = false;
         });
       }
@@ -77,8 +76,8 @@ class _PatientProfilePageState extends State<PatientProfilePage>
   }
 
   Widget _buildContent() {
-    final profile = _patientData!['profile'] ?? {};
-    final profileData = profile['profileData'] ?? {};
+    final profile = Map<String, dynamic>.from(_patientData!['profile'] ?? {});
+    final profileData = Map<String, dynamic>.from(profile['profileData'] ?? {});
 
     final injuryType =
         profile['injuryType'] ?? profileData['injuryType'] ?? 'General Patient';
@@ -216,7 +215,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
       padding: const EdgeInsets.all(16),
       itemCount: exercises.length,
       itemBuilder: (context, index) {
-        final ex = exercises[index];
+        final ex = Map<String, dynamic>.from(exercises[index] as Map);
         return Card(
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 12),
@@ -243,7 +242,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
       padding: const EdgeInsets.all(16),
       itemCount: appointments.length,
       itemBuilder: (context, index) {
-        final apt = appointments[index];
+        final apt = Map<String, dynamic>.from(appointments[index] as Map);
         return Card(
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 12),

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'SettingsPage.dart';
-import 'NotificationsPage.dart';
 
 class AiReports extends StatefulWidget {
   const AiReports({Key? key}) : super(key: key);
@@ -18,7 +16,7 @@ class _AiReportsState extends State<AiReports> {
 
   List<String> patients = [];
   final List<String> timeframes = ['Weekly', 'Monthly', 'Custom'];
-  
+
   // Dynamic patient mapping
   Map<String, Map<String, dynamic>> patientData = {};
   List<Map<String, dynamic>> weeklyProgress = [];
@@ -35,20 +33,26 @@ class _AiReportsState extends State<AiReports> {
       if (mounted) {
         setState(() {
           patients = realPatients.map((p) => p['name'] as String).toList();
-          
+
           if (patients.isNotEmpty) {
             selectedPatient = patients.first;
             // Generate some semi-dynamic placeholder data for each real patient
             for (var p in realPatients) {
-              final score = 60 + (p['name'].length * 2) % 35; // Derived from name for consistency
+              final score = 60 +
+                  (p['name'].length * 2) %
+                      35; // Derived from name for consistency
               patientData[p['name']] = {
                 'recoveryScore': '$score%',
-                'recoveryStatus': score > 80 ? 'Patient recovery\nis on track' : 'Patient needs\nmore attention',
-                'riskLevel': score > 85 ? 'Low Risk' : (score > 65 ? 'Medium' : 'High Risk'),
+                'recoveryStatus': score > 80
+                    ? 'Patient recovery\nis on track'
+                    : 'Patient needs\nmore attention',
+                'riskLevel': score > 85
+                    ? 'Low Risk'
+                    : (score > 65 ? 'Medium' : 'High Risk'),
               };
             }
             selectedRisk = patientData[selectedPatient!]!['riskLevel'];
-            
+
             // Generate mock progress for the selected patient
             weeklyProgress = [
               {
@@ -123,7 +127,8 @@ class _AiReportsState extends State<AiReports> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF95B8D1),
+      backgroundColor: Colors.white,
+      iconTheme: const IconThemeData(color: Colors.black),
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -135,33 +140,12 @@ class _AiReportsState extends State<AiReports> {
         'AI Reports',
         style: TextStyle(
           color: Colors.black,
-          fontSize: 20,
+          fontSize: 22,
           fontWeight: FontWeight.bold,
           fontFamily: 'Poppins',
         ),
       ),
       centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const NotificationsPage()),
-            );
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SettingsPage()),
-            );
-          },
-        ),
-      ],
     );
   }
 
@@ -1030,4 +1014,3 @@ class LineChartPainter extends CustomPainter {
         oldDelegate.timeframe != timeframe;
   }
 }
-

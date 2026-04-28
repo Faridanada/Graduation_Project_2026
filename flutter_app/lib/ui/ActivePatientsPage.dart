@@ -24,13 +24,15 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
     setState(() => isLoading = true);
     final fetched = await ApiService.getDoctorPatients();
     setState(() {
-      activePatients = fetched.map((p) => {
-        'id': p['id'] ?? p['_id'],
-        'name': p['name'] ?? 'Unknown',
-        'age': p['age']?.toString() ?? 'N/A',
-        'phone': p['phone'] ?? 'N/A',
-        'injuryType': p['injuryType'] ?? 'Unknown', // Fallback
-      }).toList();
+      activePatients = fetched
+          .map((p) => {
+                'id': (p['id'] ?? p['_id'] ?? '').toString(),
+                'name': (p['name'] ?? 'Unknown').toString(),
+                'age': p['age']?.toString() ?? 'N/A',
+                'phone': p['phone'] ?? 'N/A',
+                'injuryType': p['injuryType'] ?? 'Unknown', // Fallback
+              })
+          .toList();
       isLoading = false;
     });
   }
@@ -104,7 +106,7 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
             MaterialPageRoute(
               builder: (context) => PatientProfilePage(
                 patientId: patient['id'] ?? '',
-                patientName: patient['name'],
+                patientName: patient['name']?.toString() ?? 'Unknown',
               ),
             ),
           );
@@ -131,7 +133,9 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
                     radius: 32,
                     backgroundColor: const Color(0xFF95B8D1).withOpacity(0.6),
                     child: Text(
-                      patient['name'].substring(0, 1),
+                      (patient['name'] as String).isNotEmpty
+                          ? patient['name'].substring(0, 1)
+                          : '?',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -196,7 +200,8 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AssignExerciseScreen(patient: patient),
+                              builder: (context) =>
+                                  AssignExerciseScreen(patient: patient),
                             ),
                           );
                         },
