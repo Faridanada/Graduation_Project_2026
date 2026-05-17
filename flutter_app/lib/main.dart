@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:rehabilitation_app/ui/WelcomePage.dart';
 import 'package:rehabilitation_app/ui/login.dart';
 import 'package:rehabilitation_app/ui/signup.dart';
-import 'package:rehabilitation_app/ui/patientHome.dart';
+import 'package:rehabilitation_app/ui/patientHome.dart' as patient_home;
 import 'package:rehabilitation_app/ui/DoctorHome.dart';
 import 'services/api_service.dart';
 
@@ -62,7 +62,7 @@ class _InitialCoordinatorState extends State<InitialCoordinator> {
 
     // Attempt to validate token by fetching profile
     final profile = await ApiService.getUserProfile();
-    
+
     if (mounted) {
       if (profile == null) {
         // Token was invalid or expired
@@ -71,13 +71,14 @@ class _InitialCoordinatorState extends State<InitialCoordinator> {
             MaterialPageRoute(builder: (_) => const WelcomePage()));
       } else {
         // Active session. Route based on role
-        final String role = profile['role']?.toString().toLowerCase() ?? 'patient';
+        final String role =
+            profile['role']?.toString().toLowerCase() ?? 'patient';
         if (role == 'doctor') {
           Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (_) => const DoctorHome()));
         } else {
-          Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const PatientHomeScreen()));
+          Navigator.of(context).pushReplacement(MaterialPageRoute(
+              builder: (_) => const patient_home.PatientHomeScreen()));
         }
       }
     }
@@ -85,10 +86,10 @@ class _InitialCoordinatorState extends State<InitialCoordinator> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFF9FBFF),
-      body: Center(
-        child: CircularProgressIndicator(color: Color(0xFF4A90E2)),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FBFF),
+      body: const Center(
+        child: CircularProgressIndicator(color: Color(0xFF2196F3)),
       ),
     );
   }

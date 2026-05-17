@@ -29,10 +29,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
   assets:
+    - assets/
     - assets/images/
-    - assets/exercise.png
-    - assets/doctor.jpg
-    - assets/activeexercise.png
-    - assets/passiveexercise.png
-    - assets/exercise2.png
