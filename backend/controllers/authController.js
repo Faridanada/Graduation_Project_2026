@@ -119,9 +119,12 @@ exports.loginUser = async (req, res) => {
       return res.status(401).json({ message: "Incorrect password" });
     }
 
-    const secret = process.env.JWT_SECRET || "supersecretkey";
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error("JWT_SECRET is not set");
+    }
 
-    const expiresIn = rememberMe ? "30d" : "1d";
+    const expiresIn = rememberMe ? "7d" : "1h";
 
     const token = jwt.sign(
       { id: user.id, role: user.role },

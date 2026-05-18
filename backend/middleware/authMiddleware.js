@@ -14,10 +14,12 @@ function authMiddleware(req, res, next) {
   }
 
   try {
-    // Fixed: properly reference the environment variable
-    const secret = process.env.JWT_SECRET || "supersecretkey";
-    
-    const verified = jwt.verify(token, secret);
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error("JWT_SECRET is not set");
+    }
+
+    const verified = jwt.verify(token, secret, { algorithms: ['HS256'] });
     req.user = verified;
     next();
   } catch (err) {
