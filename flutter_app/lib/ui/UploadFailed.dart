@@ -63,7 +63,7 @@ class _UploadFailedPageState extends State<UploadFailedPage> {
                 child: ElevatedButton(
                   onPressed: () {
                     // Retry upload logic
-                    Navigator.pop(context);
+                    if (Navigator.canPop(context)) Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6BA5CF),
@@ -108,7 +108,7 @@ class _UploadFailedPageState extends State<UploadFailedPage> {
               // Back button
               TextButton.icon(
                 onPressed: () {
-                  Navigator.pop(context);
+                  if (Navigator.canPop(context)) Navigator.pop(context);
                 },
                 icon: Icon(
                   Icons.arrow_back,

@@ -205,7 +205,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const ActivePatientsPage()),
-                  );
+                  ).then((_) => _loadDashboardData());
                 },
                 child: SizedBox(
                   height: _topStatCardHeight,
@@ -226,7 +226,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const TodaysSessionsPage()),
-                  );
+                  ).then((_) => _loadDashboardData());
                 },
                 child: SizedBox(
                   height: _topStatCardHeight,
@@ -246,7 +246,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AlertsPage()),
-                  );
+                  ).then((_) => _loadDashboardData());
                 },
                 child: SizedBox(
                   height: _topStatCardHeight,
@@ -566,7 +566,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                     MaterialPageRoute(
                       builder: (_) => const AllPatientsPage(),
                     ),
-                  );
+                  ).then((_) => _loadDashboardData());
                 },
                 child: const Text(
                   'See All >',
@@ -625,7 +625,7 @@ class _DoctorHomeState extends State<DoctorHome> {
               patientName: patient['name'] ?? 'Unknown',
             ),
           ),
-        );
+        ).then((_) => _loadDashboardData());
       },
       child: Container(
         width: 160,

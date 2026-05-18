@@ -89,7 +89,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
                     icon: const Icon(Icons.arrow_back),
                   ),
                   const Spacer(),
@@ -289,3 +289,4 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 }
+

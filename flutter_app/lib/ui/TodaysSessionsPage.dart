@@ -24,11 +24,11 @@ class _TodaysSessionsPageState extends State<TodaysSessionsPage> {
       if (mounted) {
         setState(() {
           todaysSessions = fetched.map((s) => {
-            'name': s['patientName'] ?? s['doctorName'] ?? 'Unknown',
+            'name': (s['patientName'] ?? s['doctorName'] ?? 'Unknown').toString(),
             'age': s['age']?.toString() ?? 'N/A',
-            'phone': s['phone'] ?? 'N/A',
-            'injuryType': s['type'] ?? 'Consultation',
-            'time': s['time'] ?? '12:00 PM',
+            'phone': s['phone']?.toString() ?? 'N/A',
+            'injuryType': s['type']?.toString() ?? 'Consultation',
+            'time': s['time']?.toString() ?? '12:00 PM',
             'status': s['status'] == 'completed' ? 'Completed' : (s['status'] == 'in_progress' ? 'In Progress' : 'Scheduled'),
           }).toList();
           isLoading = false;
@@ -49,7 +49,7 @@ class _TodaysSessionsPageState extends State<TodaysSessionsPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            Navigator.pop(context);
+            if (Navigator.canPop(context)) Navigator.pop(context);
           },
         ),
         title: const Text(
@@ -82,13 +82,23 @@ class _TodaysSessionsPageState extends State<TodaysSessionsPage> {
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: todaysSessions.length,
-                itemBuilder: (context, index) {
-                  return _buildSessionCard(todaysSessions[index]);
-                },
-              ),
+                  : todaysSessions.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No sessions today.',
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                                fontFamily: 'Poppins'),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: todaysSessions.length,
+                          itemBuilder: (context, index) {
+                            return _buildSessionCard(todaysSessions[index]);
+                          },
+                        ),
             ),
           ],
         ),

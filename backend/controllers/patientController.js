@@ -43,7 +43,8 @@ const patientController = {
   async getTodayExercises(req, res) {
     try {
       const patientId = req.user?.id;
-      const exercises = await dbService.getTodayExercises(patientId);
+      const dateString = req.query.date;
+      const exercises = await dbService.getTodayExercises(patientId, dateString);
       res.json({ statusCode: 200, data: exercises });
     } catch (error) {
       console.error('Error fetching today exercises:', error);

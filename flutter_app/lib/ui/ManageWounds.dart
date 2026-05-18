@@ -78,7 +78,7 @@ class _ManageWoundsState extends State<ManageWounds> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
         title: Row(
           children: [
@@ -388,3 +388,4 @@ class _ManageWoundsState extends State<ManageWounds> {
     );
   }
 }
+

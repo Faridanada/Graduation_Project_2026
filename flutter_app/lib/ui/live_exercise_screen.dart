@@ -62,7 +62,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   /// RESUME
                   GestureDetector(
                     onTap: () {
-                      Navigator.pop(context);
+                      if (Navigator.canPop(context)) Navigator.pop(context);
                       setState(() => isPaused = false);
                     },
                     child: Container(

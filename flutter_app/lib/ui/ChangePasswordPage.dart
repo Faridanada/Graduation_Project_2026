@@ -34,7 +34,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
         title: const Text(
           'Change Password',
@@ -175,7 +175,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                             backgroundColor: Colors.green,
                           ),
                         );
-                        Navigator.pop(context);
+                        if (Navigator.canPop(context)) Navigator.pop(context);
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -247,4 +247,5 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 }
+
 

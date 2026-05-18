@@ -4,6 +4,7 @@ import 'patientRequest.dart';
 import 'Chats.dart';
 import 'ManageWounds.dart';
 import 'ActivePatientsPage.dart';
+import 'patientHome.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -15,6 +16,7 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage> {
   List<dynamic> _notifications = [];
   bool _isLoading = true;
+  String _userRole = 'patient';
 
   @override
   void initState() {
@@ -24,6 +26,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Future<void> _fetchNotifications() async {
     try {
+      final profile = await ApiService.getUserProfile();
+      if (profile != null) _userRole = profile['role'] ?? 'patient';
       final data = await ApiService.getNotifications();
       if (mounted) {
         setState(() {
@@ -73,7 +77,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
         title: const Text(
           'Notifications',
@@ -181,15 +185,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           );
         } else if (type.contains('Wound')) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ManageWounds()),
-          );
+          if (_userRole == 'doctor') {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageWounds()));
+          }
         } else if (type.contains('Exercise') || type.contains('Recovery')) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ActivePatientsPage()),
-          );
+          if (_userRole == 'doctor') {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const ActivePatientsPage()));
+          } else {
+            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const PatientHomeScreen()), (route) => false);
+          }
         }
       },
       child: Container(
@@ -287,3 +291,4 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 }
+

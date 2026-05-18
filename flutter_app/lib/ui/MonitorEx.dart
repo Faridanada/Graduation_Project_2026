@@ -151,7 +151,7 @@ class _MonitorExState extends State<MonitorEx>
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
         onPressed: () {
-          Navigator.pop(context);
+          if (Navigator.canPop(context)) Navigator.pop(context);
         },
       ),
       title: const Text(
@@ -714,7 +714,7 @@ class _MonitorExState extends State<MonitorEx>
         if (index == 0) {
           // Home - Navigate back home or pop
           if (Navigator.canPop(context)) {
-            Navigator.pop(context);
+            if (Navigator.canPop(context)) Navigator.pop(context);
           } else {
             Navigator.pushReplacement(
               context,

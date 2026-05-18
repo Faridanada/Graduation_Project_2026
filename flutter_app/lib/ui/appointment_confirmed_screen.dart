@@ -43,7 +43,7 @@ class _AppointmentConfirmedScreenState
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
                   ),
                 ),
 
@@ -253,3 +253,4 @@ class _AppointmentConfirmedScreenState
     );
   }
 }
+

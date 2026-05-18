@@ -73,7 +73,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
         ),
       );
       if (success) {
-        Navigator.pop(context);
+        if (Navigator.canPop(context)) Navigator.pop(context);
       }
     }
   }
@@ -124,7 +124,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
         title: const Text(
           'Availability & Schedule',
@@ -296,4 +296,5 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
     );
   }
 }
+
 

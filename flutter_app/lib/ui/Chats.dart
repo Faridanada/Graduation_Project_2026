@@ -332,7 +332,7 @@ class _ChatsState extends State<Chats> {
       ],
       onTap: (index) {
         if (index == 0) {
-          Navigator.pop(context);
+          if (Navigator.canPop(context)) Navigator.pop(context);
           return;
         }
         if (index == 2) {

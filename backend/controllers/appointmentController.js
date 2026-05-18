@@ -30,7 +30,7 @@ const appointmentController = {
         doctorIdParam = req.body.doctorId; // Patient selects doctor
       }
 
-      const { date, time, notes } = req.body;
+      const { date, time, type, notes } = req.body;
 
       // Validation: Date must be in the future (today or later)
       const today = new Date().toISOString().split('T')[0];
@@ -42,7 +42,7 @@ const appointmentController = {
         return res.status(400).json({ message: 'Must provide doctorId/patientId, date, and time' });
       }
 
-      const newAppt = await dbService.createAppointment(patientId, doctorIdParam, date, time, notes);
+      const newAppt = await dbService.createAppointment(patientId, doctorIdParam, date, time, type, notes);
       
       // Notify the other party
       const notifyId = req.user.role === 'doctor' ? patientId : doctorIdParam;

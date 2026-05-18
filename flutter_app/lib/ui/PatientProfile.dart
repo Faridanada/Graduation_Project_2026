@@ -2,26 +2,24 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'login.dart';
 import 'PersonalInformationPage.dart';
-import 'MedicalLicensePage.dart';
-import 'SpecializationPage.dart';
-import 'AvailabilityPage.dart';
+import 'SettingsPage.dart';
 import 'ChangePasswordPage.dart';
-import 'Chats.dart';
+import 'HelpSupportPage.dart';
 
-class DoctorProfile extends StatefulWidget {
-  final String source; // 'home' or 'settings'
+class PatientProfile extends StatefulWidget {
+  final bool isTab;
 
-  const DoctorProfile({Key? key, this.source = 'home'}) : super(key: key);
+  const PatientProfile({Key? key, this.isTab = true}) : super(key: key);
 
   @override
-  State<DoctorProfile> createState() => _DoctorProfileState();
+  State<PatientProfile> createState() => _PatientProfileState();
 }
 
-class _DoctorProfileState extends State<DoctorProfile> {
+class _PatientProfileState extends State<PatientProfile> {
   bool isLoading = true;
   Map<String, dynamic> userProfile = {};
-  Map<String, dynamic> doctorStats = {};
-  int _selectedNavIndex = 2; // Profile is index 2
+  int completedExercises = 0;
+  int upcomingAppointments = 0;
 
   @override
   void initState() {
@@ -32,12 +30,14 @@ class _DoctorProfileState extends State<DoctorProfile> {
   Future<void> _loadProfileData() async {
     try {
       final profile = await ApiService.getUserProfile() ?? {};
-      final stats = await ApiService.getDoctorStats();
-
+      final exercises = await ApiService.getPatientTodayExercises();
+      final appointment = await ApiService.getPatientNextAppointment();
+      
       if (mounted) {
         setState(() {
           userProfile = profile;
-          doctorStats = stats;
+          completedExercises = exercises.where((e) => e['isCompleted'] == true).length;
+          upcomingAppointments = appointment != null ? 1 : 0;
           isLoading = false;
         });
       }
@@ -82,23 +82,20 @@ class _DoctorProfileState extends State<DoctorProfile> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.white,
-                              size: 28,
+                          if (!widget.isTab)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                              onPressed: () {
+                                if (Navigator.canPop(context)) Navigator.pop(context);
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                             ),
-                            onPressed: () {
-                              if (widget.source == 'settings') {
-                                if (Navigator.canPop(context)) Navigator.pop(context);
-                              } else {
-                                if (Navigator.canPop(context)) Navigator.pop(context);
-                              }
-                            },
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                          const SizedBox(width: 16),
+                          if (!widget.isTab) const SizedBox(width: 16),
                           const Text(
                             'Profile',
                             style: TextStyle(
@@ -147,7 +144,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  (userProfile['role'] ?? '')
+                                  (userProfile['role'] ?? 'Patient')
                                       .toString()
                                       .toUpperCase(),
                                   style: TextStyle(
@@ -184,7 +181,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
-                      offset: Offset(0, 5),
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
@@ -206,39 +203,26 @@ class _DoctorProfileState extends State<DoctorProfile> {
                     _buildDivider(),
                     _buildMenuItem(
                       context,
-                      icon: Icons.medical_information_outlined,
-                      title: 'Medical License & Credentials',
+                      icon: Icons.settings_outlined,
+                      title: 'Settings',
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const MedicalLicensePage()),
+                              builder: (_) => const SettingsPage()),
                         );
                       },
                     ),
                     _buildDivider(),
                     _buildMenuItem(
                       context,
-                      icon: Icons.work_outline,
-                      title: 'Specialization',
+                      icon: Icons.help_outline,
+                      title: 'Help & Support',
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const SpecializationPage()),
-                        );
-                      },
-                    ),
-                    _buildDivider(),
-                    _buildMenuItem(
-                      context,
-                      icon: Icons.calendar_month_outlined,
-                      title: 'Availability & Schedule',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const AvailabilityPage()),
+                              builder: (_) => const HelpSupportPage()),
                         );
                       },
                     ),
@@ -271,8 +255,8 @@ class _DoctorProfileState extends State<DoctorProfile> {
                               child: CircularProgressIndicator(
                                   color: Colors.white))
                           : _buildStatCard(
-                              '${doctorStats['activePatients'] ?? 0}',
-                              'Active Patients'),
+                              '$completedExercises',
+                              'Completed Sessions'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -281,12 +265,12 @@ class _DoctorProfileState extends State<DoctorProfile> {
                               child: CircularProgressIndicator(
                                   color: Colors.white))
                           : _buildStatCard(
-                              '${doctorStats['todaySessions'] ?? 0}',
-                              'Total Sessions'),
+                              '$upcomingAppointments',
+                              'Upcoming Appts'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildStatCard('-', 'Success Rate'),
+                      child: _buildStatCard('-', 'Recovery Score'),
                     ),
                   ],
                 ),
@@ -337,45 +321,6 @@ class _DoctorProfileState extends State<DoctorProfile> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return BottomNavigationBar(
-      currentIndex: _selectedNavIndex,
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      selectedItemColor: const Color(0xFF6BA5CF),
-      unselectedItemColor: Colors.grey[400],
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          label: 'Chats',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
-      onTap: (index) {
-        if (index == 2) return;
-        if (index == 0) {
-          Navigator.popUntil(context, (route) => route.isFirst);
-          return;
-        }
-        if (index == 1) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const Chats()),
-          );
-          return;
-        }
-      },
     );
   }
 
@@ -409,7 +354,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   color: Colors.black87,
@@ -437,7 +382,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
   Widget _buildStatCard(String value, String label) {
     return Container(
       height: 64,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -454,19 +399,20 @@ class _DoctorProfileState extends State<DoctorProfile> {
         children: [
           Text(
             value,
-            style: TextStyle(
-              fontSize: 20,
+            style: const TextStyle(
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 0),
+          const SizedBox(height: 2),
           Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10,
               color: Colors.grey[600],
+              height: 1.1,
             ),
           ),
         ],

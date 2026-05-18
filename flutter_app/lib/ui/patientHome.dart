@@ -10,6 +10,7 @@ import 'report_wound_screen.dart';
 import 'start_exercise_screen.dart';
 import 'FindDoctorScreen.dart';
 import '../services/api_service.dart';
+import 'PatientProfile.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({super.key});
@@ -24,7 +25,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   final List<Widget> _pages = [
     _HomeContent(),
     const Chats(showNavBar: false),
-    const SettingsPage(),
+    const PatientProfile(isTab: true),
   ];
 
   @override
@@ -452,7 +453,7 @@ class _HomeContentState extends State<_HomeContent> {
                               context,
                               MaterialPageRoute(
                                   builder: (_) => StartExerciseScreen(
-                                        exercise: exercise as Map<String, dynamic>?,
+                                        exercise: exercise != null ? Map<String, dynamic>.from(exercise as Map) : null,
                                       )),
                             );
                           },

@@ -78,7 +78,7 @@ class _MedicalLicensePageState extends State<MedicalLicensePage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); }, child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               setState(() {
@@ -95,7 +95,7 @@ class _MedicalLicensePageState extends State<MedicalLicensePage> {
                   _licenses[index] = newItem;
                 }
               });
-              Navigator.pop(context);
+              if (Navigator.canPop(context)) Navigator.pop(context);
             },
             child: const Text('Save'),
           ),
@@ -228,4 +228,5 @@ class _MedicalLicensePageState extends State<MedicalLicensePage> {
     );
   }
 }
+
 

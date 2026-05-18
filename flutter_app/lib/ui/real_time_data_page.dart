@@ -75,7 +75,7 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
                     child: const Icon(Icons.arrow_back),
                   ),
                   const Spacer(),
@@ -481,3 +481,4 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
     );
   }
 }
+

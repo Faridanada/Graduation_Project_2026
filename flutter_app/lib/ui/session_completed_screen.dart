@@ -21,7 +21,7 @@ class SessionCompletedScreen extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
                   ),
                   const Spacer(),
                   const Text(
@@ -286,7 +286,7 @@ class SessionCompletedScreen extends StatelessWidget {
                       ),
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.pop(context);
+                          if (Navigator.canPop(context)) Navigator.pop(context);
                         },
                         icon: const Icon(Icons.home),
                         label: const Text("Back to Home"),
@@ -424,3 +424,4 @@ class SessionCompletedScreen extends StatelessWidget {
     );
   }
 }
+

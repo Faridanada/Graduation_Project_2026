@@ -56,6 +56,45 @@ class _PatientProfilePageState extends State<PatientProfilePage>
     }
   }
 
+  Future<void> _confirmRemovePatient() async {
+    final bool? confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Patient?'),
+        content: Text('Are you sure you want to remove ${widget.patientName} from your active patients list?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Remove', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+      final success = await ApiService.removePatient(widget.patientId);
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Patient removed successfully.')),
+          );
+          if (Navigator.canPop(context)) Navigator.pop(context, true);
+        } else {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to remove patient.'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -89,6 +128,14 @@ class _PatientProfilePageState extends State<PatientProfilePage>
           expandedHeight: 250,
           pinned: true,
           backgroundColor: const Color(0xFF6BA5CF),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.person_remove),
+              color: Colors.white,
+              tooltip: 'Remove Patient',
+              onPressed: () => _confirmRemovePatient(),
+            ),
+          ],
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
               decoration: const BoxDecoration(

@@ -77,7 +77,7 @@ class _PatientRequestState extends State<PatientRequest> {
 
     final success = await ApiService.respondToDoctorRequest(requestId, accept);
 
-    if (context.mounted) Navigator.pop(context); // hide loading
+    if (context.mounted) if (Navigator.canPop(context)) Navigator.pop(context); // hide loading
 
     if (success) {
       setState(() {
@@ -161,7 +161,7 @@ class _PatientRequestState extends State<PatientRequest> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
         onPressed: () {
-          Navigator.pop(context);
+          if (Navigator.canPop(context)) Navigator.pop(context);
         },
       ),
       title: const Text(

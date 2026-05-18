@@ -49,7 +49,7 @@ class _PatientExerciseMonitorListState
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
         title: const Text(
           'Patients - Monitor Exercise',
@@ -218,3 +218,4 @@ class _PatientExerciseMonitorListState
     );
   }
 }
+

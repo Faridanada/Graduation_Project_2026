@@ -23,7 +23,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
                     child: const Icon(Icons.arrow_back_ios),
                   ),
                   const Expanded(
@@ -103,3 +103,4 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
     );
   }
 }
+

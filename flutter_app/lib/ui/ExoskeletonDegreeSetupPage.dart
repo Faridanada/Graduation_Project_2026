@@ -30,7 +30,7 @@ class _ExoskeletonDegreeSetupPageState
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
         title: const Text(
           'Set Exoskeleton Degrees',
@@ -349,3 +349,4 @@ class _ExoskeletonDegreeSetupPageState
     );
   }
 }
+

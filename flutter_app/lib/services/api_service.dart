@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiService {
   static dynamic _normalizeJsonValue(dynamic value) {
@@ -230,6 +231,21 @@ class ApiService {
     return response.statusCode == 201 || response.statusCode == 200;
   }
 
+  static Future<bool> removePatient(String patientId) async {
+    final token = await _getToken();
+    if (token == null) return false;
+    try {
+      final response = await http.delete(
+        Uri.parse("$baseUrl/doctor/patients/$patientId"),
+        headers: _headers(token),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print("API Error (removePatient): $e");
+      return false;
+    }
+  }
+
   static Future<Map<String, dynamic>?> getPatientDetails(
       String patientId) async {
     final token = await _getToken();
@@ -343,8 +359,9 @@ class ApiService {
     final token = await _getToken();
     if (token == null) return [];
 
+    final dateStr = DateTime.now().toIso8601String().split('T')[0];
     final response = await http.get(
-      Uri.parse("$baseUrl/patient/exercises/today"),
+      Uri.parse("$baseUrl/patient/exercises/today?date=$dateStr"),
       headers: _headers(token),
     );
 
@@ -429,7 +446,26 @@ class ApiService {
 
   // --- WOUND ENDPOINTS ---
 
-  /// Patient submits a wound report. [imageFile] is optional.
+  // /// Patient submits a wound report. [imageFile] is optional.
+  // static Future<List<dynamic>> getMyWounds() async {
+  //   final token = await _getToken();
+  //   if (token == null) return [];
+  //   try {
+  //     final response = await http.get(
+  //       Uri.parse("$baseUrl/wounds"),
+  //       headers: _headers(token),
+  //     );
+  //     if (response.statusCode == 200) {
+  //       final data = jsonDecode(response.body);
+  //       return _normalizeJsonValue(data['data'] ?? []);
+  //     }
+  //     return [];
+  //   } catch (e) {
+  //     debugPrint("API Error (getMyWounds): $e");
+  //     return [];
+  //   }
+  // }
+
   static Future<bool> submitWoundReport({
     required String woundArea,
     required String painLevel,
@@ -803,3 +839,6 @@ class ApiService {
     return false;
   }
 }
+
+
+

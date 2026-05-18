@@ -36,7 +36,7 @@ class _FindDoctorScreenState extends State<FindDoctorScreen> {
 
     final success = await ApiService.sendPatientRequest(doctorId);
     
-    if (context.mounted) Navigator.pop(context); // hide loading
+    if (context.mounted) if (Navigator.canPop(context)) Navigator.pop(context); // hide loading
 
     if (success && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

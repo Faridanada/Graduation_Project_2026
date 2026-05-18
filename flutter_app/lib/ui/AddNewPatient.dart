@@ -216,7 +216,7 @@ class _AddNewPatientState extends State<AddNewPatient> {
                           await ApiService.addDoctorPatient(patientData);
 
                       // Hide loading indicator
-                      if (context.mounted) Navigator.pop(context);
+                      if (context.mounted) if (Navigator.canPop(context)) Navigator.pop(context);
 
                       if (success && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -225,7 +225,7 @@ class _AddNewPatientState extends State<AddNewPatient> {
                             backgroundColor: Colors.green,
                           ),
                         );
-                        Navigator.pop(context); // Go back to previous screen
+                        if (Navigator.canPop(context)) Navigator.pop(context); // Go back to previous screen
                       } else if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -434,7 +434,7 @@ class _AddNewPatientState extends State<AddNewPatient> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
+                    if (Navigator.canPop(context)) Navigator.pop(context);
                   },
                   child: const Text(
                     'Done',

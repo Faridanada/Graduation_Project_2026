@@ -84,7 +84,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
       ),
       body: _isLoading
@@ -147,7 +147,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
                         onTap: () {
                           if (id.isNotEmpty) {
                             // Pop the New Chat screen
-                            Navigator.pop(context);
+                            if (Navigator.canPop(context)) Navigator.pop(context);
                             // Push the ConversationScreen
                             Navigator.push(
                               context,
@@ -169,3 +169,4 @@ class _NewChatScreenState extends State<NewChatScreen> {
     );
   }
 }
+

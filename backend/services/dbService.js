@@ -315,9 +315,9 @@ const dbService = {
     }
   },
 
-  async getTodayExercises(patientId) {
+  async getTodayExercises(patientId, dateString) {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = dateString || new Date().toISOString().split('T')[0];
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Exercises",
         FilterExpression: "patientId = :patientId AND dateAssigned = :today",
@@ -589,7 +589,36 @@ const dbService = {
     }
   },
 
+  async createAppointment(patientId, doctorId, date, time, type, notes) {
+    try {
+      const newAppt = {
+        id: `appt_${Date.now()}`,
+        patientId,
+        doctorId,
+        date,
+        time,
+        type: type || 'Consultation',
+        notes: notes || '',
+        status: 'scheduled',
+        createdAt: new Date().toISOString()
+      };
+      
+      const patient = await this.getUserById(patientId);
+      const doctor = await this.getUserById(doctorId);
+      
+      if (patient) newAppt.patientName = patient.name;
+      if (doctor) newAppt.doctorName = doctor.name;
 
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Appointments",
+        Item: newAppt
+      }));
+      return newAppt;
+    } catch (error) {
+      console.error("DynamoDB error (createAppointment):", error);
+      throw error;
+    }
+  },
 
   async updateAppointmentStatus(appointmentId, status) {
     try {
@@ -707,7 +736,7 @@ const dbService = {
         senderId,
         receiverId,
         // Create a unique composite key representing the conversation room
-        conversationId: [senderId, receiverId].sort().join('_'),
+        conversationId: [String(senderId).trim().toLowerCase(), String(receiverId).trim().toLowerCase()].sort().join('_'),
         messageText,
         isRead: false,
         createdAt: new Date().toISOString()
@@ -747,7 +776,7 @@ const dbService = {
 
   async getChatHistory(user1Id, user2Id) {
     try {
-      const conversationId = [user1Id, user2Id].sort().join('_');
+      const conversationId = [String(user1Id).trim().toLowerCase(), String(user2Id).trim().toLowerCase()].sort().join('_');
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Messages",
         FilterExpression: "conversationId = :conversationId",
@@ -809,7 +838,7 @@ const dbService = {
 
   async markMessagesAsRead(senderId, currentUserId) {
     try {
-      const conversationId = [senderId, currentUserId].sort().join('_');
+      const conversationId = [String(senderId).trim().toLowerCase(), String(currentUserId).trim().toLowerCase()].sort().join('_');
       // Fetch all unread messages where current user is the receiver
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Messages",
@@ -1169,7 +1198,23 @@ const dbService = {
       console.error("DynamoDB error (getSessionsForPatient):", error);
       return [];
     }
+  },
+
+  async removePatientFromDoctor(patientId, doctorId) {
+    try {
+      const data = await ddbDocClient.send(new UpdateCommand({
+        TableName: "Users",
+        Key: { id: patientId },
+        UpdateExpression: "REMOVE assignedDoctorId",
+        ReturnValues: "ALL_NEW"
+      }));
+      return data.Attributes;
+    } catch (error) {
+      console.error("DynamoDB error (removePatientFromDoctor):", error);
+      throw error;
+    }
   }
 };
 
 module.exports = dbService;
+

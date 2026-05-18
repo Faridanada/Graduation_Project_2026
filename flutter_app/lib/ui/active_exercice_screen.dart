@@ -24,7 +24,7 @@ class ActiveExerciseScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
                       child: const Icon(Icons.arrow_back),
                     ),
                     const Text(

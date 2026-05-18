@@ -119,6 +119,20 @@ const doctorController = {
         }
     },
 
+    // DELETE /api/doctor/patients/:id
+    async removePatient(req, res) {
+        try {
+            const doctorId = req.user.id || 'doctor_1';
+            const patientId = req.params.id;
+
+            await dbService.removePatientFromDoctor(patientId, doctorId);
+            res.json({ statusCode: 200, message: 'Patient removed successfully' });
+        } catch (error) {
+            console.error('Error removing patient:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error removing patient' });
+        }
+    },
+
     // POST /api/doctor/exercises/assign
     async assignExercise(req, res) {
         try {

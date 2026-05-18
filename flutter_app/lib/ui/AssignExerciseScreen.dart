@@ -53,7 +53,7 @@ class _AssignExerciseScreenState extends State<AssignExerciseScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.pop(context);
+      if (Navigator.canPop(context)) Navigator.pop(context);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

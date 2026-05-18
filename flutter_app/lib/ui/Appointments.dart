@@ -190,7 +190,7 @@ class _AppointmentsState extends State<Appointments> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
         onPressed: () {
-          Navigator.pop(context);
+          if (Navigator.canPop(context)) Navigator.pop(context);
         },
       ),
       title: const Text(

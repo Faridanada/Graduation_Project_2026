@@ -30,7 +30,7 @@ class _LanguagePageState extends State<LanguagePage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
         title: const Text(
           'Language',
@@ -85,7 +85,7 @@ class _LanguagePageState extends State<LanguagePage> {
                           duration: const Duration(seconds: 2),
                         ),
                       );
-                      Navigator.pop(context);
+                      if (Navigator.canPop(context)) Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6BA5CF),
@@ -200,4 +200,5 @@ class _LanguagePageState extends State<LanguagePage> {
     );
   }
 }
+
 

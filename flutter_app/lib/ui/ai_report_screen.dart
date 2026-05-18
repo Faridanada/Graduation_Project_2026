@@ -96,7 +96,7 @@ class _AiReportScreenState extends State<AiReportScreen> {
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () {
-                        Navigator.pop(context);
+                        if (Navigator.canPop(context)) Navigator.pop(context);
                       },
                     ),
                     const Spacer(),

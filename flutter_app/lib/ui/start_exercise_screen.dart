@@ -28,7 +28,7 @@ class StartExerciseScreen extends StatelessWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
                     child: const Icon(Icons.arrow_back_ios, size: 20),
                   ),
                   const Expanded(
@@ -217,3 +217,4 @@ class _Bullet extends StatelessWidget {
     );
   }
 }
+

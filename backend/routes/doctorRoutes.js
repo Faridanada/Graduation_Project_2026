@@ -21,6 +21,7 @@ router.put('/requests/:id/reject', doctorController.rejectRequest);
 
 // Specific patient detail profile (Keep this below other /patients specific routes to avoid routing conflicts)
 router.get('/patients/:id', doctorController.getPatientProfile);
+router.delete('/patients/:id', doctorController.removePatient);
 
 // Wound records for doctor
 router.get('/wounds', woundController.getDoctorWounds);

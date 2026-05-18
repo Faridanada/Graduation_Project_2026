@@ -50,12 +50,12 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
             ListTile(
               leading: const Icon(Icons.camera_alt_rounded, color: Color(0xFF4A90E2)),
               title: const Text('Take a Photo'),
-              onTap: () { Navigator.pop(context); _pickImage(ImageSource.camera); },
+              onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); _pickImage(ImageSource.camera); },
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_rounded, color: Color(0xFF4A90E2)),
               title: const Text('Choose from Gallery'),
-              onTap: () { Navigator.pop(context); _pickImage(ImageSource.gallery); },
+              onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); _pickImage(ImageSource.gallery); },
             ),
           ],
         ),
@@ -91,7 +91,7 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
           backgroundColor: Color(0xFF4CAF50),
         ),
       );
-      Navigator.pop(context);
+      if (Navigator.canPop(context)) Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -118,7 +118,7 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
                     child: const Icon(Icons.arrow_back_ios, size: 18),
                   ),
                   const Spacer(),
@@ -127,7 +127,12 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const Spacer(),
-                  const SizedBox(width: 36),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const MyWoundsHistoryScreen()));
+                    },
+                    child: const Icon(Icons.history, size: 24, color: Color(0xFF4A90E2)),
+                  ),
                 ],
               ),
 
@@ -334,3 +339,110 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
     );
   }
 }
+
+class MyWoundsHistoryScreen extends StatefulWidget {
+  const MyWoundsHistoryScreen({super.key});
+
+  @override
+  State<MyWoundsHistoryScreen> createState() => _MyWoundsHistoryScreenState();
+}
+
+class _MyWoundsHistoryScreenState extends State<MyWoundsHistoryScreen> {
+  List<dynamic> _wounds = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final wounds = await ApiService.getMyWounds();
+    if (mounted) {
+      setState(() {
+        _wounds = wounds;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF2F5FB),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 18),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+        ),
+        title: const Text(
+          "My Reports",
+          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _wounds.isEmpty
+              ? const Center(child: Text("No wound reports found.", style: TextStyle(color: Colors.grey)))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _wounds.length,
+                  itemBuilder: (context, index) {
+                    final w = _wounds[index];
+                    final meta = w['metadata'] ?? {};
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  meta['woundArea'] ?? 'Unknown Area',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: (w['status'] == 'reviewed' || w['status'] == 'healed' ? Colors.green : Colors.orange).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    (w['status'] ?? 'pending').toString().toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: w['status'] == 'reviewed' || w['status'] == 'healed' ? Colors.green : Colors.orange,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text("Pain Level: ${meta['painLevel'] ?? 'N/A'}", style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+                            if (meta['description'] != null && meta['description'].toString().isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(meta['description'], style: const TextStyle(fontSize: 14)),
+                            ],
+                            const SizedBox(height: 12),
+                            Text(
+                              "Reported on: ${w['createdAt'] != null ? w['createdAt'].toString().substring(0, 10) : 'Unknown'}",
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
+}
+

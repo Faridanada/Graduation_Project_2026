@@ -323,7 +323,7 @@ class _PassiveLiveSessionScreenState
     showDialog(
       context: context,
       builder: (_) => _dialog("Session Paused", "Resume Session", () {
-        Navigator.pop(context);
+        if (Navigator.canPop(context)) Navigator.pop(context);
         setState(() => isPaused = false);
       }),
     );
@@ -334,7 +334,7 @@ class _PassiveLiveSessionScreenState
     showDialog(
       context: context,
       builder: (_) => _dialog("Session Stopped", "Restart Session", () {
-        Navigator.pop(context);
+        if (Navigator.canPop(context)) Navigator.pop(context);
         setState(() {
           progress = 0;
           time = "00:00";

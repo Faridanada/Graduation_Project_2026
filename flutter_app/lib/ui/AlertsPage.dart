@@ -26,7 +26,9 @@ class _AlertsPageState extends State<AlertsPage> {
           // In a real app, we'd have a specific alerts endpoint or flag.
           // For now, we'll treat notifications with "Recovery", "Alert", or "Critical" in the title/message as alerts.
           _alerts = data.where((n) {
-            final text = (n['title'] + n['message']).toLowerCase();
+            final title = n['title']?.toString() ?? '';
+            final message = n['message']?.toString() ?? '';
+            final text = (title + message).toLowerCase();
             return text.contains('alert') || text.contains('critical') || text.contains('recovery') || text.contains('wound');
           }).toList();
           _isLoading = false;
@@ -50,7 +52,7 @@ class _AlertsPageState extends State<AlertsPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
         title: const Text(
           'Alerts',
@@ -232,4 +234,5 @@ class _AlertsPageState extends State<AlertsPage> {
     }
   }
 }
+
 

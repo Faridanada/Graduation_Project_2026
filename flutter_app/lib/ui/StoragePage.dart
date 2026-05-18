@@ -12,7 +12,7 @@ class StoragePage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
         title: const Text(
           'Storage',
@@ -269,4 +269,5 @@ class StoragePage extends StatelessWidget {
     );
   }
 }
+
 

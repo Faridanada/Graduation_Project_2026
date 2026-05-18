@@ -92,7 +92,7 @@ class _AddWoundState extends State<AddWound> {
       // Navigate back after 1 second
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
-          Navigator.pop(context);
+          if (Navigator.canPop(context)) Navigator.pop(context);
         }
       });
     } else {
@@ -157,7 +157,7 @@ class _AddWoundState extends State<AddWound> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
         onPressed: () {
-          Navigator.pop(context);
+          if (Navigator.canPop(context)) Navigator.pop(context);
         },
       ),
       title: const Text(

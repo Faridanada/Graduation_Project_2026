@@ -96,7 +96,7 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () {
-                        Navigator.pop(context);
+                        if (Navigator.canPop(context)) Navigator.pop(context);
                       },
                     ),
                     const Spacer(),

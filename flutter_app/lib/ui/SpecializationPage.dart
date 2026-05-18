@@ -77,7 +77,7 @@ class _SpecializationPageState extends State<SpecializationPage> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); }, child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               setState(() {
@@ -96,7 +96,7 @@ class _SpecializationPageState extends State<SpecializationPage> {
                   }
                 }
               });
-              Navigator.pop(context);
+              if (Navigator.canPop(context)) Navigator.pop(context);
             },
             child: const Text('Save'),
           ),
@@ -236,4 +236,5 @@ class _SpecializationPageState extends State<SpecializationPage> {
     );
   }
 }
+
 
