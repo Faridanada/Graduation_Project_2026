@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'Chats.dart';
 import 'SettingsPage.dart';
 import 'NotificationsPage.dart';
@@ -22,7 +23,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
   final List<Widget> _pages = [
     _HomeContent(),
-    const Chats(),
+    const Chats(showNavBar: false),
     const SettingsPage(),
   ];
 
@@ -253,8 +254,11 @@ class _HomeContentState extends State<_HomeContent> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GestureDetector(
-        onTap: () {
-          // TODO: wire up to phone/emergency flow
+        onTap: () async {
+          final Uri phoneUri = Uri(scheme: 'tel', path: '112');
+          if (await canLaunchUrl(phoneUri)) {
+            await launchUrl(phoneUri);
+          }
         },
         child: Container(
           width: double.infinity,
@@ -447,7 +451,9 @@ class _HomeContentState extends State<_HomeContent> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => const StartExerciseScreen()),
+                                  builder: (_) => StartExerciseScreen(
+                                        exercise: exercise as Map<String, dynamic>?,
+                                      )),
                             );
                           },
                         ),
