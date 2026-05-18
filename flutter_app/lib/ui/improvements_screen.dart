@@ -315,13 +315,6 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chats"),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-          ],
-        ),
       ),
     );
   }
