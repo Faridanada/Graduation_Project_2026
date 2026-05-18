@@ -37,4 +37,11 @@ router.get('/doctors', patientController.getAllDoctors);
 router.post('/request', patientController.sendRequest);
 router.get('/doctors/:id/availability', patientController.getDoctorAvailability);
 
+// Recovery Plan
+router.get('/recovery-plan', patientController.getRecoveryPlan);
+
+// Sessions
+router.post('/sessions', patientController.saveSession);
+router.get('/sessions', patientController.getSessionHistory);
+
 module.exports = router;

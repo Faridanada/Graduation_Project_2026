@@ -114,7 +114,7 @@ class _PassiveLiveSessionScreenState
                   ),
                   child: Column(
                     children: [
-                      Image.asset("assets/exercise2.png", height: 120),
+                      Image.asset("assets/images/exercise2.png", height: 120),
                       const SizedBox(height: 8),
                       /*const Text("60°",
                           style: TextStyle(
