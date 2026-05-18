@@ -55,7 +55,7 @@ class _AppointmentsState extends State<Appointments> {
   }
 
   List<Map<String, dynamic>> get filteredAppointments {
-    final now = DateTime(2026, 2, 28);
+    final now = DateTime.now();
     final weekEnd = now.add(const Duration(days: 6));
 
     if (selectedFilter == 'Today') {
@@ -80,7 +80,7 @@ class _AppointmentsState extends State<Appointments> {
   }
 
   String _getHeaderText() {
-    final now = DateTime(2026, 2, 28);
+    final now = DateTime.now();
     if (selectedFilter == 'Today') {
       return 'Today, ${DateFormat('d MMM yyyy').format(now)}';
     } else if (selectedFilter == 'Week') {

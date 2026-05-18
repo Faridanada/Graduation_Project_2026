@@ -1096,6 +1096,79 @@ const dbService = {
       console.error("DynamoDB error (setDoctorAvailability):", error);
       throw error;
     }
+  },
+
+  // --- RECOVERY PLANS ---
+
+  async getRecoveryPlan(patientId) {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "RecoveryPlans",
+        FilterExpression: "patientId = :patientId",
+        ExpressionAttributeValues: { ":patientId": patientId }
+      }));
+      // Assuming one active plan per patient
+      return data.Items && data.Items.length > 0 ? data.Items[0] : null;
+    } catch (error) {
+      console.error("DynamoDB error (getRecoveryPlan):", error);
+      return null;
+    }
+  },
+
+  async createRecoveryPlan(patientId, planData) {
+    try {
+      const newPlan = {
+        id: `plan_${Date.now()}`,
+        patientId,
+        ...planData,
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "RecoveryPlans",
+        Item: newPlan
+      }));
+      return newPlan;
+    } catch (error) {
+      console.error("DynamoDB error (createRecoveryPlan):", error);
+      throw error;
+    }
+  },
+
+  // --- SESSIONS ---
+
+  async createSession(patientId, sessionData) {
+    try {
+      const newSession = {
+        id: `session_${Date.now()}`,
+        patientId,
+        ...sessionData,
+        createdAt: new Date().toISOString()
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Sessions",
+        Item: newSession
+      }));
+      return newSession;
+    } catch (error) {
+      console.error("DynamoDB error (createSession):", error);
+      throw error;
+    }
+  },
+
+  async getSessionsForPatient(patientId) {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Sessions",
+        FilterExpression: "patientId = :patientId",
+        ExpressionAttributeValues: { ":patientId": patientId }
+      }));
+      const items = data.Items || [];
+      // Sort chronologically descending
+      return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } catch (error) {
+      console.error("DynamoDB error (getSessionsForPatient):", error);
+      return [];
+    }
   }
 };
 

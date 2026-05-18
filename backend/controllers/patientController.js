@@ -304,6 +304,61 @@ const patientController = {
       console.error('Error fetching doctor availability:', error);
       res.status(500).json({ message: 'Server error fetching availability' });
     }
+  },
+
+  // GET /api/patient/recovery-plan
+  async getRecoveryPlan(req, res) {
+    try {
+      const patientId = req.user.id;
+      let plan = await dbService.getRecoveryPlan(patientId);
+
+      // Return a mock default plan if none exists (for UI demonstration)
+      if (!plan) {
+        plan = {
+          patientId,
+          startDate: "2025-04-15",
+          endDate: "2025-06-10",
+          overallProgress: 65,
+          phases: [
+            { index: 1, title: "Phase 1", subtitle: "Pain Reduction", status: "Completed", active: true, completed: true, date: "Apr 15 - Apr 29" },
+            { index: 2, title: "Phase 2", subtitle: "Mobility", status: "In Progress", active: true, completed: false, date: "Apr 30 - May 20" },
+            { index: 3, title: "Phase 3", subtitle: "Advanced Strength", status: "Upcoming", active: false, completed: false, date: "May 21 - Jun 3" },
+            { index: 4, title: "Phase 4", subtitle: "Return to Daily Activities", status: "Upcoming", active: false, completed: false, date: "Jun 4 - Jun 10" }
+          ]
+        };
+      }
+
+      res.json({ statusCode: 200, data: plan });
+    } catch (error) {
+      console.error('Error fetching recovery plan:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error fetching recovery plan' });
+    }
+  },
+
+  // POST /api/patient/sessions
+  async saveSession(req, res) {
+    try {
+      const patientId = req.user.id;
+      const sessionData = req.body;
+      
+      const newSession = await dbService.createSession(patientId, sessionData);
+      res.status(201).json({ statusCode: 201, data: newSession, message: 'Session saved successfully' });
+    } catch (error) {
+      console.error('Error saving session:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error saving session' });
+    }
+  },
+
+  // GET /api/patient/sessions
+  async getSessionHistory(req, res) {
+    try {
+      const patientId = req.user.id;
+      const sessions = await dbService.getSessionsForPatient(patientId);
+      res.json({ statusCode: 200, data: sessions });
+    } catch (error) {
+      console.error('Error fetching session history:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error fetching sessions' });
+    }
   }
 };
 
