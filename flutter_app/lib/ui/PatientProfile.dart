@@ -8,8 +8,10 @@ import 'HelpSupportPage.dart';
 
 class PatientProfile extends StatefulWidget {
   final bool isTab;
+  final VoidCallback? onBackToHome;
 
-  const PatientProfile({Key? key, this.isTab = true}) : super(key: key);
+  const PatientProfile({Key? key, this.isTab = true, this.onBackToHome})
+      : super(key: key);
 
   @override
   State<PatientProfile> createState() => _PatientProfileState();
@@ -32,11 +34,12 @@ class _PatientProfileState extends State<PatientProfile> {
       final profile = await ApiService.getUserProfile() ?? {};
       final exercises = await ApiService.getPatientTodayExercises();
       final appointment = await ApiService.getPatientNextAppointment();
-      
+
       if (mounted) {
         setState(() {
           userProfile = profile;
-          completedExercises = exercises.where((e) => e['isCompleted'] == true).length;
+          completedExercises =
+              exercises.where((e) => e['isCompleted'] == true).length;
           upcomingAppointments = appointment != null ? 1 : 0;
           isLoading = false;
         });
@@ -82,7 +85,7 @@ class _PatientProfileState extends State<PatientProfile> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         children: [
-                          if (!widget.isTab)
+                          if (!widget.isTab || widget.onBackToHome != null)
                             IconButton(
                               icon: const Icon(
                                 Icons.arrow_back,
@@ -90,12 +93,17 @@ class _PatientProfileState extends State<PatientProfile> {
                                 size: 28,
                               ),
                               onPressed: () {
-                                if (Navigator.canPop(context)) Navigator.pop(context);
+                                if (widget.onBackToHome != null) {
+                                  widget.onBackToHome!();
+                                } else if (Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                }
                               },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
-                          if (!widget.isTab) const SizedBox(width: 16),
+                          if (!widget.isTab || widget.onBackToHome != null)
+                            const SizedBox(width: 16),
                           const Text(
                             'Profile',
                             style: TextStyle(
@@ -255,8 +263,7 @@ class _PatientProfileState extends State<PatientProfile> {
                               child: CircularProgressIndicator(
                                   color: Colors.white))
                           : _buildStatCard(
-                              '$completedExercises',
-                              'Completed Sessions'),
+                              '$completedExercises', 'Completed Sessions'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -265,8 +272,7 @@ class _PatientProfileState extends State<PatientProfile> {
                               child: CircularProgressIndicator(
                                   color: Colors.white))
                           : _buildStatCard(
-                              '$upcomingAppointments',
-                              'Upcoming Appts'),
+                              '$upcomingAppointments', 'Upcoming Appts'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

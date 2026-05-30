@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'patient_bottom_nav.dart';
+
 class LiveSessionScreen extends StatefulWidget {
   const LiveSessionScreen({super.key});
 
@@ -23,14 +25,22 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+                    onTap: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
+                      }
+                    },
                     child: const Icon(Icons.arrow_back_ios),
                   ),
                   const Expanded(
                     child: Center(
                       child: Text(
                         'Live Session',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -45,7 +55,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Image.asset(
-                  'assets/images/Exercise.png',
+                  'assets/images/activeexercise.png',
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -94,13 +104,14 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   );
                 },
                 child: const Text('Finish Session',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
         ),
       ),
+      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
     );
   }
 }
-

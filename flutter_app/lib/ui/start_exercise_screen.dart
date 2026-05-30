@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'patient_bottom_nav.dart';
 import 'live_session_screen.dart';
 
 class StartExerciseScreen extends StatelessWidget {
@@ -12,7 +13,8 @@ class StartExerciseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String title = exercise?['title'] ?? 'Exercise Session';
-    final String description = exercise?['description'] ?? 'Follow the guided steps to complete your session safely.';
+    final String description = exercise?['description'] ??
+        'Follow the guided steps to complete your session safely.';
     final int durationMin = exercise?['estimatedTimeMin'] ?? 10;
     final int reps = exercise?['repsTotal'] ?? 0;
     final String repsLabel = reps > 0 ? '$reps reps' : 'As assigned';
@@ -28,7 +30,14 @@ class StartExerciseScreen extends StatelessWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+                    onTap: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
+                      }
+                    },
                     child: const Icon(Icons.arrow_back_ios, size: 20),
                   ),
                   const Expanded(
@@ -118,7 +127,8 @@ class StartExerciseScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     const Text(
                       'Before you start:',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                     ),
                     const SizedBox(height: 10),
                     const _Bullet('Find a flat, safe surface'),
@@ -161,6 +171,7 @@ class StartExerciseScreen extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
     );
   }
 }
@@ -170,7 +181,8 @@ class _InfoCard extends StatelessWidget {
   final String title;
   final String value;
 
-  const _InfoCard({required this.icon, required this.title, required this.value});
+  const _InfoCard(
+      {required this.icon, required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -188,8 +200,7 @@ class _InfoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: const TextStyle(fontSize: 12)),
-              Text(value,
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
         ],
@@ -217,4 +228,3 @@ class _Bullet extends StatelessWidget {
     );
   }
 }
-

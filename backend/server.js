@@ -4,6 +4,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 app.use(express.json());
 
+// Ensure DB bootstrap completes before starting the server
+const dbService = require("./services/dbService");
+
 // Import routes
 const userRoutes = require("./routes/userRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
@@ -27,6 +30,16 @@ app.get("/", (req, res) => {
   res.send("Backend running ✅");
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+async function start() {
+  try {
+    await dbService.ready;
+  } catch (err) {
+    console.error('Warning: DB readiness failed, continuing to start server', err);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+start();

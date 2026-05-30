@@ -5,6 +5,7 @@ import 'history_screen.dart';
 import 'real_time_data_page.dart';
 import 'NotificationsPage.dart';
 import 'SettingsPage.dart';
+import 'patient_bottom_nav.dart';
 
 import '../services/api_service.dart';
 
@@ -53,9 +54,10 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
 
       List<double> wp = [0, 0, 0, 0, 0, 0];
       if (stats['weeklyProgress'] != null) {
-        wp = List<double>.from(stats['weeklyProgress'].map((x) => x.toDouble()));
+        wp =
+            List<double>.from(stats['weeklyProgress'].map((x) => x.toDouble()));
       }
-      
+
       int unread = stats['unreadNotifications'] ?? 0;
 
       if (mounted) {
@@ -108,32 +110,35 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
                       ),
                     ),
                     const Spacer(),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Badge(
-                              isLabelVisible: unreadNotifs > 0,
-                              label: Text('$unreadNotifs'),
-                              child: const Icon(Icons.notifications_outlined),
-                            ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const NotificationsPage()),
-                              ).then((_) => _fetchData());
-                            },
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Badge(
+                            isLabelVisible: unreadNotifs > 0,
+                            label: Text('$unreadNotifs'),
+                            child: const Icon(Icons.notifications_outlined),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.settings),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const SettingsPage()),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const NotificationsPage()),
+                            ).then((_) => _fetchData());
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.settings),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const SettingsPage()),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ],
                 ),
 
@@ -166,7 +171,9 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
                                 ),
                               ),
                               Text(
-                                isLoading ? "..." : "${(progressScore * 100).toInt()}%",
+                                isLoading
+                                    ? "..."
+                                    : "${(progressScore * 100).toInt()}%",
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,
@@ -230,8 +237,10 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(latestExerciseTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
-                              Text(latestExerciseTime, style: const TextStyle(fontSize: 12)),
+                              Text(latestExerciseTitle,
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text(latestExerciseTime,
+                                  style: const TextStyle(fontSize: 12)),
                             ],
                           ),
                         ),
@@ -282,22 +291,24 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
                         "Weekly Summary",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-
                       const SizedBox(height: 20),
-
                       SizedBox(
                         height: 100,
                         child: Stack(
                           children: [
                             Positioned.fill(
-                              child: CustomPaint(painter: _DynamicLinePainter(weeklyProgress)),
+                              child: CustomPaint(
+                                  painter: _DynamicLinePainter(weeklyProgress)),
                             ),
                             Positioned(
                               right: 0,
                               top: 10,
                               child: Text(
-                                isLoading ? "..." : "${(progressScore * 100).toInt()}%",
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                isLoading
+                                    ? "..."
+                                    : "${(progressScore * 100).toInt()}%",
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -306,7 +317,10 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
                       const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: _getLast6Days().map((day) => Text(day, style: const TextStyle(fontSize: 12))).toList(),
+                        children: _getLast6Days()
+                            .map((day) =>
+                                Text(day, style: const TextStyle(fontSize: 12)))
+                            .toList(),
                       ),
                     ],
                   ),
@@ -315,6 +329,7 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
             ),
           ),
         ),
+        bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
       ),
     );
   }
@@ -336,17 +351,6 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
     );
   }
 
-  Widget _chip(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(text, style: TextStyle(color: color, fontSize: 11)),
-    );
-  }
-
   List<String> _getLast6Days() {
     final now = DateTime.now();
     return List.generate(6, (i) {
@@ -364,7 +368,7 @@ class _DynamicLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
-    
+
     final linePaint = Paint()
       ..color = Colors.blue.shade200
       ..strokeWidth = 2
@@ -375,17 +379,17 @@ class _DynamicLinePainter extends CustomPainter {
     List<Offset> points = [];
     double stepX = size.width / (data.length - 1);
     for (int i = 0; i < data.length; i++) {
-       double padding = size.height * 0.2;
-       double h = size.height - (padding * 2);
-       double y = (size.height - padding) - (data[i] * h);
-       points.add(Offset(stepX * i, y));
+      double padding = size.height * 0.2;
+      double h = size.height - (padding * 2);
+      double y = (size.height - padding) - (data[i] * h);
+      points.add(Offset(stepX * i, y));
     }
 
     final path = Path()..moveTo(points[0].dx, points[0].dy);
     for (int i = 1; i < points.length; i++) {
       path.lineTo(points[i].dx, points[i].dy);
     }
-    
+
     canvas.drawPath(path, linePaint);
     for (var p in points) {
       canvas.drawCircle(p, 4, dotPaint);

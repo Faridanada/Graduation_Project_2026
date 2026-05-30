@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'NotificationsPage.dart';
 import 'SettingsPage.dart';
-import 'patientHome.dart';
+import 'patient_bottom_nav.dart';
 
 class AiReportScreen extends StatefulWidget {
   const AiReportScreen({super.key});
@@ -53,9 +53,10 @@ class _AiReportScreenState extends State<AiReportScreen> {
 
       List<double> wp = [0, 0, 0, 0, 0, 0];
       if (stats['weeklyProgress'] != null) {
-        wp = List<double>.from(stats['weeklyProgress'].map((x) => x.toDouble()));
+        wp =
+            List<double>.from(stats['weeklyProgress'].map((x) => x.toDouble()));
       }
-      
+
       int unread = stats['unreadNotifications'] ?? 0;
 
       if (mounted) {
@@ -96,7 +97,9 @@ class _AiReportScreenState extends State<AiReportScreen> {
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () {
-                        if (Navigator.canPop(context)) Navigator.pop(context);
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        }
                       },
                     ),
                     const Spacer(),
@@ -110,32 +113,36 @@ class _AiReportScreenState extends State<AiReportScreen> {
                     const Spacer(),
                     Row(
                       children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Badge(
-                              isLabelVisible: unreadNotifs > 0,
-                              label: Text('$unreadNotifs'),
-                              child: const Icon(Icons.notifications_outlined),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: Badge(
+                                isLabelVisible: unreadNotifs > 0,
+                                label: Text('$unreadNotifs'),
+                                child: const Icon(Icons.notifications_outlined),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const NotificationsPage()),
+                                ).then((_) => _fetchStats());
+                              },
                             ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const NotificationsPage()),
-                              ).then((_) => _fetchStats());
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.settings),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const SettingsPage()),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                            IconButton(
+                              icon: const Icon(Icons.settings),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const SettingsPage()),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ],
@@ -170,7 +177,9 @@ class _AiReportScreenState extends State<AiReportScreen> {
                               ),
                             ),
                             Text(
-                              isLoading ? "..." : "${(progressScore * 100).toInt()}%",
+                              isLoading
+                                  ? "..."
+                                  : "${(progressScore * 100).toInt()}%",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
@@ -225,14 +234,18 @@ class _AiReportScreenState extends State<AiReportScreen> {
                         child: Stack(
                           children: [
                             Positioned.fill(
-                              child: CustomPaint(painter: _DynamicLinePainter(weeklyProgress)),
+                              child: CustomPaint(
+                                  painter: _DynamicLinePainter(weeklyProgress)),
                             ),
                             Positioned(
                               right: 0,
                               top: 10,
                               child: Text(
-                                isLoading ? "..." : "${(progressScore * 100).toInt()}%",
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                isLoading
+                                    ? "..."
+                                    : "${(progressScore * 100).toInt()}%",
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -241,7 +254,10 @@ class _AiReportScreenState extends State<AiReportScreen> {
                       const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: _getLast6Days().map((day) => Text(day, style: const TextStyle(fontSize: 12))).toList(),
+                        children: _getLast6Days()
+                            .map((day) =>
+                                Text(day, style: const TextStyle(fontSize: 12)))
+                            .toList(),
                       ),
                     ],
                   ),
@@ -319,21 +335,7 @@ class _AiReportScreenState extends State<AiReportScreen> {
             ),
           ),
         ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.black54,
-        unselectedItemColor: Colors.black54,
-        showUnselectedLabels: true,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PatientHomeScreen()));
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chats"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
-      ),
+        bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
       ),
     );
   }
@@ -356,41 +358,6 @@ class _AiReportScreenState extends State<AiReportScreen> {
     );
   }
 
-  /// ALERT
-  Widget _alertCard(String text) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF4CC),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text)),
-        ],
-      ),
-    );
-  }
-
-  /// RECOMMENDATION
-  Widget _recommendationCard(String text) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE3ECFF),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.lightbulb, color: Colors.blue),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text)),
-        ],
-      ),
-    );
-  }
   List<String> _getLast6Days() {
     final now = DateTime.now();
     return List.generate(6, (i) {
@@ -420,10 +387,10 @@ class _DynamicLinePainter extends CustomPainter {
     List<Offset> points = [];
     double stepX = size.width / (data.length - 1);
     for (int i = 0; i < data.length; i++) {
-       double padding = size.height * 0.2;
-       double h = size.height - (padding * 2);
-       double y = (size.height - padding) - (data[i] * h);
-       points.add(Offset(stepX * i, y));
+      double padding = size.height * 0.2;
+      double h = size.height - (padding * 2);
+      double y = (size.height - padding) - (data[i] * h);
+      points.add(Offset(stepX * i, y));
     }
 
     final path = Path()..moveTo(points[0].dx, points[0].dy);

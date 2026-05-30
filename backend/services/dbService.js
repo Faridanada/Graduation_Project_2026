@@ -1,4 +1,4 @@
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBClient, CreateTableCommand, DescribeTableCommand, waitUntilTableExists } = require("@aws-sdk/client-dynamodb");
 const { 
   DynamoDBDocumentClient, 
   GetCommand, 
@@ -25,6 +25,57 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
 
 const client = new DynamoDBClient(clientParams);
 const ddbDocClient = DynamoDBDocumentClient.from(client);
+
+const USERS_TABLE_NAME = "Users";
+let usersTableReady = null;
+
+async function ensureUsersTable() {
+  if (!usersTableReady) {
+    usersTableReady = (async () => {
+      try {
+        await client.send(new DescribeTableCommand({ TableName: USERS_TABLE_NAME }));
+      } catch (error) {
+        if (error.name !== "ResourceNotFoundException") {
+          throw error;
+        }
+
+        await client.send(new CreateTableCommand({
+          TableName: USERS_TABLE_NAME,
+          AttributeDefinitions: [{ AttributeName: "id", AttributeType: "S" }],
+          KeySchema: [{ AttributeName: "id", KeyType: "HASH" }],
+          BillingMode: "PAY_PER_REQUEST",
+        }));
+
+        // Wait until the table is ACTIVE before returning so subsequent
+        // operations (Scan/Get/Put) don't fail with ResourceNotFound.
+        await waitUntilTableExists({ client, maxWaitTime: 60 }, { TableName: USERS_TABLE_NAME });
+      }
+    })();
+  }
+
+  return usersTableReady;
+}
+
+const baseSend = ddbDocClient.send.bind(ddbDocClient);
+ddbDocClient.send = async (command, ...args) => {
+  const tableName = command?.input?.TableName;
+
+  if (tableName === USERS_TABLE_NAME) {
+    await ensureUsersTable();
+  }
+
+  try {
+    return await baseSend(command, ...args);
+  } catch (error) {
+    if (tableName === USERS_TABLE_NAME && error?.name === "ResourceNotFoundException") {
+      usersTableReady = null;
+      await ensureUsersTable();
+      return baseSend(command, ...args);
+    }
+
+    throw error;
+  }
+};
 
 // ==========================================
 // DB Simulation -> DYNAMODB IMPLEMENTATION
@@ -1217,4 +1268,16 @@ const dbService = {
 };
 
 module.exports = dbService;
+
+// Start ensuring Users table exists as soon as this module is imported.
+// Export a `ready` promise so other modules (like server.js) can await it.
+dbService.ready = (async () => {
+  try {
+    await ensureUsersTable();
+    return true;
+  } catch (err) {
+    console.error('Users table bootstrap failed:', err);
+    return false;
+  }
+})();
 

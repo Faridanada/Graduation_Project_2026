@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'live_exercise_screen.dart';
 import 'Chats.dart';
+import 'patient_bottom_nav.dart';
 
 class ActiveExerciseScreen extends StatelessWidget {
   const ActiveExerciseScreen({super.key});
@@ -24,16 +25,25 @@ class ActiveExerciseScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     GestureDetector(
-                      onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+                      onTap: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        } else {
+                          Navigator.of(context)
+                              .popUntil((route) => route.isFirst);
+                        }
+                      },
                       child: const Icon(Icons.arrow_back),
                     ),
                     const Text(
                       'Start Active Exercise',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const Text(
                       'FLEXIO',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: primaryBlue),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: primaryBlue),
                     ),
                   ],
                 ),
@@ -45,7 +55,8 @@ class ActiveExerciseScreen extends StatelessWidget {
                   children: [
                     Icon(Icons.verified, color: Colors.green, size: 16),
                     SizedBox(width: 4),
-                    Text('Monitored by Doctor', style: TextStyle(color: Colors.green)),
+                    Text('Monitored by Doctor',
+                        style: TextStyle(color: Colors.green)),
                   ],
                 ),
 
@@ -62,7 +73,8 @@ class ActiveExerciseScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Knee Flexion –\nActive Mode',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             SizedBox(height: 8),
                             Text(
@@ -75,7 +87,7 @@ class ActiveExerciseScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         flex: 4,
-                        child: Image.asset('assets/images/Exercise.png'),
+                        child: Image.asset('assets/images/exercise22.png'),
                       ),
                     ],
                   ),
@@ -106,9 +118,11 @@ class ActiveExerciseScreen extends StatelessWidget {
                             SizedBox(height: 6),
                             Row(
                               children: [
-                                Icon(Icons.graphic_eq, color: Colors.green, size: 16),
+                                Icon(Icons.graphic_eq,
+                                    color: Colors.green, size: 16),
                                 SizedBox(width: 4),
-                                Text('Live', style: TextStyle(color: Colors.green)),
+                                Text('Live',
+                                    style: TextStyle(color: Colors.green)),
                               ],
                             ),
                           ],
@@ -140,7 +154,8 @@ class ActiveExerciseScreen extends StatelessWidget {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.fitness_center, color: primaryBlue, size: 18),
+                          Icon(Icons.fitness_center,
+                              color: primaryBlue, size: 18),
                           SizedBox(width: 8),
                           Text('Exercise Overview',
                               style: TextStyle(fontWeight: FontWeight.bold)),
@@ -236,6 +251,7 @@ class ActiveExerciseScreen extends StatelessWidget {
           ),
         ),
       ),
+      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
     );
   }
 
@@ -283,7 +299,8 @@ class _OverviewItem extends StatelessWidget {
           const SizedBox(height: 4),
           Text(value,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
         ],
       ),
     );

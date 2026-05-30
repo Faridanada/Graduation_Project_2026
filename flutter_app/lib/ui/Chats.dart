@@ -8,10 +8,12 @@ import 'NotificationsPage.dart';
 
 class Chats extends StatefulWidget {
   final bool showNavBar;
+  final VoidCallback? onBackToHome;
 
   const Chats({
     Key? key,
     this.showNavBar = true,
+    this.onBackToHome,
   }) : super(key: key);
 
   @override
@@ -172,6 +174,18 @@ class _ChatsState extends State<Chats> {
       backgroundColor: Colors.white,
       iconTheme: const IconThemeData(color: Colors.black),
       elevation: 0,
+      leading: !widget.showNavBar
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                if (widget.onBackToHome != null) {
+                  widget.onBackToHome!();
+                } else if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              },
+            )
+          : null,
       title: const Text(
         'Chats',
         style: TextStyle(

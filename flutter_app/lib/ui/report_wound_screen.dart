@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
+import 'patient_bottom_nav.dart';
 
 class ReportWoundScreen extends StatefulWidget {
   const ReportWoundScreen({super.key});
@@ -12,20 +13,25 @@ class ReportWoundScreen extends StatefulWidget {
 
 class _ReportWoundScreenState extends State<ReportWoundScreen> {
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
   String selectedPain = "Medium";
   String selectedArea = "Knee";
   File? _selectedImage;
   bool _isSubmitting = false;
 
   final List<String> _bodyAreas = [
-    'Knee', 'Ankle', 'Shoulder', 'Wrist', 'Back', 'Hip', 'Elbow', 'Other'
+    'Knee',
+    'Ankle',
+    'Shoulder',
+    'Wrist',
+    'Back',
+    'Hip',
+    'Elbow',
+    'Other'
   ];
 
   @override
   void dispose() {
     _descriptionController.dispose();
-    _notesController.dispose();
     super.dispose();
   }
 
@@ -48,14 +54,22 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt_rounded, color: Color(0xFF4A90E2)),
+              leading: const Icon(Icons.camera_alt_rounded,
+                  color: Color(0xFF4A90E2)),
               title: const Text('Take a Photo'),
-              onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); _pickImage(ImageSource.camera); },
+              onTap: () {
+                if (Navigator.canPop(context)) Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library_rounded, color: Color(0xFF4A90E2)),
+              leading: const Icon(Icons.photo_library_rounded,
+                  color: Color(0xFF4A90E2)),
               title: const Text('Choose from Gallery'),
-              onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); _pickImage(ImageSource.gallery); },
+              onTap: () {
+                if (Navigator.canPop(context)) Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
             ),
           ],
         ),
@@ -77,7 +91,6 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
       woundArea: selectedArea,
       painLevel: selectedPain,
       description: _descriptionController.text.trim(),
-      notes: _notesController.text.trim(),
       imageFile: _selectedImage != null ? File(_selectedImage!.path) : null,
     );
 
@@ -87,7 +100,8 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Wound report submitted! Your doctor will be notified.'),
+          content:
+              Text('Wound report submitted! Your doctor will be notified.'),
           backgroundColor: Color(0xFF4CAF50),
         ),
       );
@@ -118,7 +132,9 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+                    onTap: () {
+                      if (Navigator.canPop(context)) Navigator.pop(context);
+                    },
                     child: const Icon(Icons.arrow_back_ios, size: 18),
                   ),
                   const Spacer(),
@@ -129,9 +145,13 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
                   const Spacer(),
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const MyWoundsHistoryScreen()));
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const MyWoundsHistoryScreen()));
                     },
-                    child: const Icon(Icons.history, size: 24, color: Color(0xFF4A90E2)),
+                    child: const Icon(Icons.history,
+                        size: 24, color: Color(0xFF4A90E2)),
                   ),
                 ],
               ),
@@ -164,12 +184,14 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
                                 color: const Color(0xFFE8EEF8),
                                 borderRadius: BorderRadius.circular(16),
                               ),
-                              child: const Icon(Icons.add, size: 28, color: Color(0xFF4A90E2)),
+                              child: const Icon(Icons.add,
+                                  size: 28, color: Color(0xFF4A90E2)),
                             ),
                             const SizedBox(height: 10),
                             const Text(
                               "Tap to take or upload a wound photo",
-                              style: TextStyle(fontSize: 13, color: Color(0xFF7A8194)),
+                              style: TextStyle(
+                                  fontSize: 13, color: Color(0xFF7A8194)),
                             ),
                           ],
                         ),
@@ -192,9 +214,11 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
                   child: DropdownButton<String>(
                     isExpanded: true,
                     value: selectedArea,
-                    icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF4A90E2)),
+                    icon: const Icon(Icons.keyboard_arrow_down,
+                        color: Color(0xFF4A90E2)),
                     items: _bodyAreas
-                        .map((area) => DropdownMenuItem(value: area, child: Text(area)))
+                        .map((area) =>
+                            DropdownMenuItem(value: area, child: Text(area)))
                         .toList(),
                     onChanged: (val) => setState(() => selectedArea = val!),
                   ),
@@ -233,7 +257,8 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
                   maxLines: 4,
                   decoration: const InputDecoration(
                     hintText: "Describe what the wound looks like...",
-                    hintStyle: TextStyle(color: Color(0xFF7A8194), fontSize: 14),
+                    hintStyle:
+                        TextStyle(color: Color(0xFF7A8194), fontSize: 14),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(16),
                   ),
@@ -241,25 +266,6 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
               ),
 
               const SizedBox(height: 20),
-
-              // NOTES
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  controller: _notesController,
-                  maxLines: 2,
-                  decoration: const InputDecoration(
-                    hintText: "Additional notes (optional)...",
-                    hintStyle: TextStyle(color: Color(0xFF7A8194), fontSize: 14),
-                    prefixIcon: Icon(Icons.note_alt_outlined, color: Color(0xFF4A90E2)),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  ),
-                ),
-              ),
 
               const SizedBox(height: 30),
 
@@ -283,7 +289,8 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
                     ],
                   ),
                   child: _isSubmitting
-                      ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                      ? const Center(
+                          child: CircularProgressIndicator(color: Colors.white))
                       : const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -307,6 +314,7 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
     );
   }
 
@@ -376,17 +384,22 @@ class _MyWoundsHistoryScreenState extends State<MyWoundsHistoryScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 18),
-          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+          onPressed: () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          },
         ),
         title: const Text(
           "My Reports",
-          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(
+              color: Colors.black, fontSize: 18, fontWeight: FontWeight.w600),
         ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _wounds.isEmpty
-              ? const Center(child: Text("No wound reports found.", style: TextStyle(color: Colors.grey)))
+              ? const Center(
+                  child: Text("No wound reports found.",
+                      style: TextStyle(color: Colors.grey)))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _wounds.length,
@@ -395,7 +408,8 @@ class _MyWoundsHistoryScreenState extends State<MyWoundsHistoryScreen> {
                     final meta = w['metadata'] ?? {};
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -406,35 +420,52 @@ class _MyWoundsHistoryScreenState extends State<MyWoundsHistoryScreen> {
                               children: [
                                 Text(
                                   meta['woundArea'] ?? 'Unknown Area',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: (w['status'] == 'reviewed' || w['status'] == 'healed' ? Colors.green : Colors.orange).withOpacity(0.1),
+                                    color: (w['status'] == 'reviewed' ||
+                                                w['status'] == 'healed'
+                                            ? Colors.green
+                                            : Colors.orange)
+                                        .withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    (w['status'] ?? 'pending').toString().toUpperCase(),
+                                    (w['status'] ?? 'pending')
+                                        .toString()
+                                        .toUpperCase(),
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: w['status'] == 'reviewed' || w['status'] == 'healed' ? Colors.green : Colors.orange,
+                                      color: w['status'] == 'reviewed' ||
+                                              w['status'] == 'healed'
+                                          ? Colors.green
+                                          : Colors.orange,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text("Pain Level: ${meta['painLevel'] ?? 'N/A'}", style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-                            if (meta['description'] != null && meta['description'].toString().isNotEmpty) ...[
+                            Text("Pain Level: ${meta['painLevel'] ?? 'N/A'}",
+                                style: TextStyle(
+                                    color: Colors.grey[700], fontSize: 13)),
+                            if (meta['description'] != null &&
+                                meta['description'].toString().isNotEmpty) ...[
                               const SizedBox(height: 8),
-                              Text(meta['description'], style: const TextStyle(fontSize: 14)),
+                              Text(meta['description'],
+                                  style: const TextStyle(fontSize: 14)),
                             ],
                             const SizedBox(height: 12),
                             Text(
                               "Reported on: ${w['createdAt'] != null ? w['createdAt'].toString().substring(0, 10) : 'Unknown'}",
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -445,4 +476,3 @@ class _MyWoundsHistoryScreenState extends State<MyWoundsHistoryScreen> {
     );
   }
 }
-

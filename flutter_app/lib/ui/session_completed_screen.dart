@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'history_screen.dart'; // <-- make sure this exists
+import 'patient_bottom_nav.dart';
 
 class SessionCompletedScreen extends StatelessWidget {
   const SessionCompletedScreen({super.key});
@@ -21,7 +22,14 @@ class SessionCompletedScreen extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
+                      }
+                    },
                   ),
                   const Spacer(),
                   const Text(
@@ -286,7 +294,8 @@ class SessionCompletedScreen extends StatelessWidget {
                       ),
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          if (Navigator.canPop(context)) Navigator.pop(context);
+                          Navigator.of(context)
+                              .popUntil((route) => route.isFirst);
                         },
                         icon: const Icon(Icons.home),
                         label: const Text("Back to Home"),
@@ -310,6 +319,7 @@ class SessionCompletedScreen extends StatelessWidget {
           ),
         ),
       ),
+      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
     );
   }
 
@@ -424,4 +434,3 @@ class SessionCompletedScreen extends StatelessWidget {
     );
   }
 }
-

@@ -18,14 +18,23 @@ class SessionSummaryScreen extends StatelessWidget {
               /// HEADER
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  SizedBox(), // removed back button
-                  Text(
-                    "Session Summary",
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
+                      }
+                    },
+                    icon: const Icon(Icons.arrow_back),
                   ),
-                  Icon(Icons.settings),
+                  const Text(
+                    "Session Summary",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const Icon(Icons.settings),
                 ],
               ),
 
@@ -72,17 +81,31 @@ class SessionSummaryScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: _stat(Icons.access_time, "Total Duration", "10:00", "min")),
-                        Expanded(child: _stat(Icons.fitness_center, "Reps Completed", "12 / 12", "100%")),
-                        Expanded(child: _stat(Icons.refresh, "Sets Completed", "3 / 3", "100%")),
+                        Expanded(
+                            child: _stat(Icons.access_time, "Total Duration",
+                                "10:00", "min")),
+                        Expanded(
+                            child: _stat(Icons.fitness_center, "Reps Completed",
+                                "12 / 12", "100%")),
+                        Expanded(
+                            child: _stat(Icons.refresh, "Sets Completed",
+                                "3 / 3", "100%")),
                       ],
                     ),
                     const Divider(height: 20),
                     Row(
                       children: [
-                        Expanded(child: _stat(Icons.track_changes, "Accuracy", "88%", "")),
-                        Expanded(child: _stat(Icons.favorite, "Average Heart Rate", "128", "bpm", valueColor: Colors.red)),
-                        Expanded(child: _stat(Icons.autorenew, "Recovery Score", "86%", "", valueColor: Colors.green)),
+                        Expanded(
+                            child: _stat(
+                                Icons.track_changes, "Accuracy", "88%", "")),
+                        Expanded(
+                            child: _stat(Icons.favorite, "Average Heart Rate",
+                                "128", "bpm",
+                                valueColor: Colors.red)),
+                        Expanded(
+                            child: _stat(
+                                Icons.autorenew, "Recovery Score", "86%", "",
+                                valueColor: Colors.green)),
                       ],
                     ),
                   ],
@@ -118,26 +141,23 @@ class SessionSummaryScreen extends StatelessWidget {
 
               const Spacer(),
 
-              /// BACK TO HOME (NO ACTION)
-              Container(
+              /// BACK TO HOME
+              SizedBox(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: primaryBlue,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.home, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text(
-                      "Back to Home",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                  icon: const Icon(Icons.home),
+                  label: const Text("Back to Home"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
+                  ),
                 ),
               ),
 
@@ -168,8 +188,7 @@ class SessionSummaryScreen extends StatelessWidget {
                       Text(
                         "View Detailed Report",
                         style: TextStyle(
-                            color: primaryBlue,
-                            fontWeight: FontWeight.bold),
+                            color: primaryBlue, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -199,8 +218,7 @@ class SessionSummaryScreen extends StatelessWidget {
                 fontSize: 16,
                 color: valueColor ?? Colors.black)),
         if (sub.isNotEmpty)
-          Text(sub,
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(sub, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
   }

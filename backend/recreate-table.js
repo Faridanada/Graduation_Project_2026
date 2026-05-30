@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { DynamoDBClient, DeleteTableCommand, CreateTableCommand, waitUntilTableNotExists, waitUntilTableExists } = require("@aws-sdk/client-dynamodb");
 
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'eu-north-1' });
+const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 async function run() {
   try {

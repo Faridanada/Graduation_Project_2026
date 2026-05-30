@@ -11,6 +11,7 @@ import 'start_exercise_screen.dart';
 import 'FindDoctorScreen.dart';
 import '../services/api_service.dart';
 import 'PatientProfile.dart';
+import 'recovery_plan_screen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({super.key});
@@ -22,18 +23,30 @@ class PatientHomeScreen extends StatefulWidget {
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    _HomeContent(),
-    const Chats(showNavBar: false),
-    const PatientProfile(isTab: true),
-  ];
+  void _goToHomeTab() {
+    setState(() => _currentIndex = 0);
+  }
+
+  List<Widget> _buildPages() {
+    return [
+      _HomeContent(),
+      Chats(
+        showNavBar: false,
+        onBackToHome: _goToHomeTab,
+      ),
+      PatientProfile(
+        isTab: true,
+        onBackToHome: _goToHomeTab,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: _currentIndex == 0 ? _buildAppBar() : null,
-      body: _pages[_currentIndex],
+      body: _buildPages()[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: const Color(0xFF2196F3),
@@ -453,7 +466,10 @@ class _HomeContentState extends State<_HomeContent> {
                               context,
                               MaterialPageRoute(
                                   builder: (_) => StartExerciseScreen(
-                                        exercise: exercise != null ? Map<String, dynamic>.from(exercise as Map) : null,
+                                        exercise: exercise != null
+                                            ? Map<String, dynamic>.from(
+                                                exercise as Map)
+                                            : null,
                                       )),
                             );
                           },
@@ -491,19 +507,19 @@ class _HomeContentState extends State<_HomeContent> {
             childAspectRatio: 1.5,
             children: [
               _buildActivityTile(
-                label: 'Start Exercise',
+                label: 'My Recovery Plan',
                 icon: Icons.fitness_center,
                 color: Colors.blue[200],
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => const StartExerciseScreen()),
+                        builder: (_) => const RecoveryPlanScreen()),
                   );
                 },
               ),
               _buildActivityTile(
-                label: 'Appointments',
+                label: 'Book Appointments',
                 icon: Icons.calendar_today,
                 color: Colors.purple[200],
                 onTap: () {

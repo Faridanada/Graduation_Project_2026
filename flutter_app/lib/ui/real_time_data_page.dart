@@ -5,7 +5,7 @@ import 'session_completed_screen.dart';
 import '../services/api_service.dart';
 import 'NotificationsPage.dart';
 import 'SettingsPage.dart';
-import 'patientHome.dart';
+import 'patient_bottom_nav.dart';
 
 class RealTimeDataScreen extends StatefulWidget {
   const RealTimeDataScreen({super.key});
@@ -50,7 +50,7 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
             repsTotal = latest['repsTotal'] ?? 20;
             repsCompleted = latest['repsCompleted'] ?? 0;
           }
-          
+
           unreadNotifs = stats['unreadNotifications'] ?? 0;
           isLoading = false;
         });
@@ -75,7 +75,14 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+                    onTap: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
+                      }
+                    },
                     child: const Icon(Icons.arrow_back),
                   ),
                   const Spacer(),
@@ -93,7 +100,8 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                        MaterialPageRoute(
+                            builder: (_) => const NotificationsPage()),
                       ).then((_) => _fetchSessionData());
                     },
                   ),
@@ -181,7 +189,7 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
               const SizedBox(height: 12),
 
               const SizedBox(height: 12),
-              
+
               const Center(
                 child: Text(
                   "More metrics will be available once sensors are connected.",
@@ -228,21 +236,7 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.black54,
-        unselectedItemColor: Colors.black54,
-        showUnselectedLabels: true,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PatientHomeScreen()));
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chats"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
-      ),
+      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
     );
   }
 
@@ -272,15 +266,23 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
             child: Row(
               children: [
                 Icon(
-                  (repsTotal == 0) ? Icons.stop_circle_outlined : (isPaused ? Icons.pause : Icons.circle),
+                  (repsTotal == 0)
+                      ? Icons.stop_circle_outlined
+                      : (isPaused ? Icons.pause : Icons.circle),
                   size: 10,
-                  color: (repsTotal == 0) ? Colors.grey : (isPaused ? Colors.orange : Colors.green),
+                  color: (repsTotal == 0)
+                      ? Colors.grey
+                      : (isPaused ? Colors.orange : Colors.green),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  (repsTotal == 0) ? "NO ACTIVE SESSION" : (isPaused ? "SESSION PAUSED" : "LIVE SESSION"),
+                  (repsTotal == 0)
+                      ? "NO ACTIVE SESSION"
+                      : (isPaused ? "SESSION PAUSED" : "LIVE SESSION"),
                   style: TextStyle(
-                    color: (repsTotal == 0) ? Colors.grey : (isPaused ? Colors.orange : Colors.green),
+                    color: (repsTotal == 0)
+                        ? Colors.grey
+                        : (isPaused ? Colors.orange : Colors.green),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -322,10 +324,13 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
         children: [
           const Text("Exercise"),
           const SizedBox(height: 6),
-          isLoading ? const Text("...") : Text(
-            exerciseTitle,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          isLoading
+              ? const Text("...")
+              : Text(
+                  exerciseTitle,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -337,7 +342,9 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(repsTotal > 0 ? "${((repsCompleted / repsTotal) * 100).toInt()}%" : "0%"),
+              Text(repsTotal > 0
+                  ? "${((repsCompleted / repsTotal) * 100).toInt()}%"
+                  : "0%"),
             ],
           ),
           const SizedBox(height: 6),
@@ -366,8 +373,6 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
       ),
     );
   }
-
-
 
   Widget _recoveryCard() {
     return _card(
@@ -428,8 +433,6 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
     );
   }
 
-
-
   Widget _actionButton(
     String text,
     Color color,
@@ -481,4 +484,3 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
     );
   }
 }
-

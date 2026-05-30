@@ -39,8 +39,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       color: primaryBlue.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.pause,
-                        size: 32, color: primaryBlue),
+                    child:
+                        const Icon(Icons.pause, size: 32, color: primaryBlue),
                   ),
 
                   const SizedBox(height: 16),
@@ -133,12 +133,22 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                 /// HEADER
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Icon(Icons.arrow_back),
-                    Text("Active Live Session",
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        } else {
+                          Navigator.of(context)
+                              .popUntil((route) => route.isFirst);
+                        }
+                      },
+                      child: const Icon(Icons.arrow_back),
+                    ),
+                    const Text("Active Live Session",
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
-                    Icon(Icons.settings),
+                    const Icon(Icons.settings),
                   ],
                 ),
 
@@ -158,8 +168,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       Icon(Icons.verified, size: 14, color: Colors.green),
                       SizedBox(width: 4),
                       Text("Monitored by Doctor",
-                          style:
-                              TextStyle(color: Colors.green, fontSize: 12)),
+                          style: TextStyle(color: Colors.green, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -203,8 +212,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
 
                 const Text("Lift your left knee",
                     style: TextStyle(
-                        color: primaryBlue,
-                        fontWeight: FontWeight.bold)),
+                        color: primaryBlue, fontWeight: FontWeight.bold)),
 
                 const SizedBox(height: 6),
 
@@ -222,7 +230,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   ),
                   child: Column(
                     children: [
-                      Image.asset("assets/activeexercise.png"),
+                      Image.asset("assets/images/activeexercise.png"),
                       const SizedBox(height: 8),
                       const Text("78°",
                           style: TextStyle(
@@ -238,7 +246,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                 /// ===== STATS GRID (UNCHANGED) =====
                 Row(
                   children: [
-                    Expanded(child: _statCard(
+                    Expanded(
+                        child: _statCard(
                       icon: Icons.refresh,
                       iconColor: Colors.green,
                       title: "Reps",
@@ -251,9 +260,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: i < 3
-                                  ? Colors.green
-                                  : Colors.grey.shade300,
+                              color:
+                                  i < 3 ? Colors.green : Colors.grey.shade300,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -261,7 +269,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       ),
                     )),
                     const SizedBox(width: 10),
-                    Expanded(child: _statCard(
+                    Expanded(
+                        child: _statCard(
                       icon: Icons.fitness_center,
                       iconColor: primaryBlue,
                       title: "Sets",
@@ -279,7 +288,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
 
                 Row(
                   children: [
-                    Expanded(child: _statCard(
+                    Expanded(
+                        child: _statCard(
                       icon: Icons.favorite,
                       iconColor: Colors.red,
                       title: "Heart Rate",
@@ -287,7 +297,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       valueColor: Colors.red,
                     )),
                     const SizedBox(width: 10),
-                    Expanded(child: _statCard(
+                    Expanded(
+                        child: _statCard(
                       icon: Icons.autorenew,
                       iconColor: Colors.green,
                       title: "Recovery Score",
@@ -325,8 +336,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                                       color: Colors.green,
                                       fontWeight: FontWeight.bold)),
                               TextSpan(
-                                  text:
-                                      ".\n\nTry to lift a little higher."),
+                                  text: ".\n\nTry to lift a little higher."),
                             ],
                           ),
                         ),
@@ -359,20 +369,21 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-  child: GestureDetector(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const SessionSummaryScreen(),
-        ),
-      );
-    },
-    child: _button("End Session", Icons.stop, Colors.red),
-  ),
-),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SessionSummaryScreen(),
+                            ),
+                          );
+                        },
+                        child: _button("End Session", Icons.stop, Colors.red),
+                      ),
+                    ),
                     const SizedBox(width: 10),
-                    Expanded(child: _button("Report", Icons.warning, Colors.grey)),
+                    Expanded(
+                        child: _button("Report", Icons.warning, Colors.grey)),
                   ],
                 ),
 
@@ -444,8 +455,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 6),
           Text(text,
-              style:
-                  TextStyle(color: color, fontWeight: FontWeight.w500)),
+              style: TextStyle(color: color, fontWeight: FontWeight.w500)),
         ],
       ),
     );
