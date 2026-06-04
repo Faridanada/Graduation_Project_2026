@@ -4,7 +4,8 @@ import 'package:rehabilitation_app/ui/exercises/active_exercice_screen.dart';
 import 'package:rehabilitation_app/ui/patient/home/patient_bottom_nav.dart';
 import 'package:rehabilitation_app/ui/patient/doctors/FindDoctorScreen.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
-
+import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
+import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 class RecoveryPlanScreen extends StatefulWidget {
   const RecoveryPlanScreen({super.key});
 
@@ -120,7 +121,7 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
+        bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0, hideActiveState: true),
       );
     }
 
@@ -139,56 +140,80 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
 
       /// ---------------- BODY ----------------
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 12),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
 
-                /// HEADER
-                Row(
-                  children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-                      onPressed: () {
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        } else {
-                          Navigator.of(context)
-                              .popUntil((route) => route.isFirst);
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        "My Recovery Plan",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                  /// HEADER
+                  Row(
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                        onPressed: () {
+                          if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          } else {
+                            Navigator.of(context)
+                                .popUntil((route) => route.isFirst);
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          "My Recovery Plan",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    const Icon(Icons.notifications_none),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.settings_outlined),
-                  ],
-                ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsPage(),
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.notifications_none),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsPage(),
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.settings_outlined),
+                      ),
+                    ],
+                  ),
 
-                const SizedBox(height: 6),
-
-                const Text(
-                  "Your personalized plan for a faster recovery 💚",
-                  style: TextStyle(color: Colors.grey),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// ================= OVERALL CARD =================
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+            
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// ================= OVERALL CARD =================
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: _card(),
@@ -523,13 +548,15 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                 ),
 
                 const SizedBox(height: 20),
-              ],
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
-
-      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
+      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0, hideActiveState: true),
     );
   }
 

@@ -14,14 +14,21 @@ import 'package:rehabilitation_app/ui/patient/profile/PatientProfile.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/recovery_plan_screen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
-  const PatientHomeScreen({super.key});
+  final int initialTab;
+  const PatientHomeScreen({super.key, this.initialTab = 0});
 
   @override
   State<PatientHomeScreen> createState() => _PatientHomeScreenState();
 }
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTab;
+  }
 
   void _goToHomeTab() {
     setState(() => _currentIndex = 0);

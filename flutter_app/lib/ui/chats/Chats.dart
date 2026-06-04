@@ -174,18 +174,7 @@ class _ChatsState extends State<Chats> {
       backgroundColor: Colors.white,
       iconTheme: const IconThemeData(color: Colors.black),
       elevation: 0,
-      leading: !widget.showNavBar
-          ? IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                if (widget.onBackToHome != null) {
-                  widget.onBackToHome!();
-                } else if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
-              },
-            )
-          : null,
+      leading: null, // Removed back button since it's a root tab
       title: const Text(
         'Chats',
         style: TextStyle(

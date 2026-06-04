@@ -6,27 +6,32 @@ import 'package:rehabilitation_app/ui/patient/home/patientHome.dart';
 
 class PatientBottomNavBar extends StatelessWidget {
   final int currentIndex;
+  final bool hideActiveState;
 
   const PatientBottomNavBar({
     super.key,
     this.currentIndex = 0,
+    this.hideActiveState = false,
   });
 
   void _goToHome(BuildContext context) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const PatientHomeScreen()),
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const PatientHomeScreen(initialTab: 0)),
+      (route) => false,
     );
   }
 
   void _goToChats(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const Chats(showNavBar: false)),
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const PatientHomeScreen(initialTab: 1)),
+      (route) => false,
     );
   }
 
   void _goToProfile(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PatientProfile(isTab: false)),
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const PatientHomeScreen(initialTab: 2)),
+      (route) => false,
     );
   }
 
@@ -36,7 +41,7 @@ class PatientBottomNavBar extends StatelessWidget {
       currentIndex: currentIndex,
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,
-      selectedItemColor: const Color(0xFF2196F3),
+      selectedItemColor: hideActiveState ? Colors.grey : const Color(0xFF2196F3),
       unselectedItemColor: Colors.grey,
       onTap: (index) {
         switch (index) {

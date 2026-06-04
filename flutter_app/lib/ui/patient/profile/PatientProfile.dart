@@ -85,7 +85,7 @@ class _PatientProfileState extends State<PatientProfile> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         children: [
-                          if (!widget.isTab || widget.onBackToHome != null)
+                          if (!widget.isTab)
                             IconButton(
                               icon: const Icon(
                                 Icons.arrow_back,
@@ -93,16 +93,14 @@ class _PatientProfileState extends State<PatientProfile> {
                                 size: 28,
                               ),
                               onPressed: () {
-                                if (widget.onBackToHome != null) {
-                                  widget.onBackToHome!();
-                                } else if (Navigator.canPop(context)) {
+                                if (Navigator.canPop(context)) {
                                   Navigator.pop(context);
                                 }
                               },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
-                          if (!widget.isTab || widget.onBackToHome != null)
+                          if (!widget.isTab)
                             const SizedBox(width: 16),
                           const Text(
                             'Profile',
