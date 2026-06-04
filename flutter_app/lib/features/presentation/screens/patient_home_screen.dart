@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_colors.dart';
-import '../widgets/appointment_card.dart';
-import '../widgets/action_card.dart';
+import 'package:rehabilitation_app/features/presentation/widgets/appointment_card.dart';
+import 'package:rehabilitation_app/features/presentation/widgets/action_card.dart';
 import 'chats_screen.dart';
 import 'profile_screen.dart';
-import '../../../ui/FindDoctorScreen.dart';
+import 'package:rehabilitation_app/ui/patient/doctors/FindDoctorScreen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({super.key});

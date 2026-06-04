@@ -216,7 +216,20 @@ class ApiService {
     return response.statusCode == 201 || response.statusCode == 200;
   }
 
-  // --- PATIENT & REQUEST ENDPOINTS (NEW) ---
+  // --- PATIENT & REQUEST ENDPOINTS  ---
+
+  static Future<bool> createRecoveryPlan(Map<String, dynamic> planData) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/doctor/recovery-plan"),
+      headers: _headers(token),
+      body: jsonEncode(planData),
+    );
+
+    return response.statusCode == 201 || response.statusCode == 200;
+  }
 
   static Future<bool> addDoctorPatient(Map<String, dynamic> patientData) async {
     final token = await _getToken();
@@ -311,6 +324,33 @@ class ApiService {
   }
 
   // --- PATIENT ENDPOINTS ---
+
+  static Future<Map<String, dynamic>?> getRecoveryPlan() async {
+    final token = await _getToken();
+    if (token == null) return null;
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/patient/recovery-plan"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data']; // Might be null
+    }
+    return null;
+  }
+
+  static Future<bool> remindDoctorToCreatePlan() async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/patient/remind-doctor"),
+      headers: _headers(token),
+    );
+
+    return response.statusCode == 200;
+  }
 
   static Future<List<dynamic>> getAllDoctors() async {
     final token = await _getToken();

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:rehabilitation_app/ui/WelcomePage.dart';
-import 'package:rehabilitation_app/ui/login.dart';
-import 'package:rehabilitation_app/ui/signup.dart';
-import 'package:rehabilitation_app/ui/patientHome.dart' as patient_home;
-import 'package:rehabilitation_app/ui/DoctorHome.dart';
+import 'package:rehabilitation_app/ui/auth/WelcomePage.dart';
+import 'package:rehabilitation_app/ui/auth/login.dart';
+import 'package:rehabilitation_app/ui/auth/signup.dart';
+import 'package:rehabilitation_app/ui/patient/home/patientHome.dart' as patient_home;
+import 'package:rehabilitation_app/ui/doctor/home/DoctorHome.dart';
 import 'services/api_service.dart';
 
 void main() async {

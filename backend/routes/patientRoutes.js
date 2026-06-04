@@ -38,6 +38,7 @@ router.post('/request', patientController.sendRequest);
 router.get('/doctors/:id/availability', patientController.getDoctorAvailability);
 
 // Recovery Plan
+router.post('/remind-doctor', patientController.remindDoctor);
 router.get('/recovery-plan', patientController.getRecoveryPlan);
 
 // Sessions

@@ -67,7 +67,8 @@ exports.registerUser = async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
-        profileData: newUser.profileData
+        profileData: newUser.profileData,
+        assignedDoctorId: newUser.assignedDoctorId
       }
     });
 
@@ -140,7 +141,8 @@ exports.loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        profileData: user.profileData || {}
+        profileData: user.profileData || {},
+        assignedDoctorId: user.assignedDoctorId
       }
     });
 
@@ -168,7 +170,8 @@ exports.getUserProfile = async (req, res) => {
         email: user.email,
         role: user.role,
         createdAt: user.createdAt,
-        profileData: user.profileData || {}
+        profileData: user.profileData || {},
+        assignedDoctorId: user.assignedDoctorId
       }
     });
   } catch (error) {
@@ -225,7 +228,8 @@ exports.updateProfile = async (req, res) => {
         email: updatedUser.email,
         phoneNumber: updatedUser.phoneNumber,
         profileImage: updatedUser.profileImage,
-        profileData: updatedUser.profileData || {}
+        profileData: updatedUser.profileData || {},
+        assignedDoctorId: updatedUser.assignedDoctorId
       }
     });
   } catch (error) {

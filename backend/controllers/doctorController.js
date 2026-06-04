@@ -254,6 +254,38 @@ const doctorController = {
             console.error('Error marking all notifications read:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error' });
         }
+    },
+
+    // POST /api/doctor/recovery-plan
+    async createRecoveryPlan(req, res) {
+        try {
+            const doctorId = req.user.id;
+            const planData = req.body;
+            
+            if (!planData.patientId) {
+                return res.status(400).json({ statusCode: 400, message: 'patientId is required' });
+            }
+
+            // Optional: Get patient name for UI rendering
+            const patient = await dbService.getUserById(planData.patientId);
+            if (patient) {
+                planData.patientName = patient.name;
+            }
+
+            const newPlan = await dbService.createRecoveryPlan(planData.patientId, planData);
+            
+            // Notify patient
+            await dbService.createNotification(
+                planData.patientId,
+                "New Recovery Plan",
+                "Your doctor has created a new recovery plan for you."
+            );
+
+            res.status(201).json({ statusCode: 201, data: newPlan, message: 'Recovery plan created successfully' });
+        } catch (error) {
+            console.error('Error creating recovery plan:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error creating recovery plan' });
+        }
     }
 };
 

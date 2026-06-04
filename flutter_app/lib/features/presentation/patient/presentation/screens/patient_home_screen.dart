@@ -1,7 +1,7 @@
 /*import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/core/theme/app_colors.dart';
-import '../widgets/appointment_card.dart';
-import '../widgets/action_card.dart';
+import 'package:rehabilitation_app/features/presentation/patient/presentation/widgets/appointment_card.dart';
+import 'package:rehabilitation_app/features/presentation/patient/presentation/widgets/action_card.dart';
 import 'chats_screen.dart';
 import 'profile_screen.dart';
 

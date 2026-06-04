@@ -307,28 +307,37 @@ const patientController = {
     }
   },
 
+  // POST /api/patient/remind-doctor
+  async remindDoctor(req, res) {
+    try {
+      const patientId = req.user.id;
+      const patient = await dbService.getUserById(patientId);
+      
+      if (!patient || !patient.assignedDoctorId) {
+        return res.status(400).json({ statusCode: 400, message: 'No doctor assigned' });
+      }
+
+      const patientName = patient.name || 'Your patient';
+      await dbService.createNotification(
+        patient.assignedDoctorId,
+        "Recovery Plan Request",
+        `${patientName} has requested you to set up a recovery plan.`
+      );
+
+      res.status(200).json({ statusCode: 200, message: 'Reminder sent to doctor' });
+    } catch (error) {
+      console.error('Error sending reminder to doctor:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error sending reminder' });
+    }
+  },
+
   // GET /api/patient/recovery-plan
   async getRecoveryPlan(req, res) {
     try {
       const patientId = req.user.id;
       let plan = await dbService.getRecoveryPlan(patientId);
 
-      // Return a mock default plan if none exists (for UI demonstration)
-      if (!plan) {
-        plan = {
-          patientId,
-          startDate: "2025-04-15",
-          endDate: "2025-06-10",
-          overallProgress: 65,
-          phases: [
-            { index: 1, title: "Phase 1", subtitle: "Pain Reduction", status: "Completed", active: true, completed: true, date: "Apr 15 - Apr 29" },
-            { index: 2, title: "Phase 2", subtitle: "Mobility", status: "In Progress", active: true, completed: false, date: "Apr 30 - May 20" },
-            { index: 3, title: "Phase 3", subtitle: "Advanced Strength", status: "Upcoming", active: false, completed: false, date: "May 21 - Jun 3" },
-            { index: 4, title: "Phase 4", subtitle: "Return to Daily Activities", status: "Upcoming", active: false, completed: false, date: "Jun 4 - Jun 10" }
-          ]
-        };
-      }
-
+      // We now return null if no plan exists, so the UI can show the empty state
       res.json({ statusCode: 200, data: plan });
     } catch (error) {
       console.error('Error fetching recovery plan:', error);
