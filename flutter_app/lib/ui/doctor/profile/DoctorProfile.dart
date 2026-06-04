@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/auth/login.dart';
 import 'package:rehabilitation_app/ui/settings/PersonalInformationPage.dart';
-import 'package:rehabilitation_app/ui/doctor/profile/MedicalLicensePage.dart';
-import 'package:rehabilitation_app/ui/doctor/profile/SpecializationPage.dart';
-import 'package:rehabilitation_app/ui/doctor/management/AvailabilityPage.dart';
+import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
+import 'package:rehabilitation_app/ui/settings/HelpSupportPage.dart';
 import 'package:rehabilitation_app/ui/auth/ChangePasswordPage.dart';
 import 'package:rehabilitation_app/ui/chats/Chats.dart';
 
@@ -54,27 +53,28 @@ class _DoctorProfileState extends State<DoctorProfile> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Header with gradient
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF6BA5CF),
-                      Color(0xFF9B8FD9),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header with gradient
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF6BA5CF),
+                    Color(0xFF9B8FD9),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
@@ -82,23 +82,21 @@ class _DoctorProfileState extends State<DoctorProfile> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
                         children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.white,
-                              size: 28,
+                          if (widget.source == 'settings')
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                              onPressed: () {
+                                if (Navigator.canPop(context)) Navigator.pop(context);
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                             ),
-                            onPressed: () {
-                              if (widget.source == 'settings') {
-                                if (Navigator.canPop(context)) Navigator.pop(context);
-                              } else {
-                                if (Navigator.canPop(context)) Navigator.pop(context);
-                              }
-                            },
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                          const SizedBox(width: 16),
+                          if (widget.source == 'settings')
+                            const SizedBox(width: 16),
                           const Text(
                             'Profile',
                             style: TextStyle(
@@ -173,6 +171,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                   ],
                 ),
               ),
+              ),
               const SizedBox(height: 20),
               // Menu Items Card
               Container(
@@ -206,39 +205,26 @@ class _DoctorProfileState extends State<DoctorProfile> {
                     _buildDivider(),
                     _buildMenuItem(
                       context,
-                      icon: Icons.medical_information_outlined,
-                      title: 'Medical License & Credentials',
+                      icon: Icons.settings_outlined,
+                      title: 'Settings',
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const MedicalLicensePage()),
+                              builder: (_) => const SettingsPage()),
                         );
                       },
                     ),
                     _buildDivider(),
                     _buildMenuItem(
                       context,
-                      icon: Icons.work_outline,
-                      title: 'Specialization',
+                      icon: Icons.help_outline,
+                      title: 'Help & Support',
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const SpecializationPage()),
-                        );
-                      },
-                    ),
-                    _buildDivider(),
-                    _buildMenuItem(
-                      context,
-                      icon: Icons.calendar_month_outlined,
-                      title: 'Availability & Schedule',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const AvailabilityPage()),
+                              builder: (_) => const HelpSupportPage()),
                         );
                       },
                     ),
@@ -271,8 +257,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                               child: CircularProgressIndicator(
                                   color: Colors.white))
                           : _buildStatCard(
-                              '${doctorStats['activePatients'] ?? 0}',
-                              'Active Patients'),
+                              '${doctorStats['activePatients'] ?? 0}', 'Completed Sessions'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -281,12 +266,11 @@ class _DoctorProfileState extends State<DoctorProfile> {
                               child: CircularProgressIndicator(
                                   color: Colors.white))
                           : _buildStatCard(
-                              '${doctorStats['todaySessions'] ?? 0}',
-                              'Total Sessions'),
+                              '${doctorStats['todaySessions'] ?? 0}', 'Upcoming Appts'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildStatCard('-', 'Success Rate'),
+                      child: _buildStatCard('-', 'Recovery Score'),
                     ),
                   ],
                 ),
@@ -336,7 +320,6 @@ class _DoctorProfileState extends State<DoctorProfile> {
             ],
           ),
         ),
-      ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
@@ -437,7 +420,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
   Widget _buildStatCard(String value, String label) {
     return Container(
       height: 64,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -454,19 +437,20 @@ class _DoctorProfileState extends State<DoctorProfile> {
         children: [
           Text(
             value,
-            style: TextStyle(
-              fontSize: 20,
+            style: const TextStyle(
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 0),
+          const SizedBox(height: 2),
           Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10,
               color: Colors.grey[600],
+              height: 1.1,
             ),
           ),
         ],

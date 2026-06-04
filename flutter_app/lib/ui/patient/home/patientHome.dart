@@ -23,11 +23,24 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   late int _currentIndex;
+  int _unreadNotifs = 0;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialTab;
+    _fetchUnread();
+  }
+
+  Future<void> _fetchUnread() async {
+    try {
+      final stats = await ApiService.getPatientDashboardStats();
+      if (mounted) {
+        setState(() {
+          _unreadNotifs = stats['unreadNotifications'] ?? 0;
+        });
+      }
+    } catch (_) {}
   }
 
   void _goToHomeTab() {
@@ -105,14 +118,18 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const NotificationsPage()),
-            );
+            ).then((_) => _fetchUnread());
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Icon(
-              Icons.notifications_none,
-              color: Colors.black,
-              size: 28,
+            child: Badge(
+              isLabelVisible: _unreadNotifs > 0,
+              label: Text('$_unreadNotifs'),
+              child: const Icon(
+                Icons.notifications_none,
+                color: Colors.black,
+                size: 28,
+              ),
             ),
           ),
         ),

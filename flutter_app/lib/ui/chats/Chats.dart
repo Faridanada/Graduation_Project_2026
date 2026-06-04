@@ -174,6 +174,7 @@ class _ChatsState extends State<Chats> {
       backgroundColor: Colors.white,
       iconTheme: const IconThemeData(color: Colors.black),
       elevation: 0,
+      automaticallyImplyLeading: false, // Ensure no back button is rendered
       leading: null, // Removed back button since it's a root tab
       title: const Text(
         'Chats',
@@ -335,11 +336,11 @@ class _ChatsState extends State<Chats> {
       ],
       onTap: (index) {
         if (index == 0) {
-          if (Navigator.canPop(context)) Navigator.pop(context);
+          Navigator.popUntil(context, (route) => route.isFirst);
           return;
         }
         if (index == 2) {
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => const DoctorProfile(source: 'home'),

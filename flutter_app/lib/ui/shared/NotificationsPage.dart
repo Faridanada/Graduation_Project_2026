@@ -4,7 +4,9 @@ import 'package:rehabilitation_app/ui/patient/doctors/patientRequest.dart';
 import 'package:rehabilitation_app/ui/chats/Chats.dart';
 import 'package:rehabilitation_app/ui/doctor/management/ManageWounds.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/ActivePatientsPage.dart';
+import 'package:rehabilitation_app/ui/doctor/patients/PatientProfilePage.dart';
 import 'package:rehabilitation_app/ui/patient/home/patientHome.dart';
+import 'package:rehabilitation_app/ui/patient/recovery/recovery_plan_screen.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -168,7 +170,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (!isRead) _markAsRead(notif['id']);
 
         // Navigate based on notification type
@@ -188,7 +190,51 @@ class _NotificationsPageState extends State<NotificationsPage> {
           if (_userRole == 'doctor') {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageWounds()));
           }
-        } else if (type.contains('Exercise') || type.contains('Recovery')) {
+        } else if (type.contains('Recovery')) {
+          if (_userRole == 'doctor') {
+            final msg = notif['message'] ?? '';
+            final nameMatch = RegExp(r'^(.*?)\s+has requested').firstMatch(msg);
+            
+            if (nameMatch != null) {
+              final pName = nameMatch.group(1);
+              
+              // Show loading indicator while fetching patient data
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const Center(child: CircularProgressIndicator()),
+              );
+              
+              final patients = await ApiService.getDoctorPatients();
+              
+              if (context.mounted) {
+                Navigator.pop(context); // Remove loading indicator
+                
+                final matchedPatient = patients.cast<Map<String, dynamic>?>().firstWhere(
+                  (p) => p?['name'] == pName,
+                  orElse: () => null,
+                );
+                
+                if (matchedPatient != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PatientProfilePage(
+                        patientId: (matchedPatient['id'] ?? matchedPatient['_id'] ?? '').toString(),
+                        patientName: pName!,
+                      ),
+                    ),
+                  );
+                  return;
+                }
+              }
+            }
+            // Fallback if patient is not found
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const ActivePatientsPage()));
+          } else {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const RecoveryPlanScreen()));
+          }
+        } else if (type.contains('Exercise')) {
           if (_userRole == 'doctor') {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ActivePatientsPage()));
           } else {

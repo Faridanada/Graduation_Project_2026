@@ -18,6 +18,7 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
   Map<String, dynamic>? _planData;
   Map<String, dynamic>? _patientProfile;
   bool _isReminding = false;
+  int _unreadNotifs = 0;
 
   @override
   void initState() {
@@ -29,11 +30,13 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
     setState(() => _isLoading = true);
     final profile = await ApiService.getUserProfile();
     final plan = await ApiService.getRecoveryPlan();
+    final stats = await ApiService.getPatientDashboardStats();
 
     if (mounted) {
       setState(() {
         _patientProfile = profile;
         _planData = plan;
+        _unreadNotifs = stats['unreadNotifications'] ?? 0;
         _isLoading = false;
       });
     }
@@ -77,6 +80,28 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           foregroundColor: Colors.black,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsPage(),
+                    ),
+                  ).then((_) => _fetchData());
+                },
+                child: Center(
+                  child: Badge(
+                    isLabelVisible: _unreadNotifs > 0,
+                    label: Text('$_unreadNotifs'),
+                    child: const Icon(Icons.notifications_none),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         body: Center(
           child: Column(
@@ -182,9 +207,13 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                             MaterialPageRoute(
                               builder: (_) => const NotificationsPage(),
                             ),
-                          );
+                          ).then((_) => _fetchData());
                         },
-                        child: const Icon(Icons.notifications_none),
+                        child: Badge(
+                          isLabelVisible: _unreadNotifs > 0,
+                          label: Text('$_unreadNotifs'),
+                          child: const Icon(Icons.notifications_none),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       GestureDetector(

@@ -57,27 +57,28 @@ class _PatientProfileState extends State<PatientProfile> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Header with gradient
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF6BA5CF),
-                      Color(0xFF9B8FD9),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header with gradient
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF6BA5CF),
+                    Color(0xFF9B8FD9),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
@@ -175,6 +176,7 @@ class _PatientProfileState extends State<PatientProfile> {
                     const SizedBox(height: 30),
                   ],
                 ),
+              ),
               ),
               const SizedBox(height: 20),
               // Menu Items Card
@@ -324,7 +326,6 @@ class _PatientProfileState extends State<PatientProfile> {
             ],
           ),
         ),
-      ),
     );
   }
 
