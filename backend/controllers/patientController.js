@@ -19,6 +19,29 @@ const patientController = {
     }
   },
 
+  // GET /api/patient/doctor
+  // Patient views their assigned doctor's info
+  async getMyDoctor(req, res) {
+    try {
+      const patientId = req.user.id;
+      const patient = await dbService.getUserById(patientId);
+      if (!patient) return res.status(404).json({ statusCode: 404, message: 'Patient not found' });
+
+      if (!patient.assignedDoctorId) {
+        return res.json({ statusCode: 200, data: null, message: 'No assigned doctor' });
+      }
+
+      const doctor = await dbService.getUserById(patient.assignedDoctorId);
+      if (!doctor) return res.status(404).json({ statusCode: 404, message: 'Doctor not found' });
+
+      const { password, resetToken, resetTokenExpiry, ...safeDoctor } = doctor;
+      res.json({ statusCode: 200, data: safeDoctor });
+    } catch (error) {
+      console.error('Error fetching doctor:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error fetching doctor' });
+    }
+  },
+
   // PUT /api/patient/profile
   // Patient updates their own profile (name, phone, address)
   async updateProfile(req, res) {
@@ -368,6 +391,23 @@ const patientController = {
     } catch (error) {
       console.error('Error fetching session history:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error fetching sessions' });
+    }
+  },
+
+  // PUT /api/patient/recovery-plan/:planId/phases/:phaseIndex/complete
+  async markPhaseCompleted(req, res) {
+    try {
+      const { planId, phaseIndex } = req.params;
+      const index = parseInt(phaseIndex, 10);
+      if (isNaN(index)) {
+        return res.status(400).json({ statusCode: 400, message: 'Invalid phase index' });
+      }
+
+      await dbService.markPhaseCompleted(planId, index);
+      res.json({ statusCode: 200, message: 'Phase marked as completed' });
+    } catch (error) {
+      console.error('Error marking phase completed:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error marking phase completed' });
     }
   }
 };

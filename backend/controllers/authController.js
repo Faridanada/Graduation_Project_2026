@@ -8,7 +8,7 @@ const path = require("path");
 // ================= REGISTER =================
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone } = req.body;
     let profileData = req.body.profileData;
 
     // Parse profileData if it was sent as a JSON string via multipart/form-data
@@ -47,6 +47,7 @@ exports.registerUser = async (req, res) => {
     const newUser = await dbService.createUser({
       name,
       email,
+      phone,
       password: hashedPassword,
       role: userRole,
       profileData: profileData || {} // Default to empty object if not provided
@@ -66,6 +67,7 @@ exports.registerUser = async (req, res) => {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
+        phone: newUser.phone,
         role: newUser.role,
         profileData: newUser.profileData,
         assignedDoctorId: newUser.assignedDoctorId
@@ -140,6 +142,7 @@ exports.loginUser = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
         profileData: user.profileData || {},
         assignedDoctorId: user.assignedDoctorId
@@ -168,6 +171,7 @@ exports.getUserProfile = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
         createdAt: user.createdAt,
         profileData: user.profileData || {},
@@ -182,7 +186,7 @@ exports.getUserProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, phoneNumber, profileData } = req.body;
+    const { name, phone, profileData } = req.body;
     const userId = req.user.id;
 
     let parsedData = profileData;
@@ -196,7 +200,7 @@ exports.updateProfile = async (req, res) => {
 
     const updates = { 
       name, 
-      phoneNumber, 
+      phone, 
       profileData: parsedData 
     };
 
@@ -226,7 +230,7 @@ exports.updateProfile = async (req, res) => {
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
-        phoneNumber: updatedUser.phoneNumber,
+        phone: updatedUser.phone,
         profileImage: updatedUser.profileImage,
         profileData: updatedUser.profileData || {},
         assignedDoctorId: updatedUser.assignedDoctorId

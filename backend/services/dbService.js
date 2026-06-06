@@ -111,7 +111,7 @@ const dbService = {
       if (!user) return null;
 
       if (updates.name) user.name = updates.name;
-      if (updates.phoneNumber !== undefined) user.phoneNumber = updates.phoneNumber;
+      if (updates.phone !== undefined) user.phone = updates.phone;
       
       if (updates.profileData) {
         user.profileData = { ...user.profileData, ...updates.profileData };
@@ -249,7 +249,7 @@ const dbService = {
         FilterExpression: filterExpression,
         ExpressionAttributeNames: expressionAttributeNames,
         ExpressionAttributeValues: expressionAttributeValues,
-        ProjectionExpression: "id, #nameAttr, email, profileData, assignedDoctorId"
+        ProjectionExpression: "id, #nameAttr, email, phone, profileData, assignedDoctorId"
       }));
       return data.Items || [];
     } catch (error) {
@@ -289,11 +289,15 @@ const dbService = {
         ExpressionAttributeValues: { ":patientId": patientId }
       }));
 
+      // 5. Get the patient's recovery plan
+      const recoveryPlan = await this.getRecoveryPlan(patientId);
+
       return {
         profile: user,
         appointments: appointmentsData.Items || [],
         exercises: exercisesData.Items || [],
-        reminders: remindersData.Items || []
+        reminders: remindersData.Items || [],
+        recoveryPlan: recoveryPlan
       };
     } catch (error) {
       console.error("DynamoDB error (getPatientDetailsAndHistory):", error);
@@ -1182,8 +1186,46 @@ const dbService = {
         FilterExpression: "patientId = :patientId",
         ExpressionAttributeValues: { ":patientId": patientId }
       }));
-      // Assuming one active plan per patient
-      return data.Items && data.Items.length > 0 ? data.Items[0] : null;
+      
+      if (!data.Items || data.Items.length === 0) return null;
+      
+      const plan = data.Items[0];
+      
+      // Dynamically calculate phase statuses based on today's date
+      if (plan.phases && Array.isArray(plan.phases)) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        plan.phases = plan.phases.map(phase => {
+          if (phase.isManuallyCompleted) {
+            phase.status = 'Completed';
+            phase.active = false;
+            phase.completed = true;
+          } else if (phase.startDate && phase.endDate) {
+            const start = new Date(phase.startDate);
+            const end = new Date(phase.endDate);
+            start.setHours(0, 0, 0, 0);
+            end.setHours(23, 59, 59, 999);
+
+            if (today > end) {
+              phase.status = 'Overdue';
+              phase.active = true;
+              phase.completed = false;
+            } else if (today >= start && today <= end) {
+              phase.status = 'Active';
+              phase.active = true;
+              phase.completed = false;
+            } else {
+              phase.status = 'Upcoming';
+              phase.active = false;
+              phase.completed = false;
+            }
+          }
+          return phase;
+        });
+      }
+      
+      return plan;
     } catch (error) {
       console.error("DynamoDB error (getRecoveryPlan):", error);
       return null;
@@ -1259,6 +1301,60 @@ const dbService = {
       console.error("DynamoDB error (removePatientFromDoctor):", error);
       throw error;
     }
+  },
+
+  async getDoctorAvailability(doctorId) {
+    try {
+      const user = await this.getUserById(doctorId);
+      return user ? (user.availability || []) : [];
+    } catch (error) {
+      console.error("DynamoDB error (getDoctorAvailability):", error);
+      throw error;
+    }
+  },
+
+  async setDoctorAvailability(doctorId, availabilityData) {
+    try {
+      const data = await ddbDocClient.send(new UpdateCommand({
+        TableName: "Users",
+        Key: { id: doctorId },
+        UpdateExpression: "set availability = :avail",
+        ExpressionAttributeValues: { ":avail": availabilityData },
+        ReturnValues: "ALL_NEW"
+      }));
+      return data.Attributes.availability;
+    } catch (error) {
+      console.error("DynamoDB error (setDoctorAvailability):", error);
+      throw error;
+    }
+  },
+
+  async markPhaseCompleted(planId, phaseIndex) {
+    try {
+      const planRes = await ddbDocClient.send(new GetCommand({
+        TableName: "RecoveryPlans",
+        Key: { id: planId }
+      }));
+
+      if (!planRes.Item) throw new Error("Plan not found");
+
+      const plan = planRes.Item;
+      if (!plan.phases || phaseIndex < 0 || phaseIndex >= plan.phases.length) {
+        throw new Error("Invalid phase index");
+      }
+
+      plan.phases[phaseIndex].isManuallyCompleted = true;
+
+      await ddbDocClient.send(new PutCommand({
+        TableName: "RecoveryPlans",
+        Item: plan
+      }));
+
+      return plan;
+    } catch (error) {
+      console.error("DynamoDB error (markPhaseCompleted):", error);
+      throw error;
+    }
   }
 };
 
@@ -1268,8 +1364,8 @@ module.exports = dbService;
 // Export a `ready` promise so other modules (like server.js) can await it.
 dbService.ready = (async () => {
   try {
-    await ensureUsersTable();
-    await ensureRecoveryPlansTable();
+    // await ensureUsersTable();
+    // await ensureRecoveryPlansTable();
     return true;
   } catch (err) {
     console.error('Users table bootstrap failed:', err);

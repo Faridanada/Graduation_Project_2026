@@ -161,6 +161,7 @@ class _AlertsPageState extends State<AlertsPage> {
     final String message = alert['message'] ?? '';
     final bool isCritical = (title + message).toLowerCase().contains('critical');
     final Color riskColor = isCritical ? Colors.red : Colors.orange;
+    final bool isRead = alert['isRead'] == true || alert['isRead'] == 'true';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -206,16 +207,18 @@ class _AlertsPageState extends State<AlertsPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: isRead ? null : () {
                   // Mark as read and refresh
                   ApiService.markNotificationRead(alert['id']).then((_) => _fetchAlerts());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: riskColor,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey[300],
+                  disabledForegroundColor: Colors.grey[600],
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text('Acknowledge'),
+                child: Text(isRead ? 'Acknowledged' : 'Acknowledge'),
               ),
             ),
           ],

@@ -413,12 +413,13 @@ class _PatientProfilePageState extends State<PatientProfilePage>
                       builder: (context) => CreateRecoveryPlan(
                         patientId: widget.patientId,
                         patientName: widget.patientName,
+                        existingPlan: _patientData?['recoveryPlan'],
                       ),
                     ),
-                  );
+                  ).then((_) => _loadData()); // Refresh after returning
                 },
-                icon: const Icon(Icons.assignment_add, size: 20, color: Colors.white),
-                label: const Text('Create Recovery Plan', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
+                icon: Icon(_patientData?['recoveryPlan'] != null ? Icons.edit_document : Icons.assignment_add, size: 20, color: Colors.white),
+                label: Text(_patientData?['recoveryPlan'] != null ? 'View / Edit Recovery Plan' : 'Create Recovery Plan', style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),

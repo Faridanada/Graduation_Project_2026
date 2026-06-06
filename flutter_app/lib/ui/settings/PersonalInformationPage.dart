@@ -20,6 +20,18 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _genderController = TextEditingController();
+  final List<String> _ptSpecialties = [
+    'Orthopedic Physical Therapy',
+    'Geriatric Physical Therapy',
+    'Neurological Physical Therapy',
+    'Cardiopulmonary Physical Therapy',
+    'Pediatric Physical Therapy',
+    'Sports Physical Therapy',
+    'Women\'s Health',
+    'General Physical Therapy',
+    'Other'
+  ];
+  String? _selectedSpecialty;
 
   @override
   void initState() {
@@ -40,6 +52,16 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
           _dobController.text =
               userProfile['profileData']?['dateOfBirth'] ?? '';
           _genderController.text = userProfile['profileData']?['gender'] ?? '';
+          
+          final loadedSpecialty = userProfile['profileData']?['specialty'];
+          if (loadedSpecialty != null && loadedSpecialty.toString().isNotEmpty) {
+            if (_ptSpecialties.contains(loadedSpecialty)) {
+              _selectedSpecialty = loadedSpecialty;
+            } else {
+              _ptSpecialties.add(loadedSpecialty);
+              _selectedSpecialty = loadedSpecialty;
+            }
+          }
           isLoading = false;
         });
       }
@@ -56,12 +78,13 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     setState(() => isSaving = true);
     final success = await ApiService.updateProfile({
       'name': _nameController.text,
-      'phoneNumber': _phoneController.text,
+      'phone': _phoneController.text,
       'profileData': {
         'phone': _phoneController.text,
         'location': _locationController.text,
         'dateOfBirth': _dobController.text,
         'gender': _genderController.text,
+        if (userProfile['role'] == 'doctor') 'specialty': _selectedSpecialty ?? '',
       }
     });
 
@@ -141,6 +164,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                       _dobController),
                   _buildField('Gender', userProfile['profileData']?['gender'],
                       _genderController),
+                  if (userProfile['role'] == 'doctor')
+                    _buildSpecialtyDropdown(),
                 ],
                 const SizedBox(height: 30),
                 if (isEditing)
@@ -240,6 +265,87 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
             style: TextStyle(
               fontSize: 16,
               color: readOnly ? Colors.grey[600] : Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecialtyDropdown() {
+    final displayValue = _selectedSpecialty ?? 'Not set';
+
+    if (isEditing) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: DropdownButtonFormField<String>(
+          value: _selectedSpecialty,
+          decoration: InputDecoration(
+            labelText: 'Specialty',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: Colors.black87, width: 2),
+            ),
+            contentPadding: const EdgeInsets.all(16),
+          ),
+          items: _ptSpecialties.map((String specialty) {
+            return DropdownMenuItem<String>(
+              value: specialty,
+              child: Text(specialty),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedSpecialty = newValue;
+            });
+          },
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Specialty',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            displayValue.isEmpty ? 'Not set' : displayValue,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.black87,
               fontWeight: FontWeight.w500,
             ),
           ),

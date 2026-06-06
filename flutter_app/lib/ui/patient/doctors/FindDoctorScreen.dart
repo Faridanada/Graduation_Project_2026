@@ -10,7 +10,9 @@ class FindDoctorScreen extends StatefulWidget {
 
 class _FindDoctorScreenState extends State<FindDoctorScreen> {
   List<dynamic> doctors = [];
+  List<dynamic> filteredDoctors = [];
   bool isLoading = true;
+  String searchQuery = '';
 
   @override
   void initState() {
@@ -23,7 +25,22 @@ class _FindDoctorScreenState extends State<FindDoctorScreen> {
     final fetched = await ApiService.getAllDoctors();
     setState(() {
       doctors = fetched;
+      filteredDoctors = fetched;
       isLoading = false;
+    });
+  }
+
+  void _filterDoctors(String query) {
+    setState(() {
+      searchQuery = query;
+      if (query.isEmpty) {
+        filteredDoctors = doctors;
+      } else {
+        filteredDoctors = doctors.where((doc) {
+          final name = (doc['name'] ?? '').toLowerCase();
+          return name.contains(query.toLowerCase());
+        }).toList();
+      }
     });
   }
 
@@ -61,7 +78,7 @@ class _FindDoctorScreenState extends State<FindDoctorScreen> {
       backgroundColor: const Color(0xFFF9FBFF),
       appBar: AppBar(
         title: const Text(
-          'Find a Doctor',
+          'Search Doctors',
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -73,14 +90,42 @@ class _FindDoctorScreenState extends State<FindDoctorScreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : doctors.isEmpty
-              ? const Center(child: Text("No doctors available."))
-              : ListView.builder(
+          : Column(
+              children: [
+                Padding(
                   padding: const EdgeInsets.all(16),
-                  itemCount: doctors.length,
-                  itemBuilder: (context, index) {
-                    final doc = doctors[index];
-                    final name = doc['name'] ?? 'Unknown Doctor';
+                  child: TextField(
+                    onChanged: _filterDoctors,
+                    decoration: InputDecoration(
+                      hintText: 'Search by doctor name...',
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFF4A90E2)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: filteredDoctors.isEmpty
+                      ? const Center(child: Text("No doctors found."))
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: filteredDoctors.length,
+                          itemBuilder: (context, index) {
+                            final doc = filteredDoctors[index];
+                            final name = doc['name'] ?? 'Unknown Doctor';
                     
                     return Card(
                       elevation: 2,
@@ -149,6 +194,9 @@ class _FindDoctorScreenState extends State<FindDoctorScreen> {
                     );
                   },
                 ),
+              ),
+            ],
+          ),
     );
   }
 }

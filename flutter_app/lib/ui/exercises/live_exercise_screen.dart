@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-
+import 'dart:async';
+import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/exercises/session_summary_screen.dart';
 
 class LiveSessionScreen extends StatefulWidget {
-  const LiveSessionScreen({super.key});
+  final Map<String, dynamic> exercise;
+  const LiveSessionScreen({super.key, required this.exercise});
 
   @override
   State<LiveSessionScreen> createState() => _LiveSessionScreenState();
@@ -13,6 +15,41 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   static const Color primaryBlue = Color(0xFF4A90E2);
 
   bool isPaused = false;
+  Timer? _timer;
+  int _secondsElapsed = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!isPaused && mounted) {
+        setState(() {
+          _secondsElapsed++;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String get _formattedTime {
+    final m = (_secondsElapsed ~/ 60).toString().padLeft(2, '0');
+    final s = (_secondsElapsed % 60).toString().padLeft(2, '0');
+    return "$m:$s";
+  }
+
+  double get _progress {
+    final totalSeconds = (widget.exercise['estimatedTimeMin'] ?? 10) * 60;
+    return totalSeconds > 0 ? _secondsElapsed / totalSeconds : 0.0;
+  }
 
   void _showPauseDialog() {
     showDialog(
@@ -145,46 +182,23 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       },
                       child: const Icon(Icons.arrow_back),
                     ),
-                    const Text("Active Live Session",
-                        style: TextStyle(
+                    Text(widget.exercise['title'] ?? "Active Live Session",
+                        style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
                     const Icon(Icons.settings),
                   ],
                 ),
 
-                const SizedBox(height: 8),
-
-                /// MONITORED
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.verified, size: 14, color: Colors.green),
-                      SizedBox(width: 4),
-                      Text("Monitored by Doctor",
-                          style: TextStyle(color: Colors.green, fontSize: 12)),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// RING
+                const SizedBox(height: 32),                /// RING
                 Stack(
                   alignment: Alignment.center,
                   children: [
                     SizedBox(
-                      height: 180,
-                      width: 180,
+                      height: 240,
+                      width: 240,
                       child: CircularProgressIndicator(
-                        value: 0.82,
-                        strokeWidth: 14,
+                        value: _progress,
+                        strokeWidth: 18,
                         strokeCap: StrokeCap.round,
                         color: primaryBlue,
                         backgroundColor: Colors.grey.shade300,
@@ -192,12 +206,12 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     ),
                     Column(
                       children: [
-                        const Text("08:24",
-                            style: TextStyle(
-                                fontSize: 28, fontWeight: FontWeight.bold)),
+                        Text(_formattedTime,
+                            style: const TextStyle(
+                                fontSize: 36, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        const Text("of 10:00",
-                            style: TextStyle(color: Colors.grey)),
+                        Text("of ${widget.exercise['estimatedTimeMin']?.toString().padLeft(2, '0') ?? '10'}:00",
+                            style: const TextStyle(color: Colors.grey)),
                         const SizedBox(height: 6),
                         Icon(
                           isPaused ? Icons.play_arrow : Icons.pause,
@@ -208,10 +222,10 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 48),
 
-                const Text("Lift your left knee",
-                    style: TextStyle(
+                Text("Proceed with ${widget.exercise['title'] ?? 'the exercise'}",
+                    style: const TextStyle(
                         color: primaryBlue, fontWeight: FontWeight.bold)),
 
                 const SizedBox(height: 6),
@@ -219,29 +233,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                 const Text("Follow the guidance and move slowly.",
                     style: TextStyle(color: Colors.grey)),
 
-                const SizedBox(height: 16),
-
-                /// IMAGE
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      Image.asset("assets/images/activeexercise.png"),
-                      const SizedBox(height: 8),
-                      const Text("78°",
-                          style: TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20)),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 12),
+                const SizedBox(height: 48),
 
                 /// ===== STATS GRID (UNCHANGED) =====
                 Row(
@@ -249,9 +241,9 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     Expanded(
                         child: _statCard(
                       icon: Icons.refresh,
-                      iconColor: Colors.green,
+                      iconColor: primaryBlue,
                       title: "Reps",
-                      value: "5 / 12",
+                      value: "0 / ${widget.exercise['repsTotal'] ?? 12}",
                       bottom: Row(
                         children: List.generate(
                           6,
@@ -261,7 +253,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                             height: 8,
                             decoration: BoxDecoration(
                               color:
-                                  i < 3 ? Colors.green : Colors.grey.shade300,
+                                  i < 3 ? primaryBlue : Colors.grey.shade300,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -284,42 +276,20 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 10),
 
-                Row(
-                  children: [
-                    Expanded(
-                        child: _statCard(
-                      icon: Icons.favorite,
-                      iconColor: Colors.red,
-                      title: "Heart Rate",
-                      value: "132 bpm",
-                      valueColor: Colors.red,
-                    )),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: _statCard(
-                      icon: Icons.autorenew,
-                      iconColor: Colors.green,
-                      title: "Recovery Score",
-                      value: "84%",
-                      valueColor: Colors.green,
-                    )),
-                  ],
-                ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 48),
 
                 /// MESSAGE
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: primaryBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.star, color: Colors.green),
+                      const Icon(Icons.star, color: primaryBlue),
                       const SizedBox(width: 8),
                       Expanded(
                         child: RichText(
@@ -333,7 +303,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                               TextSpan(
                                   text: "going",
                                   style: TextStyle(
-                                      color: Colors.green,
+                                      color: primaryBlue,
                                       fontWeight: FontWeight.bold)),
                               TextSpan(
                                   text: ".\n\nTry to lift a little higher."),
@@ -345,7 +315,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 60),
 
                 /// ===== BUTTONS (UPDATED) =====
                 Row(
@@ -370,13 +340,31 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SessionSummaryScreen(),
-                            ),
+                        onTap: () async {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => const Center(child: CircularProgressIndicator()),
                           );
+
+                          await ApiService.completeExercise(widget.exercise['id'] ?? '', widget.exercise['repsTotal'] ?? 12);
+                          await ApiService.saveSession({
+                            "exerciseId": widget.exercise['id'] ?? '',
+                            "durationMinutes": widget.exercise['estimatedTimeMin'] ?? 10,
+                            "repsCompleted": widget.exercise['repsTotal'] ?? 12,
+                            "accuracy": 88,
+                            "date": DateTime.now().toIso8601String()
+                          });
+
+                          if (context.mounted) {
+                            Navigator.pop(context); // close loading dialog
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SessionSummaryScreen(exercise: widget.exercise),
+                              ),
+                            );
+                          }
                         },
                         child: _button("End Session", Icons.stop, Colors.red),
                       ),

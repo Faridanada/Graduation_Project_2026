@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/ui/shared/ai_report_screen.dart';
 
 class SessionSummaryScreen extends StatelessWidget {
-  const SessionSummaryScreen({super.key});
+  final Map<String, dynamic> exercise;
+  const SessionSummaryScreen({super.key, required this.exercise});
 
   static const Color primaryBlue = Color(0xFF4A90E2);
 
@@ -83,13 +84,13 @@ class SessionSummaryScreen extends StatelessWidget {
                       children: [
                         Expanded(
                             child: _stat(Icons.access_time, "Total Duration",
-                                "10:00", "min")),
+                                "${exercise['estimatedTimeMin']?.toString().padLeft(2, '0') ?? '10'}:00", "min")),
                         Expanded(
                             child: _stat(Icons.fitness_center, "Reps Completed",
-                                "12 / 12", "100%")),
+                                "${exercise['repsTotal'] ?? 12} / ${exercise['repsTotal'] ?? 12}", "100%")),
                         Expanded(
                             child: _stat(Icons.refresh, "Sets Completed",
-                                "3 / 3", "100%")),
+                                "1 / 1", "100%")),
                       ],
                     ),
                     const Divider(height: 20),
@@ -133,7 +134,8 @@ class SessionSummaryScreen extends StatelessWidget {
                     ),
                     const CircleAvatar(
                       radius: 18,
-                      backgroundImage: AssetImage("assets/doctor.jpg"),
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.medical_services, color: Colors.green, size: 20),
                     )
                   ],
                 ),

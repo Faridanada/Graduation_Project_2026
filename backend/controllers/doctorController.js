@@ -100,6 +100,34 @@ const doctorController = {
         }
     },
 
+    // POST /api/doctor/patients/assign
+    async assignExistingPatient(req, res) {
+        try {
+            const doctorId = req.user.id || 'doctor_1';
+            const { patientId } = req.body;
+
+            if (!patientId) {
+                return res.status(400).json({ statusCode: 400, message: 'patientId is required' });
+            }
+
+            await dbService.linkPatientToDoctor(patientId, doctorId);
+
+            // Notify the patient
+            const doctorProfile = await dbService.getUserById(doctorId);
+            const docName = doctorProfile?.name || 'Your doctor';
+            await dbService.createNotification(
+                patientId,
+                "New Doctor Assigned",
+                `Dr. ${docName.replace('Dr. ', '')} has added you to their patients.`
+            );
+
+            res.status(200).json({ statusCode: 200, message: 'Patient assigned successfully' });
+        } catch (error) {
+            console.error('Error assigning patient:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error assigning patient' });
+        }
+    },
+
     // POST /api/doctor/patients/add
     async addPatient(req, res) {
         try {

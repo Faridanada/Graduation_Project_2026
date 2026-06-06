@@ -138,6 +138,19 @@ class ApiService {
     return [];
   }
 
+  static Future<bool> assignExistingPatient(String patientId) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/doctor/patients/assign"),
+      headers: _headers(token),
+      body: jsonEncode({'patientId': patientId}),
+    );
+
+    return response.statusCode == 200;
+  }
+
   static Future<List<dynamic>> getAllDoctorsForDoctor({String? name}) async {
     final token = await _getToken();
     if (token == null) return [];
@@ -338,6 +351,18 @@ class ApiService {
       return jsonDecode(response.body)['data']; // Might be null
     }
     return null;
+  }
+
+  static Future<bool> markPhaseCompleted(String planId, int phaseIndex) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.put(
+      Uri.parse("$baseUrl/patient/recovery-plan/$planId/phases/$phaseIndex/complete"),
+      headers: _headers(token),
+    );
+
+    return response.statusCode == 200;
   }
 
   static Future<bool> remindDoctorToCreatePlan() async {
@@ -875,6 +900,38 @@ class ApiService {
         }),
       );
       return response.statusCode == 201;
+    } catch (_) {}
+    return false;
+  }
+
+  /// Complete an exercise
+  static Future<bool> completeExercise(String exerciseId, int repsCompleted) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/patient/exercises/$exerciseId/complete'),
+        headers: _headers(token),
+        body: jsonEncode({'repsCompleted': repsCompleted}),
+      );
+      return response.statusCode == 200;
+    } catch (_) {}
+    return false;
+  }
+
+  /// Save a completed session
+  static Future<bool> saveSession(Map<String, dynamic> sessionData) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/patient/sessions'),
+        headers: _headers(token),
+        body: jsonEncode(sessionData),
+      );
+      return response.statusCode == 201 || response.statusCode == 200;
     } catch (_) {}
     return false;
   }

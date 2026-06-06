@@ -5,6 +5,7 @@ import 'package:rehabilitation_app/ui/settings/PersonalInformationPage.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 import 'package:rehabilitation_app/ui/auth/ChangePasswordPage.dart';
 import 'package:rehabilitation_app/ui/settings/HelpSupportPage.dart';
+import 'package:rehabilitation_app/ui/patient/profile/MyDoctorPage.dart';
 
 class PatientProfile extends StatefulWidget {
   final bool isTab;
@@ -207,6 +208,19 @@ class _PatientProfileState extends State<PatientProfile> {
                         );
                       },
                       isFirst: true,
+                    ),
+                    _buildDivider(),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.medical_services_outlined,
+                      title: 'My Doctor',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const MyDoctorPage()),
+                        );
+                      },
                     ),
                     _buildDivider(),
                     _buildMenuItem(

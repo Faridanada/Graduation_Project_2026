@@ -2,14 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/ui/exercises/live_exercise_screen.dart';
 import 'package:rehabilitation_app/ui/chats/Chats.dart';
 import 'package:rehabilitation_app/ui/patient/home/patient_bottom_nav.dart';
+import 'package:rehabilitation_app/services/api_service.dart';
 
-class ActiveExerciseScreen extends StatelessWidget {
-  const ActiveExerciseScreen({super.key});
+class ActiveExerciseScreen extends StatefulWidget {
+  final Map<String, dynamic> exercise;
+
+  const ActiveExerciseScreen({super.key, required this.exercise});
 
   static const Color primaryBlue = Color(0xFF2196F3);
 
   @override
+  State<ActiveExerciseScreen> createState() => _ActiveExerciseScreenState();
+}
+
+class _ActiveExerciseScreenState extends State<ActiveExerciseScreen> {
+  Map<String, dynamic>? doctorProfile;
+  bool isLoadingDoctor = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDoctor();
+  }
+
+  Future<void> _fetchDoctor() async {
+    try {
+      final data = await ApiService.getMyDoctor();
+      if (mounted) {
+        setState(() {
+          doctorProfile = data;
+          isLoadingDoctor = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => isLoadingDoctor = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final title = widget.exercise['title'] ?? 'Exercise';
+    final mode = widget.exercise['mode'] ?? 'Active Mode';
+    final duration = widget.exercise['estimatedTimeMin'] ?? 10;
+    final reps = widget.exercise['repsTotal'] ?? 15;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       body: SafeArea(
@@ -22,7 +60,6 @@ class ActiveExerciseScreen extends StatelessWidget {
 
                 /// HEADER
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     GestureDetector(
                       onTap: () {
@@ -35,50 +72,32 @@ class ActiveExerciseScreen extends StatelessWidget {
                       },
                       child: const Icon(Icons.arrow_back),
                     ),
+                    const SizedBox(width: 16),
                     const Text(
                       'Start Active Exercise',
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    const Text(
-                      'FLEXIO',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: primaryBlue),
-                    ),
                   ],
-                ),
-
-                const SizedBox(height: 8),
-
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.verified, color: Colors.green, size: 16),
-                    SizedBox(width: 4),
-                    Text('Monitored by Doctor',
-                        style: TextStyle(color: Colors.green)),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
+                ),                const SizedBox(height: 32),
 
                 /// HERO
                 _card(
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         flex: 6,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Knee Flexion –\nActive Mode',
-                              style: TextStyle(
+                              title,
+                              style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),
-                            SizedBox(height: 8),
-                            Text(
-                              'You will move your leg on your own with guidance from your doctor.',
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Complete the exercise exactly as prescribed by your doctor.',
                               style: TextStyle(color: Colors.grey),
                             ),
                           ],
@@ -93,59 +112,9 @@ class ActiveExerciseScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
-                /// DOCTOR
-                _card(
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 24,
-                        backgroundImage: AssetImage('assets/images/doctor.jpg'),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Doctor Monitoring',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            SizedBox(height: 4),
-                            Text(
-                              'Your doctor is monitoring your session in real time.',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Icon(Icons.graphic_eq,
-                                    color: Colors.green, size: 16),
-                                SizedBox(width: 4),
-                                Text('Live',
-                                    style: TextStyle(color: Colors.green)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryBlue,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const Chats()),
-                          );
-                        },
-                        child: const Text('Chat'),
-                      ),
-                    ],
-                  ),
-                ),
 
-                const SizedBox(height: 16),
 
                 /// OVERVIEW
                 _card(
@@ -155,7 +124,7 @@ class ActiveExerciseScreen extends StatelessWidget {
                       const Row(
                         children: [
                           Icon(Icons.fitness_center,
-                              color: primaryBlue, size: 18),
+                              color: ActiveExerciseScreen.primaryBlue, size: 18),
                           SizedBox(width: 8),
                           Text('Exercise Overview',
                               style: TextStyle(fontWeight: FontWeight.bold)),
@@ -163,23 +132,17 @@ class ActiveExerciseScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Row(
-                        children: const [
+                        children: [
                           _OverviewItem(
                             icon: Icons.access_time,
                             title: 'Duration',
-                            value: '10 min',
+                            value: '$duration min',
                           ),
-                          _Divider(),
+                          const _Divider(),
                           _OverviewItem(
                             icon: Icons.sync,
                             title: 'Reps',
-                            value: '3 sets × 12',
-                          ),
-                          _Divider(),
-                          _OverviewItem(
-                            icon: Icons.timer,
-                            title: 'Rest',
-                            value: '30 sec',
+                            value: '$reps total',
                           ),
                         ],
                       ),
@@ -187,13 +150,13 @@ class ActiveExerciseScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
                 /// BEFORE START
                 _card(
-                  child: Column(
+                  child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Row(
                         children: [
                           Icon(Icons.warning_amber_rounded,
@@ -212,7 +175,7 @@ class ActiveExerciseScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 48),
 
                 /// BUTTON
                 SizedBox(
@@ -220,7 +183,7 @@ class ActiveExerciseScreen extends StatelessWidget {
                   height: 55,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue,
+                      backgroundColor: ActiveExerciseScreen.primaryBlue,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -230,7 +193,7 @@ class ActiveExerciseScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const LiveSessionScreen()),
+                            builder: (_) => LiveSessionScreen(exercise: widget.exercise)),
                       );
                     },
                     child: const Row(
@@ -287,7 +250,7 @@ class _OverviewItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: primaryBlue.withValues(alpha: 0.1),
+              color: primaryBlue.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: primaryBlue, size: 18),

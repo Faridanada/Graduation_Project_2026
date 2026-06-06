@@ -40,6 +40,7 @@ router.get('/doctors/:id/availability', patientController.getDoctorAvailability)
 // Recovery Plan
 router.post('/remind-doctor', patientController.remindDoctor);
 router.get('/recovery-plan', patientController.getRecoveryPlan);
+router.put('/recovery-plan/:planId/phases/:phaseIndex/complete', patientController.markPhaseCompleted);
 
 // Sessions
 router.post('/sessions', patientController.saveSession);

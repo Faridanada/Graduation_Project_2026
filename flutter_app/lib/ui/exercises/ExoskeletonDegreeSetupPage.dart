@@ -89,6 +89,36 @@ class _ExoskeletonDegreeSetupPageState
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              // Live Video Feed Placeholder
+              Container(
+                width: double.infinity,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)
+                  ],
+                ),
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.videocam_outlined, color: Colors.white54, size: 40),
+                      SizedBox(height: 8),
+                      Text(
+                        'LIVE VIDEO FEED',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const Spacer(flex: 1),
               Center(
                 child: Column(

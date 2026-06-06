@@ -156,8 +156,6 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
     final exercises = _planData!['exercisePlan'] != null
         ? [_planData!['exercisePlan']]
         : [];
-    final medications = _planData!['medications'] as List? ?? [];
-    final guidelines = _planData!['guidelines'] as List? ?? [];
     final tip = _planData!['todayTip'] ?? "Consistency is key!";
 
     return Scaffold(
@@ -367,7 +365,7 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
 
                 /// SCROLLABLE
                 SizedBox(
-                  height: 240,
+                  height: 290,
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -382,21 +380,32 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                             date: phases[i]['date'] ?? '',
                             status: phases[i]['status'] ?? 'Upcoming',
                             borderColor: phases[i]['status'] == 'Completed' ||
-                                    phases[i]['status'] == 'In Progress'
+                                    phases[i]['status'] == 'Active'
                                 ? Colors.blue
-                                : Colors.grey.shade300,
+                                : (phases[i]['status'] == 'Overdue' ? Colors.red : Colors.grey.shade300),
                             badgeColor: phases[i]['status'] == 'Completed'
                                 ? const Color(0xFFE8F0FF)
-                                : const Color(0xFFF1F3F6),
+                                : (phases[i]['status'] == 'Overdue' ? const Color(0xFFFFEBEB) : const Color(0xFFF1F3F6)),
                             circleColor: phases[i]['status'] == 'Completed' ||
-                                    phases[i]['status'] == 'In Progress'
+                                    phases[i]['status'] == 'Active'
                                 ? Colors.blue
-                                : Colors.grey,
+                                : (phases[i]['status'] == 'Overdue' ? Colors.red : Colors.grey),
                             statusTextColor: phases[i]['status'] == 'Completed'
                                 ? Colors.green
-                                : (phases[i]['status'] == 'In Progress'
+                                : (phases[i]['status'] == 'Active'
                                     ? Colors.blue
-                                    : Colors.grey),
+                                    : (phases[i]['status'] == 'Overdue' ? Colors.red : Colors.grey)),
+                            onMarkCompleted: (phases[i]['status'] == 'Active' || phases[i]['status'] == 'Overdue')
+                                ? () async {
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marking phase completed...')));
+                                    final success = await ApiService.markPhaseCompleted(_planData!['id'], i);
+                                    if (success) {
+                                      _fetchData();
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to complete phase', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
+                                    }
+                                  }
+                                : null,
                           ),
                           if (i < phases.length - 1)
                             _phaseLine(phases[i]['status'] == 'Completed'
@@ -430,13 +439,7 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                   _exerciseTile(context, exercises[0]),
                   const SizedBox(height: 10),
                 ],
-                if (medications.isNotEmpty) ...[
-                  for (var med in medications) ...[
-                    _medicationTile(med),
-                    const SizedBox(height: 10),
-                  ]
-                ],
-                if (exercises.isEmpty && medications.isEmpty)
+                if (exercises.isEmpty)
                   const Text("No tasks for today.",
                       style: TextStyle(color: Colors.grey)),
 
@@ -463,28 +466,9 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                         icon: Icons.directions_run,
                         color: const Color(0xFF5B9CFF),
                         lightColor: const Color(0xFFEFF6FF),
-                        progress: exercises.isNotEmpty ? 1.0 : 0.0,
                       ),
                     ),
                     const SizedBox(width: 14),
-                    Expanded(
-                      child: _DetailCard(
-                        title: "Medications",
-                        value: medications.isNotEmpty ? "${medications.length} total" : "None",
-                        icon: Icons.medication,
-                        color: const Color(0xFF34D399),
-                        lightColor: const Color(0xFFECFDF5),
-                        progress: medications.isNotEmpty ? 0.5 : 0.0,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 14),
-
-                /// SECOND ROW
-                Row(
-                  children: [
                     Expanded(
                       child: _DetailCard(
                         title: "Appointments",
@@ -492,22 +476,11 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                         icon: Icons.calendar_month,
                         color: const Color(0xFFA78BFA),
                         lightColor: const Color(0xFFF5F3FF),
-                        progress: 0.5,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _DetailCard(
-                        title: "Guidelines",
-                        value: "${guidelines.length} tips",
-                        icon: Icons.description_outlined,
-                        color: const Color(0xFFFB7185),
-                        lightColor: const Color(0xFFFFF1F2),
-                        progress: guidelines.isNotEmpty ? 1.0 : 0.0,
                       ),
                     ),
                   ],
                 ),
+
 
                 const SizedBox(height: 20),
 
@@ -637,69 +610,20 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
               ],
             ),
           ),
-          _gradientButton(context),
+          _gradientButton(context, exercise),
         ],
       ),
     );
   }
 
-  static Widget _medicationTile(Map<String, dynamic> med) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: _card(),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 26,
-            backgroundColor: Color(0xFFFFF7EA),
-            child: Icon(
-              Icons.medication,
-              color: Color(0xFFFFC857),
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Medication",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(med['title'] ?? 'Take your medication'),
-                const SizedBox(height: 4),
-                Text(
-                  med['time'] ?? '',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Row(
-              children: [
-                Text("Scheduled", style: TextStyle(color: Colors.blue)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  static Widget _gradientButton(BuildContext context) {
+  static Widget _gradientButton(BuildContext context, Map<String, dynamic> exercise) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const ActiveExerciseScreen(),
+            builder: (context) => ActiveExerciseScreen(exercise: exercise),
           ),
         );
       },
@@ -766,6 +690,7 @@ class _PhaseCard extends StatelessWidget {
   final Color badgeColor;
   final Color circleColor;
   final Color statusTextColor;
+  final VoidCallback? onMarkCompleted;
 
   const _PhaseCard({
     required this.number,
@@ -777,6 +702,7 @@ class _PhaseCard extends StatelessWidget {
     required this.badgeColor,
     required this.circleColor,
     required this.statusTextColor,
+    this.onMarkCompleted,
   });
 
   @override
@@ -786,7 +712,6 @@ class _PhaseCard extends StatelessWidget {
       children: [
         Container(
           width: 162,
-          height: 212,
           margin: const EdgeInsets.only(top: 18),
           padding: const EdgeInsets.fromLTRB(14, 28, 14, 14),
           decoration: BoxDecoration(
@@ -868,6 +793,21 @@ class _PhaseCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onMarkCompleted != null) ...[
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: onMarkCompleted,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 36),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  child: const Text("Mark Complete", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
             ],
           ),
         ),
@@ -917,7 +857,6 @@ class _DetailCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final Color lightColor;
-  final double progress;
 
   const _DetailCard({
     required this.title,
@@ -925,7 +864,6 @@ class _DetailCard extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.lightColor,
-    required this.progress,
   });
 
   @override
@@ -976,15 +914,6 @@ class _DetailCard extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: LinearProgressIndicator(
-              minHeight: 6,
-              value: progress,
-              color: color.withOpacity(0.85),
-              backgroundColor: color.withOpacity(0.12),
-            ),
-          ),
         ],
       ),
     );

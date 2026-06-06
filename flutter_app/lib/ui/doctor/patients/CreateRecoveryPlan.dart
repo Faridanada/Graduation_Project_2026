@@ -6,11 +6,13 @@ import 'package:rehabilitation_app/ui/app_theme.dart';
 class CreateRecoveryPlan extends StatefulWidget {
   final String patientId;
   final String patientName;
+  final Map<String, dynamic>? existingPlan;
 
   const CreateRecoveryPlan({
     Key? key,
     required this.patientId,
     required this.patientName,
+    this.existingPlan,
   }) : super(key: key);
 
   @override
@@ -24,8 +26,6 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
   DateTime? _endDate;
 
   final List<Map<String, dynamic>> _phases = [];
-  final List<Map<String, dynamic>> _medications = [];
-  final List<String> _guidelines = [];
 
   // Exoskeleton exercise defaults
   int _repsTotal = 15;
@@ -33,20 +33,100 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
 
   final TextEditingController _tipController = TextEditingController();
 
-  Future<void> _selectDate(BuildContext context, bool isStart) async {
-    final picked = await showDatePicker(
+  final List<String> _autoTips = [
+    "Consistency is key!",
+    "Listen to your body, don't push through sharp pain.",
+    "Small progress is still progress.",
+    "Rest and recovery are just as important as the exercises.",
+    "Stay hydrated and keep moving!",
+    "Celebrate every small victory.",
+    "Focus on your form, not just the reps.",
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingPlan != null) {
+      final plan = widget.existingPlan!;
+      try {
+        if (plan['startDate'] != null) _startDate = DateTime.tryParse(plan['startDate']);
+        if (plan['endDate'] != null) _endDate = DateTime.tryParse(plan['endDate']);
+      } catch (_) {}
+      
+      if (plan['phases'] != null) {
+        _phases.addAll(List<Map<String, dynamic>>.from(plan['phases'].map((e) => Map<String, dynamic>.from(e))));
+      }
+      if (plan['todayTip'] != null) {
+        _tipController.text = plan['todayTip'];
+      }
+      if (plan['exercisePlan'] != null) {
+        _repsTotal = plan['exercisePlan']['repsTotal'] ?? 15;
+        _estimatedTimeMin = plan['exercisePlan']['estimatedTimeMin'] ?? 20;
+      }
+    } else {
+      _autoTips.shuffle();
+      _tipController.text = _autoTips.first;
+    }
+  }
+
+  void _generateRandomTip() {
+    _autoTips.shuffle();
+    setState(() {
+      _tipController.text = _autoTips.first;
+    });
+  }
+
+  Future<void> _selectDurationRange() async {
+    final picked = await showDateRangePicker(
       context: context,
-      initialDate: DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF6BA5CF), // Header background color
+              onPrimary: Colors.white, // Header text color
+              onSurface: Colors.black87, // Body text color
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
-        if (isStart) {
-          _startDate = picked;
-        } else {
-          _endDate = picked;
-        }
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+    }
+  }
+
+  Future<void> _selectPhaseDateRange(int index) async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF6BA5CF), // Header background color
+              onPrimary: Colors.white, // Header text color
+              onSurface: Colors.black87, // Body text color
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        final startStr = DateFormat('MMM dd').format(picked.start);
+        final endStr = DateFormat('MMM dd').format(picked.end);
+        _phases[index]['date'] = '$startStr - $endStr';
+        _phases[index]['startDate'] = picked.start.toIso8601String();
+        _phases[index]['endDate'] = picked.end.toIso8601String();
       });
     }
   }
@@ -64,22 +144,6 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
     });
   }
 
-  void _addMedication() {
-    setState(() {
-      _medications.add({
-        'title': '',
-        'time': '09:00 AM',
-        'taken': false,
-      });
-    });
-  }
-
-  void _addGuideline() {
-    setState(() {
-      _guidelines.add('');
-    });
-  }
-
   Future<void> _savePlan() async {
     if (_startDate == null || _endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,6 +151,27 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
             content: Text('Please select both start and end dates.')),
       );
       return;
+    }
+
+    if (_phases.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one phase.')),
+      );
+      return;
+    }
+
+    for (int i = 0; i < _phases.length; i++) {
+      final p = _phases[i];
+      final title = (p['title'] ?? '').trim();
+      final subtitle = (p['subtitle'] ?? '').trim();
+      final date = p['date'] ?? 'TBD';
+
+      if (title.isEmpty || subtitle.isEmpty || date == 'TBD' || date.isEmpty || date == 'Select Dates') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please fill out all fields (Title, Subtitle, Dates) for Phase ${i + 1}.')),
+        );
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -105,6 +190,8 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
           'date': e.value['date'],
           'active': e.value['active'],
           'completed': e.value['completed'],
+          'startDate': e.value['startDate'],
+          'endDate': e.value['endDate'],
         };
       }).toList(),
       'exercisePlan': {
@@ -113,8 +200,6 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
         'repsTotal': _repsTotal,
         'estimatedTimeMin': _estimatedTimeMin,
       },
-      'medications': _medications,
-      'guidelines': _guidelines,
       'todayTip': _tipController.text,
     };
 
@@ -158,32 +243,12 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: InkWell(
-                            onTap: () => _selectDate(context, true),
-                            child: InputDecorator(
-                              decoration: const InputDecoration(
-                                  labelText: 'Start Date',
-                                  border: OutlineInputBorder()),
-                              child: Text(_startDate == null
-                                  ? 'Select Date'
-                                  : DateFormat('MMM dd, yyyy')
-                                      .format(_startDate!)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _selectDate(context, false),
-                            child: InputDecorator(
-                              decoration: const InputDecoration(
-                                  labelText: 'End Date',
-                                  border: OutlineInputBorder()),
-                              child: Text(_endDate == null
-                                  ? 'Select Date'
-                                  : DateFormat('MMM dd, yyyy')
-                                      .format(_endDate!)),
-                            ),
+                          child: _buildDatePickerBox(
+                            label: 'Date Range',
+                            date: (_startDate == null || _endDate == null) 
+                                ? 'Select Dates' 
+                                : '${DateFormat('MMM dd').format(_startDate!)} - ${DateFormat('MMM dd').format(_endDate!)}',
+                            onTap: _selectDurationRange,
                           ),
                         ),
                       ],
@@ -262,11 +327,10 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   flex: 2,
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        labelText: 'Date (e.g. Apr 15-30)',
-                                        border: const OutlineInputBorder()),
-                                    onChanged: (v) => _phases[i]['date'] = v,
+                                  child: _buildDatePickerBox(
+                                    label: 'Date Range',
+                                    date: _phases[i]['date'] == 'TBD' || _phases[i]['date'].isEmpty ? 'Select Dates' : _phases[i]['date'],
+                                    onTap: () => _selectPhaseDateRange(i),
                                   ),
                                 ),
                                 IconButton(
@@ -288,99 +352,27 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                   ),
                   const SizedBox(height: 16),
                   _buildCard(
-                    title: "Medications",
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (int i = 0; i < _medications.length; i++)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        labelText: 'Medication Name',
-                                        border: const OutlineInputBorder()),
-                                    onChanged: (v) =>
-                                        _medications[i]['title'] = v,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  flex: 2,
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        labelText: 'Time (e.g. 09:00 AM)',
-                                        border: const OutlineInputBorder()),
-                                    onChanged: (v) =>
-                                        _medications[i]['time'] = v,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle,
-                                      color: Colors.red),
-                                  onPressed: () =>
-                                      setState(() => _medications.removeAt(i)),
-                                )
-                              ],
-                            ),
-                          ),
-                        _buildOutlinedActionButton(
-                          onPressed: _addMedication,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Medication'),
-                        )
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCard(
-                    title: "Rehab Guidelines",
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (int i = 0; i < _guidelines.length; i++)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        labelText: 'Guideline ${i + 1}',
-                                        border: const OutlineInputBorder()),
-                                    onChanged: (v) => _guidelines[i] = v,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle,
-                                      color: Colors.red),
-                                  onPressed: () =>
-                                      setState(() => _guidelines.removeAt(i)),
-                                )
-                              ],
-                            ),
-                          ),
-                        _buildOutlinedActionButton(
-                          onPressed: _addGuideline,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Guideline'),
-                        )
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCard(
                     title: "Daily Motivation / Tip",
-                    child: TextField(
-                      controller: _tipController,
-                      decoration: const InputDecoration(
-                        labelText: 'Tip of the day',
-                        border: OutlineInputBorder(),
-                        hintText: "E.g. Consistency is key!",
-                      ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _tipController,
+                            decoration: const InputDecoration(
+                              labelText: 'Tip of the day',
+                              border: OutlineInputBorder(),
+                              hintText: "E.g. Consistency is key!",
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: _generateRandomTip,
+                          icon: const Icon(Icons.auto_awesome, color: Color(0xFF6BA5CF)),
+                          tooltip: 'Auto-generate tip',
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -452,6 +444,62 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
         side: const BorderSide(color: AppColors.primary, width: 1.2),
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+  }
+
+  Widget _buildDatePickerBox({
+    required String label,
+    required String date,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.grey[300]!,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today,
+                  size: 14,
+                  color: Color(0xFF6BA5CF),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    date,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

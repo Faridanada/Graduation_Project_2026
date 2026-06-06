@@ -6,6 +6,7 @@ import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 import 'package:rehabilitation_app/ui/settings/HelpSupportPage.dart';
 import 'package:rehabilitation_app/ui/auth/ChangePasswordPage.dart';
 import 'package:rehabilitation_app/ui/chats/Chats.dart';
+import 'package:rehabilitation_app/ui/settings/DoctorAvailabilityPage.dart';
 
 class DoctorProfile extends StatefulWidget {
   final String source; // 'home' or 'settings'
@@ -205,6 +206,19 @@ class _DoctorProfileState extends State<DoctorProfile> {
                     _buildDivider(),
                     _buildMenuItem(
                       context,
+                      icon: Icons.event_available,
+                      title: 'Manage Availability',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const DoctorAvailabilityPage()),
+                        );
+                      },
+                    ),
+                    _buildDivider(),
+                    _buildMenuItem(
+                      context,
                       icon: Icons.settings_outlined,
                       title: 'Settings',
                       onTap: () {
@@ -257,7 +271,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                               child: CircularProgressIndicator(
                                   color: Colors.white))
                           : _buildStatCard(
-                              '${doctorStats['activePatients'] ?? 0}', 'Completed Sessions'),
+                              '${doctorStats['activePatients'] ?? 0}', 'Active Patients'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -266,11 +280,16 @@ class _DoctorProfileState extends State<DoctorProfile> {
                               child: CircularProgressIndicator(
                                   color: Colors.white))
                           : _buildStatCard(
-                              '${doctorStats['todaySessions'] ?? 0}', 'Upcoming Appts'),
+                              '${doctorStats['todaySessions'] ?? 0}', 'Today\'s Appts'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildStatCard('-', 'Recovery Score'),
+                      child: isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                  color: Colors.white))
+                          : _buildStatCard(
+                              '${doctorStats['alerts'] ?? 0}', 'Alerts'),
                     ),
                   ],
                 ),
