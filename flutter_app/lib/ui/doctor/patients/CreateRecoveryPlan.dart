@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/ui/app_theme.dart';
 
 class CreateRecoveryPlan extends StatefulWidget {
   final String patientId;
@@ -82,7 +83,8 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
   Future<void> _savePlan() async {
     if (_startDate == null || _endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select both start and end dates.')),
+        const SnackBar(
+            content: Text('Please select both start and end dates.')),
       );
       return;
     }
@@ -126,7 +128,9 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to create recovery plan.'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Failed to create recovery plan.'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -138,8 +142,9 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
         title: Text('Plan for ${widget.patientName}'),
-        backgroundColor: const Color(0xFF6BA5CF),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -156,8 +161,13 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                           child: InkWell(
                             onTap: () => _selectDate(context, true),
                             child: InputDecorator(
-                              decoration: const InputDecoration(labelText: 'Start Date', border: OutlineInputBorder()),
-                              child: Text(_startDate == null ? 'Select Date' : DateFormat('MMM dd, yyyy').format(_startDate!)),
+                              decoration: const InputDecoration(
+                                  labelText: 'Start Date',
+                                  border: OutlineInputBorder()),
+                              child: Text(_startDate == null
+                                  ? 'Select Date'
+                                  : DateFormat('MMM dd, yyyy')
+                                      .format(_startDate!)),
                             ),
                           ),
                         ),
@@ -166,8 +176,13 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                           child: InkWell(
                             onTap: () => _selectDate(context, false),
                             child: InputDecorator(
-                              decoration: const InputDecoration(labelText: 'End Date', border: OutlineInputBorder()),
-                              child: Text(_endDate == null ? 'Select Date' : DateFormat('MMM dd, yyyy').format(_endDate!)),
+                              decoration: const InputDecoration(
+                                  labelText: 'End Date',
+                                  border: OutlineInputBorder()),
+                              child: Text(_endDate == null
+                                  ? 'Select Date'
+                                  : DateFormat('MMM dd, yyyy')
+                                      .format(_endDate!)),
                             ),
                           ),
                         ),
@@ -175,12 +190,13 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
                   _buildCard(
                     title: "Exoskeleton Exercise (Leg Extensions)",
                     child: Column(
                       children: [
-                        const Text("The exoskeleton currently supports Leg Extensions.", style: TextStyle(color: Colors.grey)),
+                        const Text(
+                            "The exoskeleton currently supports Leg Extensions.",
+                            style: TextStyle(color: Colors.grey)),
                         const SizedBox(height: 12),
                         Row(
                           children: [
@@ -188,8 +204,11 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                               child: TextFormField(
                                 initialValue: _repsTotal.toString(),
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'Target Reps', border: OutlineInputBorder()),
-                                onChanged: (val) => _repsTotal = int.tryParse(val) ?? 15,
+                                decoration: const InputDecoration(
+                                    labelText: 'Target Reps',
+                                    border: OutlineInputBorder()),
+                                onChanged: (val) =>
+                                    _repsTotal = int.tryParse(val) ?? 15,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -197,8 +216,11 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                               child: TextFormField(
                                 initialValue: _estimatedTimeMin.toString(),
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'Duration (Min)', border: OutlineInputBorder()),
-                                onChanged: (val) => _estimatedTimeMin = int.tryParse(val) ?? 20,
+                                decoration: const InputDecoration(
+                                    labelText: 'Duration (Min)',
+                                    border: OutlineInputBorder()),
+                                onChanged: (val) =>
+                                    _estimatedTimeMin = int.tryParse(val) ?? 20,
                               ),
                             ),
                           ],
@@ -207,7 +229,6 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   _buildCard(
                     title: "Phases",
                     child: Column(
@@ -221,7 +242,9 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                                 Expanded(
                                   flex: 2,
                                   child: TextField(
-                                    decoration: InputDecoration(labelText: 'Title', border: const OutlineInputBorder()),
+                                    decoration: InputDecoration(
+                                        labelText: 'Title',
+                                        border: const OutlineInputBorder()),
                                     onChanged: (v) => _phases[i]['title'] = v,
                                   ),
                                 ),
@@ -229,26 +252,33 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                                 Expanded(
                                   flex: 2,
                                   child: TextField(
-                                    decoration: InputDecoration(labelText: 'Subtitle', border: const OutlineInputBorder()),
-                                    onChanged: (v) => _phases[i]['subtitle'] = v,
+                                    decoration: InputDecoration(
+                                        labelText: 'Subtitle',
+                                        border: const OutlineInputBorder()),
+                                    onChanged: (v) =>
+                                        _phases[i]['subtitle'] = v,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   flex: 2,
                                   child: TextField(
-                                    decoration: InputDecoration(labelText: 'Date (e.g. Apr 15-30)', border: const OutlineInputBorder()),
+                                    decoration: InputDecoration(
+                                        labelText: 'Date (e.g. Apr 15-30)',
+                                        border: const OutlineInputBorder()),
                                     onChanged: (v) => _phases[i]['date'] = v,
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                  onPressed: () => setState(() => _phases.removeAt(i)),
+                                  icon: const Icon(Icons.remove_circle,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      setState(() => _phases.removeAt(i)),
                                 )
                               ],
                             ),
                           ),
-                        ElevatedButton.icon(
+                        _buildOutlinedActionButton(
                           onPressed: _addPhase,
                           icon: const Icon(Icons.add),
                           label: const Text('Add Phase'),
@@ -257,7 +287,6 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   _buildCard(
                     title: "Medications",
                     child: Column(
@@ -271,26 +300,34 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                                 Expanded(
                                   flex: 3,
                                   child: TextField(
-                                    decoration: InputDecoration(labelText: 'Medication Name', border: const OutlineInputBorder()),
-                                    onChanged: (v) => _medications[i]['title'] = v,
+                                    decoration: InputDecoration(
+                                        labelText: 'Medication Name',
+                                        border: const OutlineInputBorder()),
+                                    onChanged: (v) =>
+                                        _medications[i]['title'] = v,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   flex: 2,
                                   child: TextField(
-                                    decoration: InputDecoration(labelText: 'Time (e.g. 09:00 AM)', border: const OutlineInputBorder()),
-                                    onChanged: (v) => _medications[i]['time'] = v,
+                                    decoration: InputDecoration(
+                                        labelText: 'Time (e.g. 09:00 AM)',
+                                        border: const OutlineInputBorder()),
+                                    onChanged: (v) =>
+                                        _medications[i]['time'] = v,
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                  onPressed: () => setState(() => _medications.removeAt(i)),
+                                  icon: const Icon(Icons.remove_circle,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      setState(() => _medications.removeAt(i)),
                                 )
                               ],
                             ),
                           ),
-                        ElevatedButton.icon(
+                        _buildOutlinedActionButton(
                           onPressed: _addMedication,
                           icon: const Icon(Icons.add),
                           label: const Text('Add Medication'),
@@ -299,7 +336,6 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   _buildCard(
                     title: "Rehab Guidelines",
                     child: Column(
@@ -312,18 +348,22 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                               children: [
                                 Expanded(
                                   child: TextField(
-                                    decoration: InputDecoration(labelText: 'Guideline ${i + 1}', border: const OutlineInputBorder()),
+                                    decoration: InputDecoration(
+                                        labelText: 'Guideline ${i + 1}',
+                                        border: const OutlineInputBorder()),
                                     onChanged: (v) => _guidelines[i] = v,
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                  onPressed: () => setState(() => _guidelines.removeAt(i)),
+                                  icon: const Icon(Icons.remove_circle,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      setState(() => _guidelines.removeAt(i)),
                                 )
                               ],
                             ),
                           ),
-                        ElevatedButton.icon(
+                        _buildOutlinedActionButton(
                           onPressed: _addGuideline,
                           icon: const Icon(Icons.add),
                           label: const Text('Add Guideline'),
@@ -332,7 +372,6 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   _buildCard(
                     title: "Daily Motivation / Tip",
                     child: TextField(
@@ -354,12 +393,16 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
           child: ElevatedButton(
             onPressed: _isLoading ? null : _savePlan,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF34D399),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
+              elevation: 0,
+              side: const BorderSide(color: AppColors.primary, width: 1.2),
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Save Plan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: const Text('Save Plan',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ),
       ),
@@ -379,10 +422,36 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF6BA5CF))),
+          Text(title,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF6BA5CF))),
           const SizedBox(height: 16),
           child,
         ],
+      ),
+    );
+  }
+
+  Widget _buildOutlinedActionButton({
+    required VoidCallback onPressed,
+    required Icon icon,
+    required Text label,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon.icon, color: AppColors.primary),
+      label: DefaultTextStyle.merge(
+        style: const TextStyle(color: AppColors.primary),
+        child: label,
+      ),
+      style: OutlinedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.primary,
+        side: const BorderSide(color: AppColors.primary, width: 1.2),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }

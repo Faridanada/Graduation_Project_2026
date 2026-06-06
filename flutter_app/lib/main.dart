@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
+import 'package:rehabilitation_app/ui/app_theme.dart';
 import 'package:rehabilitation_app/ui/auth/WelcomePage.dart';
 import 'package:rehabilitation_app/ui/auth/login.dart';
 import 'package:rehabilitation_app/ui/auth/signup.dart';
-import 'package:rehabilitation_app/ui/patient/home/patientHome.dart' as patient_home;
+import 'package:rehabilitation_app/ui/patient/home/patientHome.dart'
+    as patient_home;
 import 'package:rehabilitation_app/ui/doctor/home/DoctorHome.dart';
 import 'services/api_service.dart';
 
@@ -21,11 +21,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Rehabilitation App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        textTheme: GoogleFonts.poppinsTextTheme(),
-      ),
+      theme: AppTheme.lightTheme(),
       home: const InitialCoordinator(),
       routes: {
         '/login': (context) => const LoginScreen(),

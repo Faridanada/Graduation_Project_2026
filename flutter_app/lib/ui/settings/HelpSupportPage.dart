@@ -6,18 +6,21 @@ class HelpSupportPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6BA5CF),
-        elevation: 0,
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        shadowColor: Colors.black12,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          },
         ),
         title: const Text(
           'Help & Support',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.black87,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -35,7 +38,7 @@ class HelpSupportPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -65,7 +68,7 @@ class HelpSupportPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -93,7 +96,7 @@ class HelpSupportPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -241,12 +244,12 @@ class HelpSupportPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF6BA5CF).withValues(alpha: 0.1),
+              color: Colors.grey[100],
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF6BA5CF),
+              color: Colors.black87,
               size: 24,
             ),
           ),
@@ -269,7 +272,7 @@ class HelpSupportPage extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF6BA5CF),
+                    color: Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -327,7 +330,7 @@ class HelpSupportPage extends StatelessWidget {
               ),
             ),
           ),
-          iconColor: const Color(0xFF6BA5CF),
+          iconColor: Colors.black87,
           collapsedIconColor: Colors.grey[600],
           children: [
             Container(
@@ -363,5 +366,3 @@ class HelpSupportPage extends StatelessWidget {
     );
   }
 }
-
-

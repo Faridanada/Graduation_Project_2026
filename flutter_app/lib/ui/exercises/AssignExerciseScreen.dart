@@ -69,7 +69,8 @@ class _AssignExerciseScreenState extends State<AssignExerciseScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF95B8D1),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: Text('Assign to ${widget.patient['name']}'),
         centerTitle: true,
       ),

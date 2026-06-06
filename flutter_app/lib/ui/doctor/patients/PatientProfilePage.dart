@@ -3,6 +3,7 @@ import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/exercises/ExoskeletonDegreeSetupPage.dart';
 import 'package:rehabilitation_app/ui/chats/ConversationScreen.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/CreateRecoveryPlan.dart';
+import 'package:rehabilitation_app/ui/app_theme.dart';
 
 class PatientProfilePage extends StatefulWidget {
   final String patientId;
@@ -105,7 +106,8 @@ class _PatientProfilePageState extends State<PatientProfilePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
+      extendBodyBehindAppBar: true,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _patientData == null
@@ -118,17 +120,16 @@ class _PatientProfilePageState extends State<PatientProfilePage>
   Widget _buildContent() {
     final profile = Map<String, dynamic>.from(_patientData!['profile'] ?? {});
     final profileData = Map<String, dynamic>.from(profile['profileData'] ?? {});
-
-    final injuryType =
-        profile['injuryType'] ?? profileData['injuryType'] ?? 'General Patient';
+    final injuryType = profile['injuryType'] ?? profileData['injuryType'] ?? 'General Patient';
 
     return CustomScrollView(
       slivers: [
-        // Premium Header
         SliverAppBar(
-          expandedHeight: 250,
+          expandedHeight: 280,
           pinned: true,
-          backgroundColor: const Color(0xFF6BA5CF),
+          backgroundColor: AppColors.primary,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             IconButton(
               icon: const Icon(Icons.person_remove),
@@ -141,72 +142,78 @@ class _PatientProfilePageState extends State<PatientProfilePage>
             background: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF6BA5CF), Color(0xFF9B8FD9)],
+                  colors: [AppColors.primary, AppColors.primaryLight],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 40),
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    child: Text(
-                      widget.patientName[0].toUpperCase(),
-                      style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
+              child: SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: CircleAvatar(
+                        radius: 45,
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        child: Text(
+                          widget.patientName[0].toUpperCase(),
+                          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.patientName,
-                    style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                  ),
-                  Text(
-                    injuryType,
-                    style: TextStyle(
-                        fontSize: 16, color: Colors.white.withOpacity(0.9)),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Text(
+                      widget.patientName,
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Poppins'),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        injuryType,
+                        style: const TextStyle(fontSize: 14, color: Colors.white, fontFamily: 'Poppins'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-
-        // Info Grid
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildInfoSection(profile, profileData),
-                const SizedBox(height: 20),
-                // Tabs Header
-                TabBar(
-                  controller: _tabController,
-                  labelColor: const Color(0xFF6BA5CF),
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: const Color(0xFF6BA5CF),
-                  indicatorWeight: 3,
-                  tabs: const [
-                    Tab(text: 'History'),
-                    Tab(text: 'Appointments'),
-                  ],
-                ),
-              ],
-            ),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _buildInfoSection(profile, profileData),
+              ),
+              const SizedBox(height: 10),
+              TabBar(
+                controller: _tabController,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: AppColors.primary,
+                indicatorSize: TabBarIndicatorSize.label,
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+                tabs: const [
+                  Tab(text: 'History'),
+                  Tab(text: 'Appointments'),
+                ],
+              ),
+            ],
           ),
         ),
-
-        // Tabs Content
         SliverFillRemaining(
           child: TabBarView(
             controller: _tabController,
@@ -220,61 +227,66 @@ class _PatientProfilePageState extends State<PatientProfilePage>
     );
   }
 
-  Widget _buildInfoSection(
-      Map<String, dynamic> profile, Map<String, dynamic> profileData) {
+  Widget _buildInfoSection(Map<String, dynamic> profile, Map<String, dynamic> profileData) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))
+        ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildInfoItem(
-              'Age', '${profile['age'] ?? profileData['age'] ?? 'N/A'}'),
-          _buildInfoItem('Weight',
-              '${profile['weight'] ?? profileData['weight'] ?? '-'} kg'),
-          _buildInfoItem(
-              'Phone', '${profile['phone'] ?? profileData['phone'] ?? 'N/A'}'),
+          _buildInfoItem(Icons.cake_outlined, 'Age', '${profile['age'] ?? profileData['age'] ?? 'N/A'}'),
+          Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.2)),
+          _buildInfoItem(Icons.monitor_weight_outlined, 'Weight', '${profile['weight'] ?? profileData['weight'] ?? '-'} kg'),
+          Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.2)),
+          _buildInfoItem(Icons.phone_outlined, 'Phone', '${profile['phone'] ?? profileData['phone'] ?? 'N/A'}'),
         ],
       ),
     );
   }
 
-  Widget _buildInfoItem(String label, String value) {
+  Widget _buildInfoItem(IconData icon, String label, String value) {
     return Column(
       children: [
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        const SizedBox(height: 4),
-        Text(value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        Icon(icon, color: AppColors.primary, size: 24),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87, fontFamily: 'Poppins')),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey, fontFamily: 'Poppins')),
       ],
     );
   }
 
   Widget _buildHistoryTab() {
     final exercises = _patientData!['exercises'] as List? ?? [];
-    if (exercises.isEmpty)
-      return const Center(child: Text('No exercise history.'));
+    if (exercises.isEmpty) return const Center(child: Text('No exercise history.', style: TextStyle(fontFamily: 'Poppins')));
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       itemCount: exercises.length,
       itemBuilder: (context, index) {
         final ex = Map<String, dynamic>.from(exercises[index] as Map);
-        return Card(
-          elevation: 0,
+        return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          color: Colors.grey[50],
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          ),
           child: ListTile(
-            leading: const Icon(Icons.fitness_center, color: Color(0xFF6BA5CF)),
-            title: Text(ex['title'] ?? 'Exercise'),
-            subtitle: Text('Progress: ${ex['progress'] ?? 0}%'),
-            trailing: const Icon(Icons.chevron_right),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.fitness_center, color: AppColors.primary),
+            ),
+            title: Text(ex['title'] ?? 'Exercise', style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
+            subtitle: Text('Progress: ${ex['progress'] ?? 0}%', style: const TextStyle(fontFamily: 'Poppins')),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
           ),
         );
       },
@@ -283,39 +295,39 @@ class _PatientProfilePageState extends State<PatientProfilePage>
 
   Widget _buildAppointmentsTab() {
     final appointments = _patientData!['appointments'] as List? ?? [];
-    if (appointments.isEmpty)
-      return const Center(child: Text('No upcoming appointments.'));
+    if (appointments.isEmpty) return const Center(child: Text('No upcoming appointments.', style: TextStyle(fontFamily: 'Poppins')));
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final apt = Map<String, dynamic>.from(appointments[index] as Map);
-        return Card(
-          elevation: 0,
+        final isCompleted = apt['status'] == 'completed';
+        return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          color: Colors.grey[50],
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          ),
           child: ListTile(
-            leading: const Icon(Icons.calendar_today, color: Colors.orange),
-            title: Text(apt['type'] ?? 'Appointment'),
-            subtitle: Text('${apt['date']} at ${apt['time']}'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.calendar_today, color: Colors.orange),
+            ),
+            title: Text(apt['type'] ?? 'Appointment', style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
+            subtitle: Text('${apt['date']} at ${apt['time']}', style: const TextStyle(fontFamily: 'Poppins')),
             trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color:
-                    (apt['status'] == 'completed' ? Colors.green : Colors.blue)
-                        .withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: (isCompleted ? AppColors.success : AppColors.primary).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 apt['status'] ?? 'Pending',
-                style: TextStyle(
-                    fontSize: 10,
-                    color: (apt['status'] == 'completed'
-                        ? Colors.green
-                        : Colors.blue)),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: (isCompleted ? AppColors.success : AppColors.primary), fontFamily: 'Poppins'),
               ),
             ),
           ),
@@ -326,101 +338,97 @@ class _PatientProfilePageState extends State<PatientProfilePage>
 
   Widget _buildBottomAction() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5))
-        ],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ConversationScreen(
-                          name: widget.patientName,
-                          initials: widget.patientName[0],
-                          message: "Hello!",
-                          receiverId: widget.patientId,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ConversationScreen(
+                            name: widget.patientName,
+                            initials: widget.patientName[0],
+                            message: "Hello!",
+                            receiverId: widget.patientId,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  label: const Text('Message'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6BA5CF),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ExoskeletonDegreeSetupPage(
-                          patientName: widget.patientName,
-                          exerciseTitle: 'Session Monitoring',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.videocam_outlined),
-                  label: const Text('Monitor'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Color(0xFF6BA5CF)),
-                    foregroundColor: const Color(0xFF6BA5CF),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CreateRecoveryPlan(
-                      patientId: widget.patientId,
-                      patientName: widget.patientName,
+                      );
+                    },
+                    icon: const Icon(Icons.chat_bubble_outline, size: 20, color: Colors.white),
+                    label: const Text('Message', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                   ),
-                );
-              },
-              icon: const Icon(Icons.assignment_add),
-              label: const Text('Create Recovery Plan'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF34D399),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ExoskeletonDegreeSetupPage(
+                            patientName: widget.patientName,
+                            exerciseTitle: 'Session Monitoring',
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.videocam_outlined, size: 20, color: AppColors.primary),
+                    label: const Text('Monitor', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: AppColors.primary)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primarySoft,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreateRecoveryPlan(
+                        patientId: widget.patientId,
+                        patientName: widget.patientName,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.assignment_add, size: 20, color: Colors.white),
+                label: const Text('Create Recovery Plan', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

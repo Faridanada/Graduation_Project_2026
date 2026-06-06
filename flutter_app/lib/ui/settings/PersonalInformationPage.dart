@@ -5,7 +5,8 @@ class PersonalInformationPage extends StatefulWidget {
   const PersonalInformationPage({Key? key}) : super(key: key);
 
   @override
-  State<PersonalInformationPage> createState() => _PersonalInformationPageState();
+  State<PersonalInformationPage> createState() =>
+      _PersonalInformationPageState();
 }
 
 class _PersonalInformationPageState extends State<PersonalInformationPage> {
@@ -34,13 +35,15 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
           userProfile = profile;
           _nameController.text = userProfile['name'] ?? '';
           _phoneController.text = userProfile['profileData']?['phone'] ?? '';
-          _locationController.text = userProfile['profileData']?['location'] ?? '';
-          _dobController.text = userProfile['profileData']?['dateOfBirth'] ?? '';
+          _locationController.text =
+              userProfile['profileData']?['location'] ?? '';
+          _dobController.text =
+              userProfile['profileData']?['dateOfBirth'] ?? '';
           _genderController.text = userProfile['profileData']?['gender'] ?? '';
           isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           isLoading = false;
@@ -53,7 +56,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     setState(() => isSaving = true);
     final success = await ApiService.updateProfile({
       'name': _nameController.text,
-      'phoneNumber': _phoneController.text, // Not standard in profileData before but dbService supports it
+      'phoneNumber': _phoneController.text,
       'profileData': {
         'phone': _phoneController.text,
         'location': _locationController.text,
@@ -65,13 +68,19 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     setState(() => isSaving = false);
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Profile updated successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
       setState(() => isEditing = false);
       _loadData();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Failed to update profile'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -79,18 +88,21 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6BA5CF),
-        elevation: 0,
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        shadowColor: Colors.black12,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          },
         ),
         title: const Text(
           'Personal Information',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.black87,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -98,9 +110,9 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
         actions: [
           if (!isLoading && !isEditing)
             IconButton(
-              icon: const Icon(Icons.edit, color: Colors.white),
+              icon: const Icon(Icons.edit, color: Colors.black87),
               onPressed: () => setState(() => isEditing = true),
-            )
+            ),
         ],
       ),
       body: SafeArea(
@@ -113,12 +125,22 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                 if (isLoading)
                   const Center(child: CircularProgressIndicator())
                 else ...[
-                  _buildField('Full Name', userProfile['name'], _nameController),
-                  _buildField('Email', userProfile['email'], null, readOnly: true),
-                  _buildField('Phone', userProfile['profileData']?['phone'], _phoneController),
-                  _buildField('Address', userProfile['profileData']?['location'], _locationController),
-                  _buildField('Date of Birth', userProfile['profileData']?['dateOfBirth'], _dobController),
-                  _buildField('Gender', userProfile['profileData']?['gender'], _genderController),
+                  _buildField(
+                      'Full Name', userProfile['name'], _nameController),
+                  _buildField('Email', userProfile['email'], null,
+                      readOnly: true),
+                  _buildField('Phone', userProfile['profileData']?['phone'],
+                      _phoneController),
+                  _buildField(
+                      'Address',
+                      userProfile['profileData']?['location'],
+                      _locationController),
+                  _buildField(
+                      'Date of Birth',
+                      userProfile['profileData']?['dateOfBirth'],
+                      _dobController),
+                  _buildField('Gender', userProfile['profileData']?['gender'],
+                      _genderController),
                 ],
                 const SizedBox(height: 30),
                 if (isEditing)
@@ -128,17 +150,18 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                     child: ElevatedButton(
                       onPressed: isSaving ? null : _saveData,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6BA5CF),
+                        backgroundColor: Colors.black87,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: isSaving 
+                      child: isSaving
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Save Changes',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                     ),
                   ),
@@ -150,7 +173,12 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     );
   }
 
-  Widget _buildField(String label, String? value, TextEditingController? controller, {bool readOnly = false}) {
+  Widget _buildField(
+    String label,
+    String? value,
+    TextEditingController? controller, {
+    bool readOnly = false,
+  }) {
     final displayValue = value ?? 'Not set';
 
     if (isEditing && !readOnly && controller != null) {
@@ -164,7 +192,15 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
             fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: Colors.black87, width: 2),
             ),
             contentPadding: const EdgeInsets.all(16),
           ),
@@ -212,5 +248,3 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     );
   }
 }
-
-

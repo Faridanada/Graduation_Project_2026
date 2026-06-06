@@ -26,53 +26,48 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
 const client = new DynamoDBClient(clientParams);
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
-const USERS_TABLE_NAME = "Users";
-let usersTableReady = null;
+const tableReadyPromises = {};
 
-async function ensureUsersTable() {
-  if (!usersTableReady) {
-    usersTableReady = (async () => {
+async function ensureTable(tableName) {
+  if (!tableReadyPromises[tableName]) {
+    tableReadyPromises[tableName] = (async () => {
       try {
-        await client.send(new DescribeTableCommand({ TableName: USERS_TABLE_NAME }));
+        await client.send(new DescribeTableCommand({ TableName: tableName }));
       } catch (error) {
         if (error.name !== "ResourceNotFoundException") {
           throw error;
         }
 
         await client.send(new CreateTableCommand({
-          TableName: USERS_TABLE_NAME,
+          TableName: tableName,
           AttributeDefinitions: [{ AttributeName: "id", AttributeType: "S" }],
           KeySchema: [{ AttributeName: "id", KeyType: "HASH" }],
           BillingMode: "PAY_PER_REQUEST",
         }));
 
-        // Wait until the table is ACTIVE before returning so subsequent
-        // operations (Scan/Get/Put) don't fail with ResourceNotFound.
-        await waitUntilTableExists({ client, maxWaitTime: 60 }, { TableName: USERS_TABLE_NAME });
+        await waitUntilTableExists({ client, maxWaitTime: 60 }, { TableName: tableName });
       }
     })();
   }
-
-  return usersTableReady;
+  return tableReadyPromises[tableName];
 }
 
 const baseSend = ddbDocClient.send.bind(ddbDocClient);
 ddbDocClient.send = async (command, ...args) => {
   const tableName = command?.input?.TableName;
 
-  if (tableName === USERS_TABLE_NAME) {
-    await ensureUsersTable();
+  if (tableName) {
+    await ensureTable(tableName);
   }
 
   try {
     return await baseSend(command, ...args);
   } catch (error) {
-    if (tableName === USERS_TABLE_NAME && error?.name === "ResourceNotFoundException") {
-      usersTableReady = null;
-      await ensureUsersTable();
+    if (tableName && error?.name === "ResourceNotFoundException") {
+      tableReadyPromises[tableName] = null;
+      await ensureTable(tableName);
       return baseSend(command, ...args);
     }
-
     throw error;
   }
 };
@@ -1274,6 +1269,7 @@ module.exports = dbService;
 dbService.ready = (async () => {
   try {
     await ensureUsersTable();
+    await ensureRecoveryPlansTable();
     return true;
   } catch (err) {
     console.error('Users table bootstrap failed:', err);

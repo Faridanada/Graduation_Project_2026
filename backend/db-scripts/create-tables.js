@@ -15,7 +15,8 @@ const tablesToCreate = [
   "Appointments",
   "Exercises",
   "Requests",
-  "Reminders"
+  "Reminders",
+  "RecoveryPlans"
 ];
 
 async function createTables() {

@@ -110,7 +110,7 @@ class _WoundDetailScreenState extends State<WoundDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F5FB),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF95B8D1),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),

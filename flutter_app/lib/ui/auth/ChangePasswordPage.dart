@@ -28,18 +28,21 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6BA5CF),
-        elevation: 0,
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        shadowColor: Colors.black12,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          },
         ),
         title: const Text(
           'Change Password',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.black87,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -55,21 +58,21 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
+                    color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                    border: Border.all(color: Colors.grey[300]!),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.info_outline,
-                          color: Colors.blue, size: 24),
+                          color: Colors.black87, size: 24),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'For your security, choose a strong password',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.blue[900],
+                            color: Colors.grey[700],
                           ),
                         ),
                       ),
@@ -141,7 +144,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () async {
-                      if (_newPasswordController.text != _confirmPasswordController.text) {
+                      if (_newPasswordController.text !=
+                          _confirmPasswordController.text) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Passwords do not match!'),
@@ -150,8 +154,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         );
                         return;
                       }
-                      
-                      if (_currentPasswordController.text.isEmpty || _newPasswordController.text.isEmpty) {
+
+                      if (_currentPasswordController.text.isEmpty ||
+                          _newPasswordController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Please fill all fields!'),
@@ -179,14 +184,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Failed to change password. Make sure current password is correct.'),
+                            content: Text(
+                                'Failed to change password. Make sure current password is correct.'),
                             backgroundColor: Colors.red,
                           ),
                         );
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6BA5CF),
+                      backgroundColor: Colors.black87,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -234,7 +240,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF6BA5CF), width: 2),
+          borderSide: const BorderSide(color: Colors.black87, width: 2),
         ),
         suffixIcon: IconButton(
           icon: Icon(
@@ -247,5 +253,3 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 }
-
-

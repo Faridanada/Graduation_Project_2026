@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/ui/app_theme.dart';
 import 'package:rehabilitation_app/ui/patient/doctors/patientRequest.dart';
 import 'package:rehabilitation_app/ui/shared/AiReports.dart';
 import 'package:rehabilitation_app/ui/doctor/management/ManageWounds.dart';
@@ -32,6 +33,7 @@ class _DoctorHomeState extends State<DoctorHome> {
   int _selectedNavIndex = 0;
   final ScrollController _patientsScrollController = ScrollController();
 
+  String doctorName = 'Doctor';
   Map<String, dynamic> doctorStats = {};
   List<dynamic> patientsList = [];
   List<dynamic> todayAppointments = [];
@@ -45,12 +47,17 @@ class _DoctorHomeState extends State<DoctorHome> {
 
   Future<void> _loadDashboardData() async {
     try {
+      final profile = await ApiService.getUserProfile();
       final stats = await ApiService.getDoctorStats();
       final patients = await ApiService.getDoctorPatients();
       final appointments = await ApiService.getDoctorTodayAppointments();
 
       if (mounted) {
         setState(() {
+          final name = profile?['name']?.toString();
+          if (name != null && name.isNotEmpty) {
+            doctorName = name.split(' ')[0];
+          }
           doctorStats = stats;
           patientsList = patients;
           todayAppointments = appointments;
@@ -75,7 +82,7 @@ class _DoctorHomeState extends State<DoctorHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
       body: SafeArea(
         child: RefreshIndicator(
@@ -85,6 +92,8 @@ class _DoctorHomeState extends State<DoctorHome> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 16),
+                _buildGreetingSection(),
                 const SizedBox(height: 16),
                 _buildStatusOverview(),
                 const SizedBox(height: 28),
@@ -103,6 +112,60 @@ class _DoctorHomeState extends State<DoctorHome> {
     );
   }
 
+  Widget _buildGreetingSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Good Morning, ${doctorName.isNotEmpty ? doctorName : 'Doctor'}',
+                    style: AppTextStyles.section(context),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Ready to support your patients today?',
+                    style: AppTextStyles.body(context).copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: AppColors.primary.withOpacity(0.12),
+              child: Text(
+                doctorName.isNotEmpty ? doctorName[0].toUpperCase() : 'D',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Builds the professional app bar with branding
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -110,14 +173,7 @@ class _DoctorHomeState extends State<DoctorHome> {
       backgroundColor: Colors.white,
       elevation: 0.5,
       shadowColor: Colors.grey.withOpacity(0.1),
-      title: Text(
-        'FLEXIO',
-        style: const TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
-        ),
-      ),
+      title: Text('FLEXIO', style: AppTextStyles.heading(context)),
       actions: [
         // Search button
         IconButton(
@@ -277,7 +333,7 @@ class _DoctorHomeState extends State<DoctorHome> {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -349,8 +405,8 @@ class _DoctorHomeState extends State<DoctorHome> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.card),
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.08),
@@ -367,14 +423,11 @@ class _DoctorHomeState extends State<DoctorHome> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Appointments:',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
+                        Text('Appointments:',
+                            style: AppTextStyles.body(context).copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: Colors.black87)),
                         const SizedBox(height: 8),
                         if (todayAppointments.isNotEmpty)
                           ...todayAppointments.map((apt) {
@@ -941,8 +994,6 @@ class _DoctorHomeState extends State<DoctorHome> {
   }
 }
 
-
-
 class RemindersDetailsPage extends StatelessWidget {
   final List<dynamic> todayAppointments;
   final Map<String, dynamic> doctorStats;
@@ -1238,51 +1289,6 @@ class _ReminderRow extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: badgeColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UpcomingRow extends StatelessWidget {
-  const _UpcomingRow({required this.day, required this.item});
-
-  final String day;
-  final String item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color.fromRGBO(149, 184, 209, 1).withOpacity(0.45),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              day,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              item,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black87,
               ),
             ),
           ),

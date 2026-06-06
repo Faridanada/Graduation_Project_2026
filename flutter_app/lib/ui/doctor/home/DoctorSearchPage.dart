@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
-import 'package:rehabilitation_app/ui/doctor/patients/PatientProfilePage.dart';
 
 class DoctorSearchPage extends StatefulWidget {
   const DoctorSearchPage({super.key});

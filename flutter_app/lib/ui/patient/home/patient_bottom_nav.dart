@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:rehabilitation_app/ui/chats/Chats.dart';
-import 'package:rehabilitation_app/ui/patient/profile/PatientProfile.dart';
 import 'package:rehabilitation_app/ui/patient/home/patientHome.dart';
 
 class PatientBottomNavBar extends StatelessWidget {
@@ -41,7 +39,8 @@ class PatientBottomNavBar extends StatelessWidget {
       currentIndex: currentIndex,
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,
-      selectedItemColor: hideActiveState ? Colors.grey : const Color(0xFF2196F3),
+      selectedItemColor:
+          hideActiveState ? Colors.grey : const Color(0xFF2196F3),
       unselectedItemColor: Colors.grey,
       onTap: (index) {
         switch (index) {

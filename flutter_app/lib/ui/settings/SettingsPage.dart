@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/ui/auth/login.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/ui/app_theme.dart';
 import 'package:rehabilitation_app/ui/doctor/profile/DoctorProfile.dart';
 import 'package:rehabilitation_app/ui/settings/PersonalInformationPage.dart';
 import 'package:rehabilitation_app/ui/auth/ChangePasswordPage.dart';
@@ -47,236 +48,282 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF95B8D1),
-        elevation: 0,
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        shadowColor: Colors.black12,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () {
             if (Navigator.canPop(context)) Navigator.pop(context);
           },
         ),
-        title: const Text(
+        title: Text(
           'Settings',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
-          ),
+          style: AppTextStyles.section(context).copyWith(fontSize: 22),
         ),
         centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              _buildSectionTitle('Account'),
-              _buildSettingsTile(
-                icon: Icons.person,
-                title: 'Profile',
-                subtitle: 'Edit your profile information',
-                onTap: () {
-                  if (_userRole == 'doctor') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const DoctorProfile(source: 'settings')),
-                    );
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const PersonalInformationPage()),
-                    );
-                  }
-                },
-              ),
-              _buildSettingsTile(
-                icon: Icons.lock,
-                title: 'Change Password',
-                subtitle: 'Update your password',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const ChangePasswordPage()),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Notifications'),
-              _buildToggleTile(
-                icon: Icons.notifications,
-                title: 'Enable Notifications',
-                subtitle: 'Receive push notifications',
-                value: _notificationsEnabled,
-                onChanged: (value) {
-                  setState(() {
-                    _notificationsEnabled = value;
-                  });
-                },
-              ),
-              _buildSettingsTile(
-                icon: Icons.notifications_active,
-                title: 'Notification Preferences',
-                subtitle: 'Customize your notifications',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const NotificationPreferencesPage()),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Privacy & Security'),
-              _buildSettingsTile(
-                icon: Icons.privacy_tip,
-                title: 'Privacy Policy',
-                subtitle: 'Read our privacy policy',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const PrivacyPolicyPage()),
-                  );
-                },
-              ),
-              _buildSettingsTile(
-                icon: Icons.shield,
-                title: 'Two-Factor Authentication',
-                subtitle: 'Add extra security to your account',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const TwoFactorAuthPage()),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Display'),
-              _buildToggleTile(
-                icon: Icons.dark_mode,
-                title: 'Dark Mode',
-                subtitle: 'Enable dark mode theme',
-                value: _darkModeEnabled,
-                onChanged: (value) {
-                  setState(() {
-                    _darkModeEnabled = value;
-                  });
-                },
-              ),
-              _buildSettingsTile(
-                icon: Icons.language,
-                title: 'Language',
-                subtitle: 'Change app language',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LanguagePage()),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Data'),
-              _buildToggleTile(
-                icon: Icons.backup,
-                title: 'Auto Backup',
-                subtitle: 'Automatically backup your data',
-                value: _dataBackupEnabled,
-                onChanged: (value) {
-                  setState(() {
-                    _dataBackupEnabled = value;
-                  });
-                },
-              ),
-              _buildSettingsTile(
-                icon: Icons.storage,
-                title: 'Storage',
-                subtitle: 'Manage app storage and cache',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const StoragePage()),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('About'),
-              _buildSettingsTile(
-                icon: Icons.info,
-                title: 'About FLEXIO',
-                subtitle: 'Version 1.0.0',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AboutPage()),
-                  );
-                },
-              ),
-              _buildSettingsTile(
-                icon: Icons.help,
-                title: 'Help & Support',
-                subtitle: 'Get help and contact support',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const HelpSupportPage()),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showLogoutDialog();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[400],
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionCard(
+                  'Account',
+                  [
+                    _buildSettingsTile(
+                      icon: Icons.person,
+                      title: 'Profile',
+                      subtitle: 'Edit your profile information',
+                      onTap: () {
+                        if (_userRole == 'doctor') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const DoctorProfile(source: 'settings'),
+                            ),
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PersonalInformationPage(),
+                            ),
+                          );
+                        }
+                      },
                     ),
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    label: const Text(
-                      'Logout',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontFamily: 'Poppins',
+                    _buildSettingsTile(
+                      icon: Icons.lock,
+                      title: 'Change Password',
+                      subtitle: 'Update your password',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ChangePasswordPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                _buildSectionCard(
+                  'Notifications',
+                  [
+                    _buildToggleTile(
+                      icon: Icons.notifications,
+                      title: 'Enable Notifications',
+                      subtitle: 'Receive push notifications',
+                      value: _notificationsEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _notificationsEnabled = value;
+                        });
+                      },
+                    ),
+                    _buildSettingsTile(
+                      icon: Icons.notifications_active,
+                      title: 'Notification Preferences',
+                      subtitle: 'Customize your notifications',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationPreferencesPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                _buildSectionCard(
+                  'Privacy & Security',
+                  [
+                    _buildSettingsTile(
+                      icon: Icons.privacy_tip,
+                      title: 'Privacy Policy',
+                      subtitle: 'Read our privacy policy',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PrivacyPolicyPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSettingsTile(
+                      icon: Icons.shield,
+                      title: 'Two-Factor Authentication',
+                      subtitle: 'Add extra security to your account',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TwoFactorAuthPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                _buildSectionCard(
+                  'Display',
+                  [
+                    _buildToggleTile(
+                      icon: Icons.dark_mode,
+                      title: 'Dark Mode',
+                      subtitle: 'Enable dark mode theme',
+                      value: _darkModeEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _darkModeEnabled = value;
+                        });
+                      },
+                    ),
+                    _buildSettingsTile(
+                      icon: Icons.language,
+                      title: 'Language',
+                      subtitle: 'Change app language',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const LanguagePage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                _buildSectionCard(
+                  'Data',
+                  [
+                    _buildToggleTile(
+                      icon: Icons.backup,
+                      title: 'Auto Backup',
+                      subtitle: 'Automatically backup your data',
+                      value: _dataBackupEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _dataBackupEnabled = value;
+                        });
+                      },
+                    ),
+                    _buildSettingsTile(
+                      icon: Icons.storage,
+                      title: 'Storage',
+                      subtitle: 'Manage app storage and cache',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const StoragePage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                _buildSectionCard(
+                  'About',
+                  [
+                    _buildSettingsTile(
+                      icon: Icons.info,
+                      title: 'About FLEXIO',
+                      subtitle: 'Version 1.0.0',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AboutPage()),
+                        );
+                      },
+                    ),
+                    _buildSettingsTile(
+                      icon: Icons.help,
+                      title: 'Help & Support',
+                      subtitle: 'Get help and contact support',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const HelpSupportPage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _showLogoutDialog,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[400],
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
+                      ),
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      label: const Text(
+                        'Logout',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 30),
-            ],
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionCard(String title, List<Widget> children) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-          fontFamily: 'Poppins',
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 12, 0, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  title,
+                  style: AppTextStyles.section(context).copyWith(fontSize: 18),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...children,
+            ],
+          ),
         ),
       ),
     );
@@ -288,57 +335,38 @@ class _SettingsPageState extends State<SettingsPage> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Container(
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.08),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: AppColors.primary.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(AppRadius.medium),
         ),
-        child: ListTile(
-          onTap: onTap,
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF95B8D1).withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF95B8D1),
-              size: 24,
-            ),
-          ),
-          title: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontFamily: 'Poppins',
-            ),
-          ),
-          trailing: Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: Colors.grey[400],
-          ),
+        child: Icon(
+          icon,
+          color: AppColors.primary,
+          size: 24,
         ),
+      ),
+      title: Text(
+        title,
+        style: AppTextStyles.body(context).copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: AppTextStyles.caption(context).copyWith(
+          color: Colors.grey[600],
+        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        size: 22,
+        color: Colors.black26,
       ),
     );
   }
@@ -350,56 +378,37 @@ class _SettingsPageState extends State<SettingsPage> {
     required bool value,
     required Function(bool) onChanged,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Container(
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.08),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: AppColors.primary.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(AppRadius.medium),
         ),
-        child: ListTile(
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF95B8D1).withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF95B8D1),
-              size: 24,
-            ),
-          ),
-          title: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontFamily: 'Poppins',
-            ),
-          ),
-          trailing: Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: const Color(0xFF95B8D1),
-          ),
+        child: Icon(
+          icon,
+          color: AppColors.primary,
+          size: 24,
         ),
+      ),
+      title: Text(
+        title,
+        style: AppTextStyles.body(context).copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: AppTextStyles.caption(context).copyWith(
+          color: Colors.grey[600],
+        ),
+      ),
+      trailing: Switch(
+        value: value,
+        onChanged: onChanged,
+        activeThumbColor: AppColors.primary,
       ),
     );
   }
@@ -449,6 +458,9 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[400],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.medium),
+                ),
               ),
               child: const Text(
                 'Logout',

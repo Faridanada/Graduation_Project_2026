@@ -87,7 +87,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 const SizedBox(height: 20),
 
                 if (isLoading)
-                  const Center(child: Padding(
+                  const Center(
+                      child: Padding(
                     padding: EdgeInsets.all(32.0),
                     child: CircularProgressIndicator(),
                   ))
@@ -96,16 +97,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 50),
-                        Icon(Icons.check_circle_outline, size: 80, color: Colors.grey[300]),
+                        Icon(Icons.check_circle_outline,
+                            size: 80, color: Colors.grey[300]),
                         const SizedBox(height: 16),
-                        const Text("No reminders at the moment!", 
-                          style: TextStyle(color: Colors.grey, fontSize: 16)),
+                        const Text("No reminders at the moment!",
+                            style: TextStyle(color: Colors.grey, fontSize: 16)),
                       ],
                     ),
                   )
                 else
-                  ...remindersList.map((reminder) => _buildReminderCard(reminder)),
-                
+                  ...remindersList
+                      .map((reminder) => _buildReminderCard(reminder)),
               ],
             ),
           ),
@@ -113,12 +115,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
         /// NAV BAR
         bottomNavigationBar: BottomNavigationBar(
-          selectedItemColor: Colors.black54, // Dull color so it doesn't look "lit up"
+          selectedItemColor:
+              Colors.black54, // Dull color so it doesn't look "lit up"
           unselectedItemColor: Colors.black54,
           showUnselectedLabels: true,
           onTap: (index) {
             if (index == 0) {
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PatientHomeScreen()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (_) => const PatientHomeScreen()));
             } else if (index == 1) {
               // Ignore or route to chats
             } else if (index == 2) {
@@ -160,7 +164,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -173,9 +178,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(time, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                Text(time,
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 6),
-                _chip(completed ? "Done" : "Pending", completed ? Colors.green : Colors.orange),
+                _chip(completed ? "Done" : "Pending",
+                    completed ? Colors.green : Colors.orange),
               ],
             ),
           ],
@@ -202,15 +210,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  /// 🔴🟢🟡 DOT
-  Widget _statusDot(Color color) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-
   /// CHIP
   Widget _chip(String text, Color color) {
     return Container(
@@ -223,13 +222,5 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  /// SWIPE BG
-  Widget _swipeBg(Color color, IconData icon) {
-    return Container(
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      color: color.withValues(alpha: 0.2),
-      child: Icon(icon, color: color),
-    );
-  }
+  // Removed unused helper widgets: _statusDot and _swipeBg
 }

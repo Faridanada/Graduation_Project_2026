@@ -3,7 +3,7 @@ import 'dart:developer' as developer;
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
+// Removed unused import: package:flutter/foundation.dart
 
 class ApiService {
   static dynamic _normalizeJsonValue(dynamic value) {
@@ -879,6 +879,3 @@ class ApiService {
     return false;
   }
 }
-
-
-

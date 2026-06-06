@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/ui/exercises/MonitorEx.dart';
+import 'package:rehabilitation_app/ui/app_theme.dart';
 
 class ExoskeletonDegreeSetupPage extends StatefulWidget {
   final String patientName;
@@ -24,13 +25,15 @@ class _ExoskeletonDegreeSetupPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF95B8D1),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+          onPressed: () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          },
         ),
         title: const Text(
           'Set Exoskeleton Degrees',
@@ -43,17 +46,25 @@ class _ExoskeletonDegreeSetupPageState
         centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: CustomScrollView(
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.05), blurRadius: 10)
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,37 +89,43 @@ class _ExoskeletonDegreeSetupPageState
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text(
-                'Set Min and Max Degree',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+              const Spacer(flex: 1),
+              Center(
+                child: Column(
+                  children: [
+                    const Text(
+                      'Set Min and Max Degree',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildDegreeInput(
+                          label: 'Set Min Value',
+                          value: _minDegree,
+                          onTapManual: () => _showDegreeInputDialog(isMin: true),
+                          onIncrement: () => _adjustDegree(isMin: true, delta: 1),
+                          onDecrement: () => _adjustDegree(isMin: true, delta: -1),
+                        ),
+                        const SizedBox(width: 44),
+                        _buildDegreeInput(
+                          label: 'Set Max Value',
+                          value: _maxDegree,
+                          onTapManual: () => _showDegreeInputDialog(isMin: false),
+                          onIncrement: () => _adjustDegree(isMin: false, delta: 1),
+                          onDecrement: () => _adjustDegree(isMin: false, delta: -1),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildDegreeInput(
-                    label: 'Set Min Value',
-                    value: _minDegree,
-                    onTapManual: () => _showDegreeInputDialog(isMin: true),
-                    onIncrement: () => _adjustDegree(isMin: true, delta: 1),
-                    onDecrement: () => _adjustDegree(isMin: true, delta: -1),
-                  ),
-                  const SizedBox(width: 44),
-                  _buildDegreeInput(
-                    label: 'Set Max Value',
-                    value: _maxDegree,
-                    onTapManual: () => _showDegreeInputDialog(isMin: false),
-                    onIncrement: () => _adjustDegree(isMin: false, delta: 1),
-                    onDecrement: () => _adjustDegree(isMin: false, delta: -1),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
+              const Spacer(flex: 2),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -136,12 +153,15 @@ class _ExoskeletonDegreeSetupPageState
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5798C6),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.medium),
                     ),
+                    elevation: 0,
+                    side:
+                        const BorderSide(color: AppColors.primary, width: 1.2),
                   ),
                   child: const Text(
                     'Continue to Monitor Exercise',
@@ -154,6 +174,9 @@ class _ExoskeletonDegreeSetupPageState
               ),
             ],
           ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -188,11 +211,14 @@ class _ExoskeletonDegreeSetupPageState
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.medium),
               border: Border.all(
-                color: const Color(0xFF95B8D1),
+                color: AppColors.accent,
                 width: 2,
               ),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)
+              ],
             ),
             child: Text(
               displayText,
@@ -200,9 +226,7 @@ class _ExoskeletonDegreeSetupPageState
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: isExample ? FontWeight.w500 : FontWeight.bold,
-                color: isExample
-                    ? Colors.grey[400]!.withValues(alpha: 0.5)
-                    : const Color(0xFF95B8D1),
+                color: isExample ? Colors.grey[400] : AppColors.accent,
               ),
             ),
           ),
@@ -231,12 +255,12 @@ class _ExoskeletonDegreeSetupPageState
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           padding: EdgeInsets.zero,
-          side: const BorderSide(color: Color(0xFF95B8D1)),
+          side: const BorderSide(color: AppColors.accent),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        child: Icon(icon, size: 18, color: const Color(0xFF95B8D1)),
+        child: Icon(icon, size: 18, color: AppColors.accent),
       ),
     );
   }
@@ -299,12 +323,12 @@ class _ExoskeletonDegreeSetupPageState
               labelText: 'Degree (0-180)',
               suffixText: '°',
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.medium),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.medium),
                 borderSide: const BorderSide(
-                  color: Color.fromRGBO(128, 155, 206, 1),
+                  color: AppColors.primary,
                   width: 2,
                 ),
               ),
@@ -336,7 +360,8 @@ class _ExoskeletonDegreeSetupPageState
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF95B8D1),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
               ),
               child: const Text(
                 'Set',
@@ -349,4 +374,3 @@ class _ExoskeletonDegreeSetupPageState
     );
   }
 }
-

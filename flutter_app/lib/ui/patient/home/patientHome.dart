@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:rehabilitation_app/ui/chats/Chats.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
+import 'package:rehabilitation_app/ui/app_theme.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/reminders.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/improvements_screen.dart';
 import 'package:rehabilitation_app/ui/patient/appointments/book_appointement.dart';
@@ -64,12 +65,12 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
       appBar: _currentIndex == 0 ? _buildAppBar() : null,
       body: _buildPages()[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFF2196F3),
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -94,14 +95,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       backgroundColor: Colors.white,
       elevation: 0.5,
       shadowColor: Colors.grey.withOpacity(0.1),
-      title: const Text(
-        'FLEXIO',
-        style: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
-        ),
-      ),
+      title: Text('FLEXIO', style: AppTextStyles.heading(context)),
       actions: [
         IconButton(
           icon: const Icon(Icons.search, size: 28),
@@ -235,8 +229,8 @@ class _HomeContentState extends State<_HomeContent> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.card),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.06),
@@ -253,27 +247,18 @@ class _HomeContentState extends State<_HomeContent> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Good Morning, ${userName.isNotEmpty ? userName : 'Patient'}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
+                      'Good Morning, ${userName.isNotEmpty ? userName : 'Patient'}',
+                      style: AppTextStyles.section(context)),
                   const SizedBox(height: 6),
-                  Text(
-                    "Let's continue your recovery!",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+                  Text("Let's continue your recovery!",
+                      style: AppTextStyles.body(context)
+                          .copyWith(color: Colors.grey[600])),
                 ],
               ),
             ),
             CircleAvatar(
               radius: 24,
-              backgroundColor: const Color(0xFF2196F3).withOpacity(0.12),
+              backgroundColor: AppColors.primary.withOpacity(0.12),
               child: Text(
                 userName.isNotEmpty ? userName[0].toUpperCase() : 'P',
                 style: const TextStyle(
@@ -306,7 +291,7 @@ class _HomeContentState extends State<_HomeContent> {
             gradient: const LinearGradient(
               colors: [Color(0xFFFF6B6B), Color(0xFFFF8A80)],
             ),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.medium),
             boxShadow: [
               BoxShadow(
                 color: Colors.red.withOpacity(0.12),
@@ -316,23 +301,19 @@ class _HomeContentState extends State<_HomeContent> {
             ],
           ),
           child: Row(
-            children: const [
-              Icon(Icons.call, color: Colors.white, size: 22),
-              SizedBox(width: 12),
+            children: [
+              const Icon(Icons.call, color: Colors.white, size: 22),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  'Emergency Call',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: Text('Emergency Call',
+                    style: AppTextStyles.body(context).copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
               ),
-              Text(
-                'Contact emergency support',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
-              ),
+              Text('Contact emergency support',
+                  style: AppTextStyles.caption(context)
+                      .copyWith(color: Colors.white70)),
             ],
           ),
         ),
@@ -352,7 +333,7 @@ class _HomeContentState extends State<_HomeContent> {
               const Text(
                 'Reminders',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
@@ -441,7 +422,7 @@ class _HomeContentState extends State<_HomeContent> {
           const Text(
             'Today\'s Exercises',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
@@ -517,7 +498,7 @@ class _HomeContentState extends State<_HomeContent> {
           const Text(
             'Activities',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
@@ -527,9 +508,9 @@ class _HomeContentState extends State<_HomeContent> {
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 1.5,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.3,
             children: [
               _buildActivityTile(
                 label: 'My Recovery Plan',
@@ -595,10 +576,10 @@ class _HomeContentState extends State<_HomeContent> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.06),
@@ -614,18 +595,18 @@ class _HomeContentState extends State<_HomeContent> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: const [
-                Icon(Icons.chevron_right, color: Colors.black54, size: 18),
+                Icon(Icons.chevron_right, color: Colors.black54, size: 16),
               ],
             ),
             const SizedBox(height: 4),
             Container(
-              width: 38,
-              height: 38,
+              width: 48,
+              height: 40,
               decoration: BoxDecoration(
                 color: (color ?? Colors.blue).withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(icon, color: color ?? Colors.blue, size: 20),
+              child: Icon(icon, color: color ?? Colors.blue, size: 30),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -635,7 +616,7 @@ class _HomeContentState extends State<_HomeContent> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
                 ),
