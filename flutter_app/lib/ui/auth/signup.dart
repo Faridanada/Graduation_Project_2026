@@ -501,7 +501,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     // Prepare Profile Data Map
     final Map<String, dynamic> profileData = {
-      "phone": _fullPhoneNumber,
       "role": selectedRole,
       // Step 2 details
       "gender": selectedGender,
@@ -539,6 +538,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final response = await AuthService.register(
         name: fullName,
         email: emailController.text.trim(),
+        phone: _fullPhoneNumber,
         password: passwordController.text,
         profileData: profileData,
         imageFile: selectedProfileImage,

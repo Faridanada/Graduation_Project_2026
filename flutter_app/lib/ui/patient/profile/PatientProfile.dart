@@ -23,6 +23,7 @@ class _PatientProfileState extends State<PatientProfile> {
   Map<String, dynamic> userProfile = {};
   int completedExercises = 0;
   int upcomingAppointments = 0;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -43,12 +44,14 @@ class _PatientProfileState extends State<PatientProfile> {
               exercises.where((e) => e['isCompleted'] == true).length;
           upcomingAppointments = appointment != null ? 1 : 0;
           isLoading = false;
+          _hasError = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           isLoading = false;
+          _hasError = true;
         });
       }
     }
@@ -67,8 +70,8 @@ class _PatientProfileState extends State<PatientProfile> {
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
+                    Color(0xFF4A90E2),
                     Color(0xFF6BA5CF),
-                    Color(0xFF9B8FD9),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -133,7 +136,7 @@ class _PatientProfileState extends State<PatientProfile> {
                             child: Icon(
                               Icons.person,
                               size: 50,
-                              color: Color(0xFF6BA5CF),
+                              color: Color(0xFF4A90E2),
                             ),
                           ),
                           const SizedBox(width: 20),
@@ -178,8 +181,41 @@ class _PatientProfileState extends State<PatientProfile> {
                   ],
                 ),
               ),
-              ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 20),
+            if (_hasError)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 48, color: Colors.red.shade300),
+                      const SizedBox(height: 16),
+                      const Text("Failed to load profile data",
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            isLoading = true;
+                            _hasError = false;
+                          });
+                          _loadProfileData();
+                        },
+                        child: const Text("Retry"),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else ...[
               // Menu Items Card
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -337,6 +373,7 @@ class _PatientProfileState extends State<PatientProfile> {
                 ),
               ),
               const SizedBox(height: 30),
+             ],
             ],
           ),
         ),
@@ -360,12 +397,12 @@ class _PatientProfileState extends State<PatientProfile> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF6BA5CF).withValues(alpha: 0.1),
+                color: const Color(0xFF4A90E2).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
-                color: const Color(0xFF6BA5CF),
+                color: const Color(0xFF4A90E2),
                 size: 24,
               ),
             ),

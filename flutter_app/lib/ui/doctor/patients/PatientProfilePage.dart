@@ -244,7 +244,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
           Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.2)),
           _buildInfoItem(Icons.monitor_weight_outlined, 'Weight', '${profile['weight'] ?? profileData['weight'] ?? '-'} kg'),
           Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.2)),
-          _buildInfoItem(Icons.phone_outlined, 'Phone', '${profile['phone'] ?? profileData['phone'] ?? 'N/A'}'),
+          _buildInfoItem(Icons.phone_outlined, 'Phone', '${profile['phone'] ?? 'N/A'}'),
         ],
       ),
     );

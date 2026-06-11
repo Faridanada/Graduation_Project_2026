@@ -1,0 +1,88 @@
+{
+  "All Requests in DB": [
+    {
+      "patientId": "patient1",
+      "timestamp": "10 mins ago",
+      "status": "pending",
+      "message": "Requesting appointment for next Tuesday at 2 PM",
+      "id": "req_1",
+      "name": "John Doe",
+      "doctorId": "doctor1",
+      "type": "Appointment Request"
+    },
+    {
+      "patientId": "patient2",
+      "timestamp": "2 hours ago",
+      "status": "pending",
+      "message": "Is it normal to feel slight discomfort during the knee exercises?",
+      "id": "req_2",
+      "name": "Alice Smith",
+      "doctorId": "doctor1",
+      "type": "Exercise Question"
+    },
+    {
+      "patientId": "patient3",
+      "timestamp": "1 day ago",
+      "status": "completed",
+      "message": "Need prescription refill for pain medication",
+      "id": "req_3",
+      "name": "Mark Lee",
+      "doctorId": "doctor1",
+      "type": "Prescription Refill"
+    },
+    {
+      "patientId": "1773960006547",
+      "status": "accepted",
+      "createdAt": "2026-03-19T23:44:47.843Z",
+      "patientEmail": "No email",
+      "id": "req_1773963887841",
+      "patientName": "Patient",
+      "doctorId": "1773960124632"
+    },
+    {
+      "patientId": "1773960006547",
+      "status": "accepted",
+      "createdAt": "2026-03-19T23:46:03.895Z",
+      "patientEmail": "No email",
+      "id": "req_1773963963895",
+      "patientName": "Patient",
+      "doctorId": "1773960124632"
+    }
+  ],
+  "Summary": "Found 1 doctors and 3 patients.",
+  "Patient samples": [
+    {
+      "id": "1773885759278",
+      "profileData": {
+        "role": "patient"
+      }
+    },
+    {
+      "id": "1773886124669",
+      "profileData": {
+        "role": "patient"
+      }
+    },
+    {
+      "id": "1773960006547",
+      "assignedDoctorId": "1773960124632",
+      "profileData": {
+        "allergies": "Skin sensitivity",
+        "role": "patient",
+        "gender": "Female",
+        "diagnosis": "Post Fracture",
+        "dateOfBirth": "20 / 03 / 1997",
+        "injuryDate": "03 / 03 / 2026",
+        "rehabilitationGoal": "Return to work",
+        "currentMedicationUse": "Anti-inflammatory medications",
+        "affectedArea": "Shoulder",
+        "currentPainLevel": "2",
+        "phone": "01064420642",
+        "mobilityLimitations": "Moderate limitation",
+        "location": "smouha",
+        "assistiveDevices": "Cane",
+        "age": 29
+      }
+    }
+  ]
+}

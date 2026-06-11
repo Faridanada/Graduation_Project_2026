@@ -17,6 +17,7 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
   String selectedArea = "Knee";
   File? _selectedImage;
   bool _isSubmitting = false;
+  String? _errorMessage;
 
   final List<String> _bodyAreas = [
     'Knee',
@@ -78,10 +79,9 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
   }
 
   Future<void> _submitReport() async {
+    setState(() => _errorMessage = null);
     if (selectedArea.isEmpty || selectedPain.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
-      );
+      setState(() => _errorMessage = 'Please fill all required fields');
       return;
     }
 
@@ -107,12 +107,7 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
       );
       if (Navigator.canPop(context)) Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to submit. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _errorMessage = 'Failed to submit. Please try again.');
     }
   }
 
@@ -266,8 +261,29 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
               ),
 
               const SizedBox(height: 20),
-
-              const SizedBox(height: 30),
+              if (_errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               // SUBMIT BUTTON
               GestureDetector(
@@ -314,7 +330,6 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
     );
   }
 

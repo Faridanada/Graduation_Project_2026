@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/ui/app_theme.dart';
 
 class Appointments extends StatefulWidget {
   const Appointments({Key? key}) : super(key: key);
@@ -14,6 +15,7 @@ class _AppointmentsState extends State<Appointments> {
 
   List<Map<String, dynamic>> allAppointments = [];
   bool isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -43,12 +45,14 @@ class _AppointmentsState extends State<Appointments> {
             };
           }).toList();
           isLoading = false;
+          _hasError = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           isLoading = false;
+          _hasError = true;
         });
       }
     }
@@ -134,46 +138,51 @@ class _AppointmentsState extends State<Appointments> {
               Expanded(
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                        itemCount: filteredAppointments.length,
-                        itemBuilder: (context, index) {
-                          final appointment = filteredAppointments[index];
-                          bool showDateLabel = false;
+                    : _hasError
+                        ? _buildErrorState()
+                        : RefreshIndicator(
+                            onRefresh: _loadAppointments,
+                            child: ListView.builder(
+                              itemCount: filteredAppointments.length,
+                              itemBuilder: (context, index) {
+                                final appointment = filteredAppointments[index];
+                                bool showDateLabel = false;
 
-                          // Show date label for non-today appointments
-                          if (selectedFilter != 'Today') {
-                            if (index == 0 ||
-                                filteredAppointments[index - 1]['date'].day !=
-                                    appointment['date'].day) {
-                              showDateLabel = true;
-                            }
-                          }
+                                // Show date label for non-today appointments
+                                if (selectedFilter != 'Today') {
+                                  if (index == 0 ||
+                                      filteredAppointments[index - 1]['date'].day !=
+                                          appointment['date'].day) {
+                                    showDateLabel = true;
+                                  }
+                                }
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (showDateLabel) ...[
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.only(bottom: 8, top: 8),
-                                  child: Text(
-                                    DateFormat('EEEE, d MMMM')
-                                        .format(appointment['date']),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              _buildAppointmentCard(appointment),
-                              const SizedBox(height: 12),
-                            ],
-                          );
-                        },
-                      ),
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (showDateLabel) ...[
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 8, top: 8),
+                                        child: Text(
+                                          DateFormat('EEEE, d MMMM')
+                                              .format(appointment['date']),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                            fontFamily: 'Poppins',
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    _buildAppointmentCard(appointment),
+                                    const SizedBox(height: 12),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
               ),
             ],
           ),
@@ -229,10 +238,10 @@ class _AppointmentsState extends State<Appointments> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF5798C6) : Colors.white,
+          color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFF5798C6) : Colors.grey[300]!,
+            color: isSelected ? AppColors.primary : Colors.grey[300]!,
             width: 1,
           ),
         ),
@@ -275,7 +284,7 @@ class _AppointmentsState extends State<Appointments> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF5798C6),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -321,9 +330,8 @@ class _AppointmentsState extends State<Appointments> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: isConfirmed
-                  ? const Color.fromARGB(255, 99, 197, 150)
-                      .withValues(alpha: 0.2)
-                  : Colors.orange.withValues(alpha: 0.2),
+                  ? AppColors.accent.withOpacity(0.2)
+                  : Colors.orange.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -333,7 +341,7 @@ class _AppointmentsState extends State<Appointments> {
                   isConfirmed ? Icons.check_circle : Icons.schedule,
                   size: 14,
                   color: isConfirmed
-                      ? const Color.fromARGB(255, 99, 197, 150)
+                      ? AppColors.accent
                       : Colors.orange,
                 ),
                 const SizedBox(width: 4),
@@ -343,7 +351,7 @@ class _AppointmentsState extends State<Appointments> {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: isConfirmed
-                        ? const Color.fromARGB(255, 99, 197, 150)
+                        ? AppColors.accent
                         : Colors.orange,
                     fontFamily: 'Poppins',
                   ),
@@ -356,5 +364,31 @@ class _AppointmentsState extends State<Appointments> {
     );
   }
 
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+          const SizedBox(height: 16),
+          const Text(
+            "Failed to load appointments",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                isLoading = true;
+                _hasError = false;
+              });
+              _loadAppointments();
+            },
+            child: const Text("Retry"),
+          ),
+        ],
+      ),
+    );
+  }
 }
 

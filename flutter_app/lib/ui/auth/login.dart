@@ -522,6 +522,7 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
   final tokenController = TextEditingController();
   final passwordController = TextEditingController();
   bool isLoading = false;
+  String? errorMessage;
 
   @override
   void dispose() {
@@ -539,7 +540,10 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
       );
       return;
     }
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
     final res = await AuthService.forgotPassword(email);
     setState(() => isLoading = false);
     if (res['statusCode'] == 200) {
@@ -553,12 +557,36 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
         SnackBar(content: Text(res['data']['message'] ?? 'Token sent!')),
       );
     } else {
+      setState(() {
+        errorMessage = res['data']['message'] ?? 'Failed to send token';
+      });
+    }
+  }
+
+  Future<void> verifyToken() async {
+    final email = emailController.text.trim();
+    final token = tokenController.text.trim();
+
+    if (token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res['data']['message'] ?? 'Failed to send token'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Please enter token')),
       );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+    final res = await AuthService.verifyResetToken(email, token);
+    setState(() => isLoading = false);
+
+    if (res['statusCode'] == 200) {
+      setState(() => step = 3);
+    } else {
+      setState(() {
+        errorMessage = res['data']['message'] ?? 'Invalid token';
+      });
     }
   }
 
@@ -567,14 +595,17 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
     final token = tokenController.text.trim();
     final newPass = passwordController.text;
 
-    if (token.isEmpty || newPass.isEmpty) {
+    if (newPass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter token and new password')),
+        const SnackBar(content: Text('Please enter new password')),
       );
       return;
     }
 
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
     final res = await AuthService.resetPassword(email, token, newPass);
     setState(() => isLoading = false);
 
@@ -587,17 +618,18 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
       );
       Navigator.of(context).pop(); // Close modal
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res['data']['message'] ?? 'Failed to reset password'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() {
+        errorMessage = res['data']['message'] ?? 'Failed to reset password';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    String title = 'Forgot Password';
+    if (step == 2) title = 'Verify Token';
+    if (step == 3) title = 'Reset Password';
+
     return Container(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -605,9 +637,32 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            step == 1 ? 'Forgot Password' : 'Reset Password',
+            title,
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
+          if (errorMessage != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      errorMessage!,
+                      style: TextStyle(color: Colors.red.shade700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           if (step == 1) ...[
             const Text('Enter your email and we will send you a reset token.'),
@@ -627,9 +682,9 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                   ? const CircularProgressIndicator()
                   : const Text('Send Reset Token'),
             ),
-          ] else ...[
+          ] else if (step == 2) ...[
             const Text(
-                'Enter the token we sent to you, and your new password.'),
+                'Enter the token we sent to you.'),
             const SizedBox(height: 16),
             TextField(
               controller: tokenController,
@@ -638,6 +693,15 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                 border: OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: isLoading ? null : verifyToken,
+              child: isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Verify Token'),
+            ),
+          ] else if (step == 3) ...[
+            const Text('Enter your new password.'),
             const SizedBox(height: 16),
             TextField(
               controller: passwordController,

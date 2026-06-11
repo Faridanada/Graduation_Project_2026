@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const dbService = require("../services/dbService");
 const fs = require("fs");
 const path = require("path");
+const { hashResetToken } = require("../utils/fieldCrypto");
 
 // ================= REGISTER =================
 exports.registerUser = async (req, res) => {
@@ -53,7 +54,8 @@ exports.registerUser = async (req, res) => {
       profileData: profileData || {} // Default to empty object if not provided
     });
 
-    const secret = process.env.JWT_SECRET || "supersecretkey";
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error("JWT_SECRET is not set");
     const token = jwt.sign(
       { id: newUser.id, role: userRole },
       secret,
@@ -310,6 +312,27 @@ exports.forgotPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Forgot Password Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.verifyResetToken = async (req, res) => {
+  try {
+    const { email, token } = req.body;
+    if (!email || !token) {
+      return res.status(400).json({ message: "Email and token are required" });
+    }
+
+    const user = await dbService.getUserByEmail(email);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.resetToken !== token || new Date(user.resetTokenExpiry) < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    res.json({ message: "Token is valid" });
+  } catch (error) {
+    console.error("Verify Token Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

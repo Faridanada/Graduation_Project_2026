@@ -46,7 +46,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
         setState(() {
           userProfile = profile;
           _nameController.text = userProfile['name'] ?? '';
-          _phoneController.text = userProfile['profileData']?['phone'] ?? '';
+          _phoneController.text = userProfile['phone'] ?? '';
           _locationController.text =
               userProfile['profileData']?['location'] ?? '';
           _dobController.text =
@@ -152,7 +152,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                       'Full Name', userProfile['name'], _nameController),
                   _buildField('Email', userProfile['email'], null,
                       readOnly: true),
-                  _buildField('Phone', userProfile['profileData']?['phone'],
+                  _buildField('Phone', userProfile['phone'],
                       _phoneController),
                   _buildField(
                       'Address',

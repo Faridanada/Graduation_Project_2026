@@ -9,6 +9,7 @@ class AuthService {
   static Future<Map<String, dynamic>> register({
     required String name,
     required String email,
+    required String phone,
     required String password,
     Map<String, dynamic>? profileData,
     File? imageFile,
@@ -19,6 +20,7 @@ class AuthService {
 
       request.fields['name'] = name;
       request.fields['email'] = email;
+      request.fields['phone'] = phone;
       request.fields['password'] = password;
 
       if (profileData != null) {
@@ -84,6 +86,33 @@ class AuthService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "email": email,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      return {
+        "statusCode": response.statusCode,
+        "data": data,
+      };
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "data": {"message": "Server error. Could not decode response."},
+      };
+    }
+  }
+
+  // VERIFY RESET TOKEN
+  static Future<Map<String, dynamic>> verifyResetToken(
+      String email, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/verify-reset-token"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": email,
+          "token": token,
         }),
       );
 

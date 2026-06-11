@@ -157,6 +157,7 @@ class _HomeContentState extends State<_HomeContent> {
   Map<String, dynamic>? nextAppointment;
   int completedExercises = 0;
   int upcomingAppointments = 0;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -184,12 +185,14 @@ class _HomeContentState extends State<_HomeContent> {
               exercises.where((e) => e['isCompleted'] == true).length;
           upcomingAppointments = appointment != null ? 1 : 0;
           isLoading = false;
+          _hasError = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           isLoading = false;
+          _hasError = true;
         });
       }
     }
@@ -208,14 +211,18 @@ class _HomeContentState extends State<_HomeContent> {
               const SizedBox(height: 28),
               _buildGreetingSection(),
               const SizedBox(height: 18),
-              _buildEmergencyCall(),
-              const SizedBox(height: 24),
-              _buildExercisesSection(),
-              const SizedBox(height: 20),
-              _buildRemindersSection(),
-              const SizedBox(height: 36),
-              _buildActivitiesSection(),
-              const SizedBox(height: 32),
+              if (_hasError)
+                _buildErrorState()
+              else ...[
+                _buildEmergencyCall(),
+                const SizedBox(height: 24),
+                _buildExercisesSection(),
+                const SizedBox(height: 20),
+                _buildRemindersSection(),
+                const SizedBox(height: 36),
+                _buildActivitiesSection(),
+                const SizedBox(height: 32),
+              ],
             ],
           ),
         ),
@@ -288,9 +295,7 @@ class _HomeContentState extends State<_HomeContent> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF6B6B), Color(0xFFFF8A80)],
-            ),
+            color: Colors.red.shade400,
             borderRadius: BorderRadius.circular(AppRadius.medium),
             boxShadow: [
               BoxShadow(
@@ -623,6 +628,35 @@ class _HomeContentState extends State<_HomeContent> {
               ),
             ),
             const SizedBox(height: 2),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            const SizedBox(height: 16),
+            const Text(
+              "Failed to load dashboard data",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  isLoading = true;
+                  _hasError = false;
+                });
+                _loadDashboardData();
+              },
+              child: const Text("Retry"),
+            ),
           ],
         ),
       ),

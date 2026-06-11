@@ -25,6 +25,7 @@ router.put("/2fa", authMiddleware, authController.toggle2FA);
 
 // Password recovery
 router.post("/forgot-password", authController.forgotPassword);
+router.post("/verify-reset-token", authController.verifyResetToken);
 router.post("/reset-password", authController.resetPassword);
 
 module.exports = router;

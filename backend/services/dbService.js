@@ -13,6 +13,17 @@ const {
 // const exercisesData = require("../data/exercises");
 // const { requestsList } = require("../data/requests");
 
+const { encryptField, decryptField, hashResetToken } = require('../utils/fieldCrypto');
+
+const ENCRYPTED_FIELDS = {
+  Users: ['name', 'phone', 'profileData'],
+  Appointments: ['patientName', 'doctorName', 'notes'],
+  Exercises: ['description'],
+  Requests: ['patientName'],
+  Reminders: ['title'],
+  Wounds: ['classification', 'analysisResult', 'notes'],
+};
+
 // Initialize DynamoDB Client
 // The SDK automatically falls back to EC2 IAM roles if access keys are missing from .env
 const clientParams = { region: process.env.AWS_REGION || 'us-east-1' };
@@ -60,8 +71,71 @@ ddbDocClient.send = async (command, ...args) => {
     await ensureTable(tableName);
   }
 
+  // ENCRYPTION INTERCEPTION
+  if (tableName && ENCRYPTED_FIELDS[tableName]) {
+    const fieldsToEncrypt = ENCRYPTED_FIELDS[tableName];
+
+    // Intercept PutCommand
+    if (command.constructor.name === 'PutCommand' && command.input.Item) {
+      // Specialty top-level extraction for Users table
+      if (tableName === 'Users' && command.input.Item.profileData) {
+        let pData = command.input.Item.profileData;
+        if (typeof pData === 'string') {
+          try { pData = JSON.parse(pData); } catch(e) {}
+        }
+        if (pData && typeof pData === 'object' && pData.specialty) {
+          command.input.Item.specialty = pData.specialty;
+        }
+      }
+
+      // Encrypt fields
+      for (const field of fieldsToEncrypt) {
+        if (command.input.Item[field] !== undefined) {
+          command.input.Item[field] = encryptField(command.input.Item[field]);
+        }
+      }
+    }
+
+    // Intercept UpdateCommand
+    if (command.constructor.name === 'UpdateCommand') {
+      const updateExpr = command.input.UpdateExpression || '';
+      const touchesEncrypted = fieldsToEncrypt.some(f => updateExpr.includes(f));
+      if (touchesEncrypted) {
+        // We only support simple SET expressions here if we had to.
+        // Limitation: complex UpdateCommands on encrypted fields are not supported dynamically here.
+        console.warn(`[WARNING] UpdateCommand on encrypted field in table ${tableName}. Auto-encryption may not apply correctly to ExpressionAttributeValues.`);
+      }
+    }
+  }
+
   try {
-    return await baseSend(command, ...args);
+    const result = await baseSend(command, ...args);
+
+    // DECRYPTION INTERCEPTION
+    if (tableName && ENCRYPTED_FIELDS[tableName] && result) {
+      const fieldsToDecrypt = ENCRYPTED_FIELDS[tableName];
+
+      const decryptItem = (item) => {
+        if (!item) return;
+        for (const field of fieldsToDecrypt) {
+          if (item[field] !== undefined) {
+            item[field] = decryptField(item[field]);
+          }
+        }
+      };
+
+      if (result.Item) {
+        decryptItem(result.Item);
+      }
+      if (Array.isArray(result.Items)) {
+        result.Items.forEach(decryptItem);
+      }
+      if (result.Attributes) {
+        decryptItem(result.Attributes);
+      }
+    }
+
+    return result;
   } catch (error) {
     if (tableName && error?.name === "ResourceNotFoundException") {
       tableReadyPromises[tableName] = null;
@@ -239,11 +313,6 @@ const dbService = {
       };
       const expressionAttributeValues = { ":role": "patient" };
 
-      if (name) {
-        filterExpression += " AND contains(#nameAttr, :name)";
-        expressionAttributeValues[":name"] = name;
-      }
-
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Users",
         FilterExpression: filterExpression,
@@ -251,7 +320,12 @@ const dbService = {
         ExpressionAttributeValues: expressionAttributeValues,
         ProjectionExpression: "id, #nameAttr, email, phone, profileData, assignedDoctorId"
       }));
-      return data.Items || [];
+      let items = data.Items || [];
+      const q = (name || '').toLowerCase();
+      if (q) {
+        items = items.filter(u => (u.name || '').toLowerCase().includes(q));
+      }
+      return items;
     } catch (error) {
       console.error("DynamoDB error (getAllPatients):", error);
       throw error;
@@ -532,12 +606,9 @@ const dbService = {
       };
       const expressionAttributeValues = { ":role": "doctor" };
 
-      if (name) {
-        filterExpression += " AND contains(#nameAttr, :name)";
-        expressionAttributeValues[":name"] = name;
-      }
       if (specialty) {
-        filterExpression += " AND contains(profileData.specialty, :specialty)";
+        filterExpression += " AND contains(#sp, :specialty)";
+        expressionAttributeNames["#sp"] = "specialty";
         expressionAttributeValues[":specialty"] = specialty;
       }
 
@@ -546,9 +617,14 @@ const dbService = {
         FilterExpression: filterExpression,
         ExpressionAttributeNames: expressionAttributeNames,
         ExpressionAttributeValues: expressionAttributeValues,
-        ProjectionExpression: "id, #nameAttr, email, profileData"
+        ProjectionExpression: "id, #nameAttr, email, profileData, specialty"
       }));
-      return data.Items || [];
+      let items = data.Items || [];
+      const q = (name || '').toLowerCase();
+      if (q) {
+        items = items.filter(u => (u.name || '').toLowerCase().includes(q));
+      }
+      return items;
     } catch (error) {
       console.error("DynamoDB error (getAllDoctors):", error);
       throw error;

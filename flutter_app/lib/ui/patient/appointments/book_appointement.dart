@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/patient/appointments/appointment_confirmed_screen.dart';
-import 'package:rehabilitation_app/ui/patient/home/patient_bottom_nav.dart';
+import 'package:rehabilitation_app/ui/app_theme.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
   final Map<String, dynamic>? doctor;
@@ -179,7 +179,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.blue.shade50.withValues(alpha: 0.4),
+            color: AppColors.primaryLight.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
           ),
@@ -229,7 +229,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                           children: [
                             CircleAvatar(
                               radius: 25,
-                              backgroundColor: Colors.blue.shade100,
+                              backgroundColor: AppColors.primarySoft,
                               child: Text(
                                 widget.doctor!['name']?[0] ?? 'D',
                                 style: const TextStyle(
@@ -298,7 +298,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: isSelected
-                                            ? Colors.blue
+                                            ? AppColors.primary
                                             : Colors.white,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
@@ -441,7 +441,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                                   duration: const Duration(milliseconds: 250),
                                   decoration: BoxDecoration(
                                     color:
-                                        isSelected ? Colors.blue : Colors.white,
+                                        isSelected ? AppColors.primary : Colors.white,
                                     borderRadius: BorderRadius.circular(12),
                                     border: isSelected
                                         ? null
@@ -491,7 +491,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: const StadiumBorder(),
@@ -517,7 +517,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 ),
               ),
       ),
-      bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
     );
   }
 }

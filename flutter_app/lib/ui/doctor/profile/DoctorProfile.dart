@@ -7,6 +7,7 @@ import 'package:rehabilitation_app/ui/settings/HelpSupportPage.dart';
 import 'package:rehabilitation_app/ui/auth/ChangePasswordPage.dart';
 import 'package:rehabilitation_app/ui/chats/Chats.dart';
 import 'package:rehabilitation_app/ui/settings/DoctorAvailabilityPage.dart';
+import 'package:rehabilitation_app/ui/app_theme.dart';
 
 class DoctorProfile extends StatefulWidget {
   final String source; // 'home' or 'settings'
@@ -22,6 +23,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
   Map<String, dynamic> userProfile = {};
   Map<String, dynamic> doctorStats = {};
   int _selectedNavIndex = 2; // Profile is index 2
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -39,12 +41,14 @@ class _DoctorProfileState extends State<DoctorProfile> {
           userProfile = profile;
           doctorStats = stats;
           isLoading = false;
+          _hasError = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           isLoading = false;
+          _hasError = true;
         });
       }
     }
@@ -54,17 +58,19 @@ class _DoctorProfileState extends State<DoctorProfile> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
+      body: _hasError
+          ? _buildErrorState()
+          : SingleChildScrollView(
+              child: Column(
+                children: [
             // Header with gradient
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Color(0xFF6BA5CF),
-                    Color(0xFF9B8FD9),
+                    AppColors.primary,
+                    AppColors.accent,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -127,7 +133,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
                             child: Icon(
                               Icons.person,
                               size: 50,
-                              color: Color(0xFF6BA5CF),
+                              color: AppColors.primary,
                             ),
                           ),
                           const SizedBox(width: 20),
@@ -348,7 +354,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
       currentIndex: _selectedNavIndex,
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,
-      selectedItemColor: const Color(0xFF6BA5CF),
+      selectedItemColor: AppColors.primary,
       unselectedItemColor: Colors.grey[400],
       items: const [
         BottomNavigationBarItem(
@@ -398,12 +404,12 @@ class _DoctorProfileState extends State<DoctorProfile> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF6BA5CF).withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
-                color: const Color(0xFF6BA5CF),
+                color: AppColors.primary,
                 size: 24,
               ),
             ),
@@ -521,6 +527,33 @@ class _DoctorProfileState extends State<DoctorProfile> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+          const SizedBox(height: 16),
+          const Text(
+            "Failed to load profile data",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                isLoading = true;
+                _hasError = false;
+              });
+              _loadProfileData();
+            },
+            child: const Text("Retry"),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -38,6 +38,7 @@ class _DoctorHomeState extends State<DoctorHome> {
   List<dynamic> patientsList = [];
   List<dynamic> todayAppointments = [];
   bool isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -62,12 +63,14 @@ class _DoctorHomeState extends State<DoctorHome> {
           patientsList = patients;
           todayAppointments = appointments;
           isLoading = false;
+          _hasError = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           isLoading = false;
+          _hasError = true;
         });
       }
     }
@@ -95,14 +98,18 @@ class _DoctorHomeState extends State<DoctorHome> {
                 const SizedBox(height: 16),
                 _buildGreetingSection(),
                 const SizedBox(height: 16),
-                _buildStatusOverview(),
-                const SizedBox(height: 28),
-                _buildRemindersSection(),
-                const SizedBox(height: 28),
-                _buildPatientsSection(),
-                const SizedBox(height: 28),
-                _buildActivitiesSection(),
-                const SizedBox(height: 32),
+                if (_hasError)
+                  _buildErrorState()
+                else ...[
+                  _buildStatusOverview(),
+                  const SizedBox(height: 28),
+                  _buildRemindersSection(),
+                  const SizedBox(height: 28),
+                  _buildPatientsSection(),
+                  const SizedBox(height: 28),
+                  _buildActivitiesSection(),
+                  const SizedBox(height: 32),
+                ],
               ],
             ),
           ),
@@ -269,7 +276,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                   child: _buildStatusCard(
                     'Active Patients',
                     isLoading ? '-' : '${doctorStats['activePatients'] ?? 0}',
-                    const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                    AppColors.primaryLight.withOpacity(0.6),
                     Icons.people_outline,
                   ),
                 ),
@@ -290,7 +297,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                   child: _buildStatusCard(
                     'Today\'s Sessions',
                     isLoading ? '-' : '${doctorStats['todaySessions'] ?? 0}',
-                    const Color.fromRGBO(149, 184, 209, 1).withOpacity(0.6),
+                    AppColors.primarySoft.withOpacity(0.6),
                     Icons.check_circle_outline,
                   ),
                 ),
@@ -310,7 +317,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                   child: _buildStatusCard(
                     'Alerts',
                     isLoading ? '-' : '${doctorStats['alerts'] ?? 0}',
-                    const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
+                    AppColors.accent.withOpacity(0.6),
                     Icons.warning_outlined,
                   ),
                 ),
@@ -651,8 +658,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                     'age': patient['profileData']?['age']?.toString() ?? 'N/A',
                     'progress': '0', // Not yet tracked in backend
                     'status': 'New',
-                    'statusColor':
-                        const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                    'statusColor': AppColors.primary,
                   };
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
@@ -705,22 +711,20 @@ class _DoctorHomeState extends State<DoctorHome> {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor:
-                      const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                  backgroundColor: AppColors.primaryLight.withOpacity(0.4),
                   child: Text(
                     patient['name'].substring(0, 1),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color:
-                        const Color.fromRGBO(184, 224, 210, 1).withOpacity(0.6),
+                    color: AppColors.primarySoft.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -990,6 +994,34 @@ class _DoctorHomeState extends State<DoctorHome> {
           _selectedNavIndex = index;
         });
       },
+    );
+  }
+  Widget _buildErrorState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            const SizedBox(height: 16),
+            const Text(
+              "Failed to load dashboard data",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  isLoading = true;
+                  _hasError = false;
+                });
+                _loadDashboardData();
+              },
+              child: const Text("Retry"),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1362,8 +1394,7 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
                     'age': p['age'] ?? 0,
                     'progress': 0, // Mock for now
                     'status': 'On Track',
-                    'statusColor':
-                        const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
+                    'statusColor': AppColors.primary,
                   })
               .toList();
           isLoading = false;
