@@ -1,4 +1,5 @@
 const dbService = require('../services/dbService');
+const { attachImageUrls } = require('../utils/userPresenter');
 
 const patientController = {
 
@@ -12,7 +13,8 @@ const patientController = {
 
       // Strip password before sending
       const { password, resetToken, resetTokenExpiry, ...safeUser } = user;
-      res.json({ statusCode: 200, data: safeUser });
+      const userResponse = await attachImageUrls(safeUser);
+      res.json({ statusCode: 200, data: userResponse });
     } catch (error) {
       console.error('Error fetching patient profile:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error fetching profile' });
@@ -35,7 +37,8 @@ const patientController = {
       if (!doctor) return res.status(404).json({ statusCode: 404, message: 'Doctor not found' });
 
       const { password, resetToken, resetTokenExpiry, ...safeDoctor } = doctor;
-      res.json({ statusCode: 200, data: safeDoctor });
+      const doctorResponse = await attachImageUrls(safeDoctor);
+      res.json({ statusCode: 200, data: doctorResponse });
     } catch (error) {
       console.error('Error fetching doctor:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error fetching doctor' });
@@ -55,7 +58,8 @@ const patientController = {
 
       const updated = await dbService.updateUserProfile(patientId, { name, profileData });
       const { password, resetToken, resetTokenExpiry, ...safeUser } = updated;
-      res.json({ statusCode: 200, data: safeUser, message: 'Profile updated successfully' });
+      const userResponse = await attachImageUrls(safeUser);
+      res.json({ statusCode: 200, data: userResponse, message: 'Profile updated successfully' });
     } catch (error) {
       console.error('Error updating patient profile:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error updating profile' });
@@ -153,7 +157,8 @@ const patientController = {
 
       // Strip sensitive fields
       const { password, resetToken, resetTokenExpiry, ...safeDoctor } = doctor;
-      res.json({ statusCode: 200, data: safeDoctor });
+      const doctorResponse = await attachImageUrls(safeDoctor);
+      res.json({ statusCode: 200, data: doctorResponse });
     } catch (error) {
       console.error('Error fetching assigned doctor:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error fetching doctor' });
@@ -290,7 +295,8 @@ const patientController = {
     try {
       const { name, specialty } = req.query;
       const doctors = await dbService.getAllDoctors({ name, specialty });
-      res.json({ statusCode: 200, data: doctors });
+      const enrichedDoctors = await Promise.all(doctors.map(attachImageUrls));
+      res.json({ statusCode: 200, data: enrichedDoctors });
     } catch (error) {
       console.error('Error fetching doctors:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error fetching doctors' });

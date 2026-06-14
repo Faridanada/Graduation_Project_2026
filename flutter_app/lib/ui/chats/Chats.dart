@@ -5,6 +5,7 @@ import 'package:rehabilitation_app/ui/doctor/profile/DoctorProfile.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 import 'package:rehabilitation_app/ui/chats/NewChatScreen.dart';
 import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
+import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
 
 class Chats extends StatefulWidget {
   final bool showNavBar;
@@ -51,6 +52,7 @@ class _ChatsState extends State<Chats> {
             return {
               'userId': c['otherUserId'],
               'name': c['otherUserName'] ?? 'Unknown',
+              'profileImage': c['otherUserProfileImageUrl'] ?? c['otherUserProfileImage'],
               'message': c['lastMessage'] ?? '',
               'time': _formatTime(c['lastMessageTime']),
               'unread': c['unreadCount'] ?? 0,
@@ -235,17 +237,12 @@ class _ChatsState extends State<Chats> {
         ),
         child: Row(
           children: [
-            CircleAvatar(
+            ProfileAvatar(
+              imageUrl: chat['profileImage'],
+              name: chat['name'],
               radius: 28,
               backgroundColor: const Color(0xFF6BA5CF),
-              child: Text(
-                chat['initials'] ?? '?',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
+              textColor: Colors.white,
             ),
             const SizedBox(width: 12),
             Expanded(

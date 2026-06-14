@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 
 class PersonalInformationPage extends StatefulWidget {
@@ -37,6 +39,18 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
   void initState() {
     super.initState();
     _loadData();
+    ApiService.profileUpdateNotifier.addListener(_loadData);
+  }
+
+  @override
+  void dispose() {
+    ApiService.profileUpdateNotifier.removeListener(_loadData);
+    _nameController.dispose();
+    _phoneController.dispose();
+    _locationController.dispose();
+    _dobController.dispose();
+    _genderController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -108,6 +122,29 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     }
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    
+    if (image != null) {
+      setState(() => isSaving = true);
+      final success = await ApiService.updateProfileImage(File(image.path));
+      setState(() => isSaving = false);
+      
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile picture updated successfully'), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update profile picture'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -148,6 +185,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                 if (isLoading)
                   const Center(child: CircularProgressIndicator())
                 else ...[
+                  _buildProfilePictureSection(),
+                  const SizedBox(height: 20),
                   _buildField(
                       'Full Name', userProfile['name'], _nameController),
                   _buildField('Email', userProfile['email'], null,
@@ -194,6 +233,48 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildProfilePictureSection() {
+    final profileImageUrl = userProfile['profileImageUrl'] ?? userProfile['profileImage'];
+    final bool hasImage = profileImageUrl != null && profileImageUrl.toString().isNotEmpty;
+    
+    return Center(
+      child: Stack(
+        children: [
+          CircleAvatar(
+            radius: 50,
+            backgroundColor: Colors.grey[200],
+            backgroundImage: hasImage
+                ? NetworkImage(profileImageUrl.toString().startsWith('http') 
+                    ? profileImageUrl 
+                    : '${ApiService.baseUrl.replaceAll('/api', '')}/$profileImageUrl')
+                : null,
+            child: !hasImage
+                ? Icon(Icons.person, size: 50, color: Colors.grey[400])
+                : null,
+          ),
+          if (isEditing)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: isSaving ? null : _pickAndUploadImage,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Colors.black87,
+                    shape: BoxShape.circle,
+                  ),
+                  child: isSaving 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

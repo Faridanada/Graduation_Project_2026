@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
 
 class ConversationScreen extends StatefulWidget {
   final String name;
   final String initials;
+  final String? profileImage;
   final String message;
   final String? receiverId;
 
@@ -12,6 +14,7 @@ class ConversationScreen extends StatefulWidget {
     Key? key,
     required this.name,
     required this.initials,
+    this.profileImage,
     required this.message,
     this.receiverId,
   }) : super(key: key);
@@ -106,17 +109,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
         ),
         title: Row(
           children: [
-            CircleAvatar(
+            ProfileAvatar(
+              imageUrl: widget.profileImage,
+              name: widget.name,
               radius: 18,
               backgroundColor: const Color(0xFF6BA5CF),
-              child: Text(
-                widget.initials,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
+              textColor: Colors.white,
             ),
             const SizedBox(width: 12),
             Text(
@@ -161,18 +159,13 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                     : MainAxisAlignment.start,
                                 children: [
                                   if (!isSentByMe) ...[
-                                    CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: const Color(0xFF6BA5CF),
-                                      child: Text(
-                                        widget.initials,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
+                                      ProfileAvatar(
+                                        imageUrl: widget.profileImage,
+                                        name: widget.name,
+                                        radius: 16,
+                                        backgroundColor: const Color(0xFF6BA5CF),
+                                        textColor: Colors.white,
                                       ),
-                                    ),
                                     const SizedBox(width: 8),
                                   ],
                                   Container(

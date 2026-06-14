@@ -15,6 +15,7 @@ import 'package:rehabilitation_app/ui/doctor/profile/DoctorProfile.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/AddNewPatient.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/PatientProfilePage.dart';
 import 'package:rehabilitation_app/ui/exercises/PatientExerciseMonitorList.dart';
+import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
 import 'DoctorSearchPage.dart';
 
 /// Doctor home page - Main dashboard for healthcare professionals
@@ -34,6 +35,7 @@ class _DoctorHomeState extends State<DoctorHome> {
   final ScrollController _patientsScrollController = ScrollController();
 
   String doctorName = 'Doctor';
+  String? doctorProfileImage;
   Map<String, dynamic> doctorStats = {};
   List<dynamic> patientsList = [];
   List<dynamic> todayAppointments = [];
@@ -44,6 +46,7 @@ class _DoctorHomeState extends State<DoctorHome> {
   void initState() {
     super.initState();
     _loadDashboardData();
+    ApiService.profileUpdateNotifier.addListener(_loadDashboardData);
   }
 
   Future<void> _loadDashboardData() async {
@@ -59,6 +62,7 @@ class _DoctorHomeState extends State<DoctorHome> {
           if (name != null && name.isNotEmpty) {
             doctorName = name.split(' ')[0];
           }
+          doctorProfileImage = profile?['profileImageUrl']?.toString() ?? profile?['profileImage']?.toString();
           doctorStats = stats;
           patientsList = patients;
           todayAppointments = appointments;
@@ -78,6 +82,7 @@ class _DoctorHomeState extends State<DoctorHome> {
 
   @override
   void dispose() {
+    ApiService.profileUpdateNotifier.removeListener(_loadDashboardData);
     _patientsScrollController.dispose();
     super.dispose();
   }
@@ -155,17 +160,12 @@ class _DoctorHomeState extends State<DoctorHome> {
                 ],
               ),
             ),
-            CircleAvatar(
+            ProfileAvatar(
+              imageUrl: doctorProfileImage,
+              name: doctorName,
               radius: 24,
               backgroundColor: AppColors.primary.withOpacity(0.12),
-              child: Text(
-                doctorName.isNotEmpty ? doctorName[0].toUpperCase() : 'D',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
+              textColor: AppColors.primary,
             ),
           ],
         ),
@@ -655,6 +655,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                   final mappedPatient = {
                     'id': patient['id'] ?? patient['_id'] ?? '',
                     'name': patient['name'] ?? 'Unknown',
+                    'profileImage': patient['profileImageUrl']?.toString() ?? patient['profileImage']?.toString(),
                     'age': patient['profileData']?['age']?.toString() ?? 'N/A',
                     'progress': '0', // Not yet tracked in backend
                     'status': 'New',
@@ -709,17 +710,12 @@ class _DoctorHomeState extends State<DoctorHome> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                CircleAvatar(
+                ProfileAvatar(
+                  imageUrl: patient['profileImageUrl'] ?? patient['profileImage'],
+                  name: patient['name'],
                   radius: 28,
                   backgroundColor: AppColors.primaryLight.withOpacity(0.4),
-                  child: Text(
-                    patient['name'].substring(0, 1),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  textColor: AppColors.primary,
                 ),
                 Container(
                   padding: const EdgeInsets.all(4),

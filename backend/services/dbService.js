@@ -22,6 +22,8 @@ const ENCRYPTED_FIELDS = {
   Requests: ['patientName'],
   Reminders: ['title'],
   Wounds: ['classification', 'analysisResult', 'notes'],
+  Messages: ['messageText'],
+  Notifications: ['message'],
 };
 
 // Initialize DynamoDB Client
@@ -929,10 +931,16 @@ const dbService = {
 
       const messages = data.Items || [];
       const conversationsMap = new Map();
+      const unreadCountMap = new Map();
 
-      // Get last message for each conversation
+      // Get last message for each conversation and count unread
       for (const msg of messages) {
         const otherId = msg.senderId === userId ? msg.receiverId : msg.senderId;
+        
+        if (msg.receiverId === userId && !msg.isRead) {
+          unreadCountMap.set(otherId, (unreadCountMap.get(otherId) || 0) + 1);
+        }
+
         const currentLast = conversationsMap.get(otherId);
         if (!currentLast || new Date(msg.createdAt) > new Date(currentLast.createdAt)) {
           conversationsMap.set(otherId, msg);
@@ -947,9 +955,10 @@ const dbService = {
           conversationList.push({
             otherUserId: otherId,
             otherUserName: partner.name,
+            otherUserProfileImage: partner.profileImage,
             lastMessage: lastMsg.messageText,
             lastMessageTime: lastMsg.createdAt,
-            unreadCount: 0 // Simplification for now
+            unreadCount: unreadCountMap.get(otherId) || 0
           });
         }
       }

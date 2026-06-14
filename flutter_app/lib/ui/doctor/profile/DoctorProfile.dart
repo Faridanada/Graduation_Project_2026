@@ -29,6 +29,13 @@ class _DoctorProfileState extends State<DoctorProfile> {
   void initState() {
     super.initState();
     _loadProfileData();
+    ApiService.profileUpdateNotifier.addListener(_loadProfileData);
+  }
+
+  @override
+  void dispose() {
+    ApiService.profileUpdateNotifier.removeListener(_loadProfileData);
+    super.dispose();
   }
 
   Future<void> _loadProfileData() async {
@@ -127,14 +134,21 @@ class _DoctorProfileState extends State<DoctorProfile> {
                       child: Row(
                         children: [
                           // Profile Picture
-                          const CircleAvatar(
+                          CircleAvatar(
                             radius: 40,
                             backgroundColor: Colors.white,
-                            child: Icon(
-                              Icons.person,
-                              size: 50,
-                              color: AppColors.primary,
-                            ),
+                            backgroundImage: (userProfile['profileImageUrl'] ?? userProfile['profileImage']) != null && (userProfile['profileImageUrl'] ?? userProfile['profileImage']).toString().isNotEmpty
+                                ? NetworkImage((userProfile['profileImageUrl'] ?? userProfile['profileImage']).toString().startsWith('http') 
+                                    ? (userProfile['profileImageUrl'] ?? userProfile['profileImage']) 
+                                    : '${ApiService.baseUrl.replaceAll('/api', '')}/${userProfile['profileImage']}')
+                                : null,
+                            child: (userProfile['profileImageUrl'] ?? userProfile['profileImage']) == null || (userProfile['profileImageUrl'] ?? userProfile['profileImage']).toString().isEmpty
+                                ? const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: AppColors.primary,
+                                  )
+                                : null,
                           ),
                           const SizedBox(width: 20),
                           // Profile Details

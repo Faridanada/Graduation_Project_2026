@@ -13,6 +13,7 @@ import 'package:rehabilitation_app/ui/patient/doctors/FindDoctorScreen.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/patient/profile/PatientProfile.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/recovery_plan_screen.dart';
+import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final int initialTab;
@@ -151,6 +152,7 @@ class _HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<_HomeContent> {
   String userName = "Patient";
+  String? userProfileImage;
   bool isLoading = true;
   List<dynamic> todayExercises = [];
   List<dynamic> reminders = [];
@@ -163,6 +165,13 @@ class _HomeContentState extends State<_HomeContent> {
   void initState() {
     super.initState();
     _loadDashboardData();
+    ApiService.profileUpdateNotifier.addListener(_loadDashboardData);
+  }
+
+  @override
+  void dispose() {
+    ApiService.profileUpdateNotifier.removeListener(_loadDashboardData);
+    super.dispose();
   }
 
   Future<void> _loadDashboardData() async {
@@ -178,6 +187,7 @@ class _HomeContentState extends State<_HomeContent> {
           if (name != null && name.isNotEmpty) {
             userName = name.split(' ')[0];
           }
+          userProfileImage = userProfile?['profileImageUrl']?.toString() ?? userProfile?['profileImage']?.toString();
           todayExercises = exercises;
           reminders = fetchedReminders;
           nextAppointment = appointment;
@@ -263,17 +273,12 @@ class _HomeContentState extends State<_HomeContent> {
                 ],
               ),
             ),
-            CircleAvatar(
+            ProfileAvatar(
+              imageUrl: userProfileImage,
+              name: userName,
               radius: 24,
               backgroundColor: AppColors.primary.withOpacity(0.12),
-              child: Text(
-                userName.isNotEmpty ? userName[0].toUpperCase() : 'P',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2196F3),
-                ),
-              ),
+              textColor: const Color(0xFF2196F3),
             ),
           ],
         ),

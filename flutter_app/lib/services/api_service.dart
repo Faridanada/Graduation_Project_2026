@@ -3,7 +3,7 @@ import 'dart:developer' as developer;
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-// Removed unused import: package:flutter/foundation.dart
+import 'package:flutter/foundation.dart';
 
 class ApiService {
   static dynamic _normalizeJsonValue(dynamic value) {
@@ -818,6 +818,9 @@ class ApiService {
     return null;
   }
 
+  /// Global notifier for profile updates
+  static final ValueNotifier<int> profileUpdateNotifier = ValueNotifier<int>(0);
+
   /// Update user profile
   static Future<bool> updateProfile(Map<String, dynamic> data) async {
     final token = await _getToken();
@@ -829,7 +832,33 @@ class ApiService {
         headers: _headers(token),
         body: jsonEncode(data),
       );
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        profileUpdateNotifier.value++;
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Update user profile picture
+  static Future<bool> updateProfileImage(io.File imageFile) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      var request = http.MultipartRequest('PUT', Uri.parse('$baseUrl/profile'));
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+      });
+      request.files.add(
+        await http.MultipartFile.fromPath('profileImage', imageFile.path),
+      );
+
+      final streamedResponse = await request.send();
+      if (streamedResponse.statusCode == 200) {
+        profileUpdateNotifier.value++;
+        return true;
+      }
     } catch (_) {}
     return false;
   }

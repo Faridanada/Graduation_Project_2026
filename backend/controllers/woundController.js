@@ -1,4 +1,5 @@
 const dbService = require('../services/dbService');
+const { attachWoundImageUrls } = require('../utils/userPresenter');
 
 const woundController = {
 
@@ -15,8 +16,8 @@ const woundController = {
         return res.status(400).json({ message: 'Wound area and pain level are required' });
       }
 
-      // On EC2, req.file.path will be the local server filepath served at /uploads/
-      const imagePath = req.file ? req.file.path : null;
+      // With S3, req.file.location contains the full URL
+      const imagePath = req.file ? (req.file.location || req.file.path) : null;
 
       // Lookup patient's assigned doctor from their profile
       const patient = await dbService.getUserById(patientId);
@@ -30,7 +31,8 @@ const woundController = {
       };
 
       const newWound = await dbService.createWoundRecord(patientId, doctorId, imagePath, metadata);
-      res.status(201).json({ message: 'Wound report submitted \u2705', data: newWound });
+      const enrichedWound = await attachWoundImageUrls(newWound);
+      res.status(201).json({ message: 'Wound report submitted \u2705', data: enrichedWound });
     } catch (error) {
       console.error('Error creating wound record:', error);
       res.status(500).json({ message: 'Server error creating wound record' });
@@ -44,7 +46,8 @@ const woundController = {
       if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
       const wounds = await dbService.getPatientWounds(req.user.id);
       wounds.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      res.json({ data: wounds });
+      const enrichedWounds = await Promise.all(wounds.map(attachWoundImageUrls));
+      res.json({ data: enrichedWounds });
     } catch (error) {
       console.error('Error fetching wounds:', error);
       res.status(500).json({ message: 'Server error fetching wounds' });
@@ -57,7 +60,8 @@ const woundController = {
     try {
       const records = await dbService.getPatientWounds(req.params.patientId);
       records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      res.json({ data: records });
+      const enrichedRecords = await Promise.all(records.map(attachWoundImageUrls));
+      res.json({ data: enrichedRecords });
     } catch (error) {
       console.error('Error fetching wound records:', error);
       res.status(500).json({ message: 'Server error fetching wound records' });
@@ -78,7 +82,8 @@ const woundController = {
         })
       );
       enriched.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      res.json({ data: enriched });
+      const signedEnriched = await Promise.all(enriched.map(attachWoundImageUrls));
+      res.json({ data: signedEnriched });
     } catch (error) {
       console.error('Error fetching doctor wounds:', error);
       res.status(500).json({ message: 'Server error fetching doctor wounds' });
@@ -100,7 +105,8 @@ const woundController = {
       if (!status) return res.status(400).json({ message: 'status is required' });
 
       const updated = await dbService.updateWoundStatus(id, status, req.user.id, patientId || null);
-      res.json({ message: `Wound marked as ${status}`, data: updated });
+      const enrichedUpdated = await attachWoundImageUrls(updated);
+      res.json({ message: `Wound marked as ${status}`, data: enrichedUpdated });
     } catch (error) {
       console.error('Error updating wound status:', error);
       res.status(500).json({ message: 'Server error updating wound status' });

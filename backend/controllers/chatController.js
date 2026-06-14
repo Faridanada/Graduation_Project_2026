@@ -1,4 +1,5 @@
 const dbService = require('../services/dbService');
+const { getSignedReadUrl } = require('../utils/s3Service');
 
 const chatController = {
     // GET /api/chat
@@ -6,7 +7,16 @@ const chatController = {
         try {
             const userId = req.user.id;
             const conversations = await dbService.getConversations(userId);
-            res.json({ statusCode: 200, data: conversations });
+            
+            const enrichedConversations = await Promise.all(conversations.map(async conv => {
+                const out = { ...conv };
+                if (out.otherUserProfileImage) {
+                    out.otherUserProfileImageUrl = await getSignedReadUrl(out.otherUserProfileImage);
+                }
+                return out;
+            }));
+
+            res.json({ statusCode: 200, data: enrichedConversations });
         } catch (error) {
             console.error('Error fetching conversations:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error fetching conversations' });
@@ -21,6 +31,12 @@ const chatController = {
             const otherUserId = req.params.userId;
 
             const messages = await dbService.getChatHistory(currentUserId, otherUserId);
+            
+            // Auto-mark messages as read in the background
+            dbService.markMessagesAsRead(otherUserId, currentUserId).catch(err => {
+                console.error('Failed to mark messages as read:', err);
+            });
+
             res.json({ statusCode: 200, data: messages });
         } catch (error) {
             console.error('Error fetching chat history:', error);

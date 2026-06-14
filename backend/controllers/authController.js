@@ -5,6 +5,8 @@ const dbService = require("../services/dbService");
 const fs = require("fs");
 const path = require("path");
 const { hashResetToken } = require("../utils/fieldCrypto");
+const { deleteObject } = require("../utils/s3Service");
+const { attachImageUrls } = require("../utils/userPresenter");
 
 // ================= REGISTER =================
 exports.registerUser = async (req, res) => {
@@ -44,6 +46,11 @@ exports.registerUser = async (req, res) => {
     // Define role from profileData (set by Flutter UI), default to 'patient'
     const userRole = (profileData && profileData.role) ? profileData.role : 'patient';
 
+    let profileImage = null;
+    if (req.file) {
+      profileImage = req.file.key;
+    }
+
     // Create user using our DB abstraction, passing profileData
     const newUser = await dbService.createUser({
       name,
@@ -51,7 +58,8 @@ exports.registerUser = async (req, res) => {
       phone,
       password: hashedPassword,
       role: userRole,
-      profileData: profileData || {} // Default to empty object if not provided
+      profileData: profileData || {}, // Default to empty object if not provided
+      profileImage
     });
 
     const secret = process.env.JWT_SECRET;
@@ -62,18 +70,21 @@ exports.registerUser = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+    const userResponse = await attachImageUrls({
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      profileImage: newUser.profileImage,
+      profileData: newUser.profileData,
+      assignedDoctorId: newUser.assignedDoctorId
+    });
+
     res.status(201).json({
       message: "User registered ✅",
       token,
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        role: newUser.role,
-        profileData: newUser.profileData,
-        assignedDoctorId: newUser.assignedDoctorId
-      }
+      user: userResponse
     });
 
   } catch (error) {
@@ -137,18 +148,21 @@ exports.loginUser = async (req, res) => {
       { expiresIn }
     );
 
+    const userResponse = await attachImageUrls({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      profileImage: user.profileImage,
+      profileData: user.profileData || {},
+      assignedDoctorId: user.assignedDoctorId
+    });
+
     res.json({
       message: "Login successful ✅",
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        profileData: user.profileData || {},
-        assignedDoctorId: user.assignedDoctorId
-      }
+      user: userResponse
     });
 
   } catch (error) {
@@ -167,18 +181,21 @@ exports.getUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const userResponse = await attachImageUrls({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      createdAt: user.createdAt,
+      profileImage: user.profileImage,
+      profileData: user.profileData || {},
+      assignedDoctorId: user.assignedDoctorId
+    });
+
     res.json({
       message: "Protected profile data ✅",
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        createdAt: user.createdAt,
-        profileData: user.profileData || {},
-        assignedDoctorId: user.assignedDoctorId
-      }
+      user: userResponse
     });
   } catch (error) {
     console.error("Profile Error:", error);
@@ -209,15 +226,16 @@ exports.updateProfile = async (req, res) => {
     if (req.file) {
       const user = await dbService.getUserById(userId);
       
-      // Delete old image if it exists to save space
-      if (user && user.profileImage) {
-        const oldImagePath = path.resolve(user.profileImage);
-        fs.unlink(oldImagePath, (err) => {
-          if (err) console.warn("Error deleting old profile image:", err.message);
-        });
+      // Delete old image if it exists to save space (only if it's an S3 key)
+      if (user && user.profileImage && user.profileImage.startsWith('profile-images/')) {
+        try {
+          await deleteObject(user.profileImage);
+        } catch (err) {
+          console.warn("Failed to delete old profile image from S3:", err.message);
+        }
       }
       
-      updates.profileImage = req.file.path.replace(/\\/g, '/'); // Normalize path for all OS
+      updates.profileImage = req.file.key;
     }
 
     const updatedUser = await dbService.updateUserProfile(userId, updates);
@@ -226,17 +244,19 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const userResponse = await attachImageUrls({
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      profileImage: updatedUser.profileImage,
+      profileData: updatedUser.profileData || {},
+      assignedDoctorId: updatedUser.assignedDoctorId
+    });
+
     res.json({
       message: "Profile updated successfully ✅",
-      user: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        phone: updatedUser.phone,
-        profileImage: updatedUser.profileImage,
-        profileData: updatedUser.profileData || {},
-        assignedDoctorId: updatedUser.assignedDoctorId
-      }
+      user: userResponse
     });
   } catch (error) {
     console.error("Profile Update Error:", error);
@@ -326,7 +346,8 @@ exports.verifyResetToken = async (req, res) => {
     const user = await dbService.getUserByEmail(email);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.resetToken !== token || new Date(user.resetTokenExpiry) < new Date()) {
+    const hashedIncoming = hashResetToken(token);
+    if (user.resetToken !== hashedIncoming || new Date(user.resetTokenExpiry) < new Date()) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
@@ -347,7 +368,8 @@ exports.resetPassword = async (req, res) => {
     const user = await dbService.getUserByEmail(email);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.resetToken !== token || new Date(user.resetTokenExpiry) < new Date()) {
+    const hashedIncoming = hashResetToken(token);
+    if (user.resetToken !== hashedIncoming || new Date(user.resetTokenExpiry) < new Date()) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 

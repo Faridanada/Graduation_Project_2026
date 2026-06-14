@@ -1,4 +1,5 @@
 const dbService = require('../services/dbService');
+const { attachImageUrls } = require('../utils/userPresenter');
 
 const doctorController = {
     // GET /api/doctor/stats
@@ -19,7 +20,8 @@ const doctorController = {
         try {
             const doctorId = req.user.id || 'doctor_1';
             const patients = await dbService.getPatientsForDoctor(doctorId);
-            res.json({ statusCode: 200, data: patients });
+            const enrichedPatients = await Promise.all(patients.map(attachImageUrls));
+            res.json({ statusCode: 200, data: enrichedPatients });
         } catch (error) {
             console.error('Error fetching patients:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error fetching patients' });
@@ -31,7 +33,8 @@ const doctorController = {
         try {
             const { name } = req.query;
             const patients = await dbService.getAllPatients({ name });
-            res.json({ statusCode: 200, data: patients });
+            const enrichedPatients = await Promise.all(patients.map(attachImageUrls));
+            res.json({ statusCode: 200, data: enrichedPatients });
         } catch (error) {
             console.error('Error fetching all patients:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error fetching all patients' });
@@ -79,6 +82,9 @@ const doctorController = {
             const detailedProfile = await dbService.getPatientDetailsAndHistory(patientId);
             if (!detailedProfile) {
                 return res.status(404).json({ statusCode: 404, message: 'Patient not found' });
+            }
+            if (detailedProfile.patient) {
+                detailedProfile.patient = await attachImageUrls(detailedProfile.patient);
             }
 
             res.json({ statusCode: 200, data: detailedProfile });
