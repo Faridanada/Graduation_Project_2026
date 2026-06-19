@@ -6,8 +6,7 @@ class ChatbotService {
       return 'For exercise-related questions, I recommend:\n'
           '• Start with low-intensity exercises\n'
           '• Stop if you experience sharp pain\n'
-          '• Consult your therapist for personalized guidance\n\n'
-          'Would you like specific exercise recommendations?';
+          '• Consult your therapist for personalized guidance';
     }
 
     if (lowerMessage.contains('wound') || lowerMessage.contains('photo')) {
@@ -52,8 +51,7 @@ class ChatbotService {
           '✓ Wound care tips\n'
           '✓ Appointment scheduling\n'
           '✓ Recovery progress\n'
-          '✓ General app navigation\n\n'
-          'What would you like help with?';
+          '✓ General app navigation';
     }
 
     if (lowerMessage.contains('contact') ||
@@ -65,11 +63,6 @@ class ChatbotService {
           'For urgent matters, call the support hotline!';
     }
 
-    return 'That\'s a great question! 🤔\n\n'
-        'You can also:\n'
-        '• Chat directly with your therapist\n'
-        '• Check Help & Support for more info\n'
-        '• View FAQ in Settings\n\n'
-        'How else can I assist you?';
+    return 'I am unable to answer this question. Please ask your doctor for more information.';
   }
 }

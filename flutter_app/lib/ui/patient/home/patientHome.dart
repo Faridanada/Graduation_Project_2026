@@ -14,6 +14,7 @@ import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/patient/profile/PatientProfile.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/recovery_plan_screen.dart';
 import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
+import 'package:rehabilitation_app/ui/chats/ChatbotPage.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final int initialTab;
@@ -87,6 +88,18 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
         ],
       ),
+      floatingActionButton: _currentIndex == 0
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatbotPage()),
+                );
+              },
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.smart_toy_outlined, color: Colors.white),
+            )
+          : null,
     );
   }
 

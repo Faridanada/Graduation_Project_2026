@@ -6,11 +6,13 @@ class ChatMessage {
   final String text;
   final bool isBot;
   final DateTime timestamp;
+  final List<String>? quickReplies;
 
   const ChatMessage({
     required this.text,
     required this.isBot,
     required this.timestamp,
+    this.quickReplies,
   });
 }
 
@@ -19,10 +21,15 @@ class ChatbotController extends ChangeNotifier {
       : _service = service ?? ChatbotService() {
     _messages.add(
       ChatMessage(
-        text:
-            'Hello! 👋 I\'m FLEXIO\'s AI Assistant. How can I help you today?',
+        text: 'Hello! 👋 I\'m FLEXIO\'s AI Assistant. How can I help you today?',
         isBot: true,
         timestamp: DateTime.now().subtract(const Duration(minutes: 2)),
+        quickReplies: [
+          'How do I do my exercises?',
+          'How do I upload a wound photo?',
+          'How do I book an appointment?',
+          'What if I feel pain?',
+        ],
       ),
     );
   }
@@ -52,6 +59,12 @@ class ChatbotController extends ChangeNotifier {
         text: _service.buildResponse(text),
         isBot: true,
         timestamp: DateTime.now(),
+        quickReplies: [
+          'How do I do my exercises?',
+          'How do I upload a wound photo?',
+          'How do I book an appointment?',
+          'What if I feel pain?',
+        ],
       ),
     );
     notifyListeners();

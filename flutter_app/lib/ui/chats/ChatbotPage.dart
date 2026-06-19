@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:rehabilitation_app/controllers/chatbot_controller.dart';
+import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
 
 class ChatbotPage extends StatefulWidget {
   const ChatbotPage({Key? key}) : super(key: key);
@@ -36,6 +37,10 @@ class _ChatbotPageState extends State<ChatbotPage> {
     await _chatbotController.sendMessage(message);
   }
 
+  Future<void> _sendQuickReply(String text) async {
+    await _chatbotController.sendMessage(text);
+  }
+
   void _scrollToBottom() {
     Future<void>.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
@@ -51,21 +56,33 @@ class _ChatbotPageState extends State<ChatbotPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8EEF2),
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6BA5CF),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () { if (Navigator.canPop(context)) Navigator.pop(context); },
         ),
-        title: const Text(
-          'FLEXIO Assistant',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Row(
+          children: [
+            const ProfileAvatar(
+              name: 'F',
+              radius: 18,
+              backgroundColor: Color(0xFF6BA5CF),
+              textColor: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'FLEXIO Assistant',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
       body: AnimatedBuilder(
@@ -95,22 +112,10 @@ class _ChatbotPageState extends State<ChatbotPage> {
                       child: TextField(
                         controller: _messageController,
                         decoration: InputDecoration(
-                          hintText: 'Ask me anything...',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintText: 'Type a message...',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF6BA5CF),
-                              width: 2,
-                            ),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -121,11 +126,12 @@ class _ChatbotPageState extends State<ChatbotPage> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    FloatingActionButton(
-                      onPressed: _sendMessage,
+                    CircleAvatar(
                       backgroundColor: const Color(0xFF6BA5CF),
-                      mini: true,
-                      child: const Icon(Icons.send, color: Colors.white),
+                      child: IconButton(
+                        icon: const Icon(Icons.send, color: Colors.white),
+                        onPressed: _sendMessage,
+                      ),
                     ),
                   ],
                 ),
@@ -138,34 +144,68 @@ class _ChatbotPageState extends State<ChatbotPage> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    return Align(
-      alignment: message.isBot ? Alignment.centerLeft : Alignment.centerRight,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: message.isBot ? Colors.white : const Color(0xFF6BA5CF),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
-        ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: message.isBot ? Colors.black87 : Colors.white,
-            fontSize: 14,
-            height: 1.4,
+    return Column(
+      crossAxisAlignment: message.isBot ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: message.isBot ? MainAxisAlignment.start : MainAxisAlignment.end,
+            children: [
+              if (message.isBot) ...[
+                const ProfileAvatar(
+                  name: 'F',
+                  radius: 16,
+                  backgroundColor: Color(0xFF6BA5CF),
+                  textColor: Colors.white,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.65,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: message.isBot ? Colors.grey[200] : const Color(0xFF6BA5CF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  message.text,
+                  style: TextStyle(
+                    color: message.isBot ? Colors.black : Colors.white,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (!message.isBot) const SizedBox(width: 8),
+            ],
           ),
         ),
-      ),
+        if (message.quickReplies != null && message.quickReplies!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: message.quickReplies!.map((reply) {
+                return ActionChip(
+                  label: Text(
+                    reply,
+                    style: const TextStyle(
+                      color: Color(0xFF6BA5CF),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: Color(0xFF6BA5CF), width: 1),
+                  onPressed: () => _sendQuickReply(reply),
+                );
+              }).toList(),
+            ),
+          ),
+      ],
     );
   }
 }

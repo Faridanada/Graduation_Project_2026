@@ -142,15 +142,25 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           ),
                         )
                       : ListView.builder(
-                          reverse:
-                              false, // History is already sorted chronologically
+                          reverse: false,
                           padding: const EdgeInsets.all(16),
                           itemCount: messages.length,
                           itemBuilder: (context, index) {
                             final msg = messages[index];
                             final isSentByMe = msg['senderId'] == currentUserId;
+                            
+                            // Check if we need a date divider
+                            bool showDateDivider = false;
+                            if (index == 0) {
+                              showDateDivider = true;
+                            } else {
+                              final prevMsg = messages[index - 1];
+                              if (_formatDate(msg['createdAt']) != _formatDate(prevMsg['createdAt'])) {
+                                showDateDivider = true;
+                              }
+                            }
 
-                            return Padding(
+                            final messageWidget = Padding(
                               padding:
                                   const EdgeInsets.symmetric(vertical: 8.0),
                               child: Row(
@@ -198,16 +208,29 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                             fontSize: 14,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          _formatTime(msg['createdAt']),
-                                          style: TextStyle(
-                                            color: isSentByMe
-                                                ? Colors.white70
-                                                : Colors.black45,
-                                            fontSize: 10,
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                _formatTime(msg['createdAt']),
+                                                style: TextStyle(
+                                                  color: isSentByMe
+                                                      ? Colors.white70
+                                                      : Colors.black45,
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                              if (isSentByMe) ...[
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  msg['isRead'] == true ? Icons.done_all : Icons.check,
+                                                  size: 14,
+                                                  color: msg['isRead'] == true ? Colors.blue[200] : Colors.white70,
+                                                ),
+                                              ],
+                                            ],
                                           ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -215,6 +238,29 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                 ],
                               ),
                             );
+
+                            if (showDateDivider) {
+                              return Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[300],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        _formatDateFriendly(msg['createdAt']),
+                                        style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                  messageWidget,
+                                ],
+                              );
+                            }
+                            return messageWidget;
                           },
                         ),
                 ),
@@ -262,6 +308,38 @@ class _ConversationScreenState extends State<ConversationScreen> {
     try {
       final dt = DateTime.parse(iso).toLocal();
       return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _formatDate(String? iso) {
+    if (iso == null || iso.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _formatDateFriendly(String? iso) {
+    if (iso == null || iso.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final yesterday = today.subtract(const Duration(days: 1));
+      final dateToCheck = DateTime(dt.year, dt.month, dt.day);
+
+      if (dateToCheck == today) {
+        return 'Today';
+      } else if (dateToCheck == yesterday) {
+        return 'Yesterday';
+      } else {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+      }
     } catch (_) {
       return '';
     }
