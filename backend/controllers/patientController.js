@@ -415,6 +415,30 @@ const patientController = {
       console.error('Error marking phase completed:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error marking phase completed' });
     }
+  },
+
+  // POST /api/patient/notify-session-completed
+  async notifySessionCompleted(req, res) {
+    try {
+      const patientId = req.user.id;
+      const patient = await dbService.getUserById(patientId);
+      
+      if (!patient || !patient.assignedDoctorId) {
+        return res.status(400).json({ statusCode: 400, message: 'No doctor assigned' });
+      }
+
+      const patientName = patient.name || 'Your patient';
+      await dbService.createNotification(
+        patient.assignedDoctorId,
+        "Session Completed",
+        `${patientName} has just completed an exercise session.`
+      );
+
+      res.status(200).json({ statusCode: 200, message: 'Doctor notified of session completion' });
+    } catch (error) {
+      console.error('Error notifying doctor of session completion:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error notifying doctor' });
+    }
   }
 };
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:rehabilitation_app/services/webrtc_service.dart';
 
 class Exoskeleton extends StatefulWidget {
   final String patientName;
@@ -26,12 +28,37 @@ class _ExoskeletonState extends State<Exoskeleton> {
   String _elapsedTime = '03:24';
   double _progress = 0.53;
   bool _isPaused = false;
+  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
   @override
   void initState() {
     super.initState();
     _minDegree = widget.initialMinDegree;
     _maxDegree = widget.initialMaxDegree;
+    _initWebRTC();
+  }
+
+  Future<void> _initWebRTC() async {
+    await _remoteRenderer.initialize();
+    final webrtc = WebRTCService();
+    webrtc.onRemoteStream = (stream) {
+      if (mounted) {
+        setState(() {
+          _remoteRenderer.srcObject = stream;
+        });
+      }
+    };
+    
+    // For prototype, using a fixed session ID. In production, this would be passed.
+    final sessionId = 'exercise_session_1';
+    await webrtc.initConnection(sessionId, isPatient: false);
+  }
+
+  @override
+  void dispose() {
+    _remoteRenderer.dispose();
+    WebRTCService().dispose();
+    super.dispose();
   }
 
   @override
@@ -63,22 +90,21 @@ class _ExoskeletonState extends State<Exoskeleton> {
                   color: Colors.grey[200],
                 ),
                 clipBehavior: Clip.hardEdge,
-                child: Image.asset(
-                  'assets/images/Exercise.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(
-                          Icons.videocam,
-                          size: 48,
-                          color: Colors.grey,
+                child: _remoteRenderer.srcObject != null
+                    ? RTCVideoView(_remoteRenderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover)
+                    : Container(
+                        color: Colors.black87,
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(color: Colors.white),
+                              SizedBox(height: 12),
+                              Text("Waiting for patient stream...", style: TextStyle(color: Colors.white)),
+                            ],
+                          ),
                         ),
                       ),
-                    );
-                  },
-                ),
               ),
               const SizedBox(height: 24),
 

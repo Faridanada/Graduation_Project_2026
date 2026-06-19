@@ -177,10 +177,14 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
     setState(() => _isLoading = true);
 
     final planData = {
+      if (widget.existingPlan != null && widget.existingPlan!['id'] != null)
+        'id': widget.existingPlan!['id'],
+      if (widget.existingPlan != null && widget.existingPlan!['createdAt'] != null)
+        'createdAt': widget.existingPlan!['createdAt'],
       'patientId': widget.patientId,
       'startDate': DateFormat('yyyy-MM-dd').format(_startDate!),
       'endDate': DateFormat('yyyy-MM-dd').format(_endDate!),
-      'overallProgress': 0, // Starts at 0
+      'overallProgress': widget.existingPlan?['overallProgress'] ?? 0,
       'phases': _phases.asMap().entries.map((e) {
         return {
           'index': e.key + 1,

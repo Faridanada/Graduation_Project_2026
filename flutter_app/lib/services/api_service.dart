@@ -960,4 +960,20 @@ class ApiService {
     } catch (_) {}
     return false;
   }
+
+  static Future<bool> notifyDoctorSessionCompleted() async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/patient/notify-session-completed"),
+        headers: _headers(token),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("API Error (notifyDoctorSessionCompleted): $e");
+      return false;
+    }
+  }
 }

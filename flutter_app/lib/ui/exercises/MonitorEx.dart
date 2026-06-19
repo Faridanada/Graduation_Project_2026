@@ -326,7 +326,7 @@ class _MonitorExState extends State<MonitorEx>
         children: [
           _buildCompactMetricItem(Icons.repeat, 'Reps', '$_repsRemaining', AppColors.primary),
           Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.2)),
-          _buildCompactMetricItem(Icons.analytics_outlined, 'Accuracy', '${_accuracy.toStringAsFixed(0)}%', Colors.orange),
+          _buildCompactMetricItem(Icons.analytics_outlined, 'Accuracy', '${_accuracy.toStringAsFixed(0)}%', AppColors.primary),
           Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.2)),
           _buildCompactMetricItem(Icons.rotate_right, 'Angle', '$_currentAngle°', Colors.teal),
         ],
@@ -365,7 +365,7 @@ class _MonitorExState extends State<MonitorEx>
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Emergency stop activated! Session terminated.'),
-                backgroundColor: Color(0xFFB85C5C),
+                backgroundColor: Colors.red,
               ),
             );
           } else {
@@ -377,7 +377,7 @@ class _MonitorExState extends State<MonitorEx>
           }
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFB85C5C),
+          backgroundColor: Colors.red.shade400,
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 2,
           shape:

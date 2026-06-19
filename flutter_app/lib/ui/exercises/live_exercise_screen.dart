@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/exercises/session_summary_screen.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:rehabilitation_app/services/webrtc_service.dart';
 
 class LiveSessionScreen extends StatefulWidget {
   final Map<String, dynamic> exercise;
@@ -17,11 +19,29 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   bool isPaused = false;
   Timer? _timer;
   int _secondsElapsed = 0;
+  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
 
   @override
   void initState() {
     super.initState();
     _startTimer();
+    _initWebRTC();
+  }
+
+  Future<void> _initWebRTC() async {
+    await _localRenderer.initialize();
+    final webrtc = WebRTCService();
+    webrtc.onLocalStream = (stream) {
+      if (mounted) {
+        setState(() {
+          _localRenderer.srcObject = stream;
+        });
+      }
+    };
+    
+    // We use the exercise ID as the sessionId for WebRTC signaling
+    final sessionId = widget.exercise['id']?.toString() ?? 'exercise_session_1';
+    await webrtc.initConnection(sessionId, isPatient: true);
   }
 
   void _startTimer() {
@@ -37,6 +57,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _localRenderer.dispose();
+    WebRTCService().dispose();
     super.dispose();
   }
 
@@ -232,6 +254,24 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
 
                 const Text("Follow the guidance and move slowly.",
                     style: TextStyle(color: Colors.grey)),
+
+                const SizedBox(height: 24),
+                
+                // WebRTC Local Camera Preview
+                Container(
+                  height: 180,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _localRenderer.srcObject != null 
+                        ? RTCVideoView(_localRenderer, mirror: true, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover)
+                        : const Center(child: CircularProgressIndicator(color: Colors.white)),
+                  ),
+                ),
 
                 const SizedBox(height: 48),
 

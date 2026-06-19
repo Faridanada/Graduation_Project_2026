@@ -16,7 +16,6 @@ import 'package:rehabilitation_app/ui/doctor/patients/AddNewPatient.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/PatientProfilePage.dart';
 import 'package:rehabilitation_app/ui/exercises/PatientExerciseMonitorList.dart';
 import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
-import 'DoctorSearchPage.dart';
 
 /// Doctor home page - Main dashboard for healthcare professionals
 class DoctorHome extends StatefulWidget {
@@ -182,12 +181,6 @@ class _DoctorHomeState extends State<DoctorHome> {
       shadowColor: Colors.grey.withOpacity(0.1),
       title: Text('FLEXIO', style: AppTextStyles.heading(context)),
       actions: [
-        // Search button
-        IconButton(
-          icon: const Icon(Icons.search, size: 28),
-          color: Colors.black,
-          onPressed: _openSearchPage,
-        ),
         GestureDetector(
           onTap: () {
             Navigator.push(
@@ -248,12 +241,6 @@ class _DoctorHomeState extends State<DoctorHome> {
     );
   }
 
-  void _openSearchPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const DoctorSearchPage()),
-    );
-  }
 
   Widget _buildStatusOverview() {
     return Padding(

@@ -79,7 +79,11 @@ class _NewAppointmentState extends State<NewAppointment> {
     _generatedTimeSlots.clear();
     _selectedTime = null;
 
-    if (rules == null || rules['isAvailable'] != true) {
+    if (rules == null) return;
+    
+    final isAvailable = rules['isAvailable'] == true || rules['enabled'] == true || rules['enabled'] == 'true';
+
+    if (!isAvailable) {
       // Off day
       return;
     }

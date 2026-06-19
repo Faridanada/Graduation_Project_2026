@@ -170,6 +170,7 @@ class _HomeContentState extends State<_HomeContent> {
   List<dynamic> todayExercises = [];
   List<dynamic> reminders = [];
   Map<String, dynamic>? nextAppointment;
+  Map<String, dynamic>? assignedDoctor;
   int completedExercises = 0;
   int upcomingAppointments = 0;
   bool _hasError = false;
@@ -194,6 +195,7 @@ class _HomeContentState extends State<_HomeContent> {
       final exercises = await ApiService.getPatientTodayExercises();
       final fetchedReminders = await ApiService.getPatientReminders();
       final appointment = await ApiService.getPatientNextAppointment();
+      final doctor = await ApiService.getMyDoctor();
 
       if (mounted) {
         setState(() {
@@ -204,6 +206,7 @@ class _HomeContentState extends State<_HomeContent> {
           todayExercises = exercises;
           reminders = fetchedReminders;
           nextAppointment = appointment;
+          assignedDoctor = doctor;
           completedExercises =
               exercises.where((e) => e['isCompleted'] == true).length;
           upcomingAppointments = appointment != null ? 1 : 0;
@@ -555,7 +558,7 @@ class _HomeContentState extends State<_HomeContent> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => const BookAppointmentScreen()),
+                        builder: (_) => BookAppointmentScreen(doctor: assignedDoctor)),
                   );
                 },
               ),

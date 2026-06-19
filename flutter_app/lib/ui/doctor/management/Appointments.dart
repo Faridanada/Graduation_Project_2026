@@ -331,7 +331,7 @@ class _AppointmentsState extends State<Appointments> {
             decoration: BoxDecoration(
               color: isConfirmed
                   ? AppColors.accent.withOpacity(0.2)
-                  : Colors.orange.withOpacity(0.2),
+                  : Colors.blue.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -342,7 +342,7 @@ class _AppointmentsState extends State<Appointments> {
                   size: 14,
                   color: isConfirmed
                       ? AppColors.accent
-                      : Colors.orange,
+                      : Colors.blue,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -352,7 +352,7 @@ class _AppointmentsState extends State<Appointments> {
                     fontWeight: FontWeight.w600,
                     color: isConfirmed
                         ? AppColors.accent
-                        : Colors.orange,
+                        : Colors.blue,
                     fontFamily: 'Poppins',
                   ),
                 ),
