@@ -240,6 +240,23 @@ class ApiService {
     return response.statusCode == 201 || response.statusCode == 200;
   }
 
+  static Future<bool> deleteRecoveryPlan(String planId) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.delete(
+        Uri.parse("$baseUrl/doctor/recovery-plan/$planId"),
+        headers: _headers(token),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Delete recovery plan error: $e");
+      return false;
+    }
+  }
+
   static Future<bool> addDoctorPatient(Map<String, dynamic> patientData) async {
     final token = await _getToken();
     if (token == null) return false;

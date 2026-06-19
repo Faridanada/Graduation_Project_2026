@@ -315,25 +315,30 @@ const doctorController = {
                 
                 // Loop through each day and assign the exercise
                 for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                    const dateAssigned = d.toISOString().split('T')[0];
-                    const exerciseData = {
-                        title: planData.exercisePlan.title || 'Therapy Exercise',
-                        estimatedTimeMin: planData.exercisePlan.estimatedTimeMin || 15,
-                        repsTotal: planData.exercisePlan.repsTotal || 10,
-                        repsCompleted: 0,
-                        mode: planData.exercisePlan.mode || 'Active Mode',
-                        dateAssigned: dateAssigned,
-                        planId: newPlan.id
-                    };
-                    await dbService.assignExercise(planData.patientId, doctorId, exerciseData);
+                    // Only assign if the date is >= today (for updates)
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    if (d >= today) {
+                        const dateAssigned = d.toISOString().split('T')[0];
+                        const exerciseData = {
+                            title: planData.exercisePlan.title || 'Therapy Exercise',
+                            estimatedTimeMin: planData.exercisePlan.estimatedTimeMin || 15,
+                            repsTotal: planData.exercisePlan.repsTotal || 10,
+                            repsCompleted: 0,
+                            mode: planData.exercisePlan.mode || 'Active Mode',
+                            dateAssigned: dateAssigned,
+                            planId: newPlan.id
+                        };
+                        await dbService.assignExercise(planData.patientId, doctorId, exerciseData);
+                    }
                 }
             }
 
             // Notify patient
             await dbService.createNotification(
                 planData.patientId,
-                "New Recovery Plan",
-                "Your doctor has created a new recovery plan for you."
+                "Recovery Plan Updated",
+                "Your doctor has created or updated a recovery plan for you."
             );
 
             res.status(201).json({ statusCode: 201, data: newPlan, message: 'Recovery plan created successfully' });
@@ -341,7 +346,24 @@ const doctorController = {
             console.error('Error creating recovery plan:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error creating recovery plan' });
         }
-    }
+    },
+
+    // DELETE /api/doctor/recovery-plan/:id
+    async deleteRecoveryPlan(req, res) {
+        try {
+            const planId = req.params.id;
+            
+            if (!planId) {
+                return res.status(400).json({ statusCode: 400, message: 'planId is required' });
+            }
+
+            await dbService.deleteRecoveryPlan(planId);
+            res.json({ statusCode: 200, message: 'Recovery plan and pending exercises deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting recovery plan:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error deleting recovery plan' });
+        }
+    },
 };
 
 module.exports = doctorController;

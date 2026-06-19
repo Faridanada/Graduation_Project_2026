@@ -28,7 +28,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadData();
   }
 
@@ -209,6 +209,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
                 tabs: const [
                   Tab(text: 'History'),
                   Tab(text: 'Appointments'),
+                  Tab(text: 'Recovery Plans'),
                 ],
               ),
             ],
@@ -220,6 +221,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
             children: [
               _buildHistoryTab(),
               _buildAppointmentsTab(),
+              _buildRecoveryPlansTab(),
             ],
           ),
         ),
@@ -285,7 +287,14 @@ class _PatientProfilePageState extends State<PatientProfilePage>
               child: const Icon(Icons.fitness_center, color: AppColors.primary),
             ),
             title: Text(ex['title'] ?? 'Exercise', style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
-            subtitle: Text('Progress: ${ex['progress'] ?? 0}%', style: const TextStyle(fontFamily: 'Poppins')),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text('Date: ${ex['dateAssigned'] ?? 'N/A'}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey)),
+                Text('Progress: ${ex['repsCompleted'] ?? 0} / ${ex['repsTotal'] ?? 0} reps', style: const TextStyle(fontFamily: 'Poppins', fontSize: 12)),
+              ],
+            ),
             trailing: const Icon(Icons.chevron_right, color: Colors.grey),
           ),
         );
@@ -334,6 +343,140 @@ class _PatientProfilePageState extends State<PatientProfilePage>
         );
       },
     );
+  }
+
+  Widget _buildRecoveryPlansTab() {
+    final plansList = _patientData?['recoveryPlans'] as List?;
+    final List<Map<String, dynamic>> plans = [];
+    
+    // Support the new backend (array) or fallback to old backend (single object)
+    if (plansList != null) {
+      plans.addAll(List<Map<String, dynamic>>.from(plansList));
+    } else if (_patientData?['recoveryPlan'] != null) {
+      plans.add(Map<String, dynamic>.from(_patientData!['recoveryPlan']));
+    }
+
+    if (plans.isEmpty) {
+      return const Center(
+        child: Text(
+          'No recovery plans assigned.',
+          style: TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      itemCount: plans.length,
+      itemBuilder: (context, index) {
+        final plan = plans[index];
+        final startDate = plan['startDate'] ?? 'N/A';
+        final endDate = plan['endDate'] ?? 'N/A';
+        final title = plan['exercisePlan']?['title'] ?? 'Recovery Plan';
+        
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Poppins', color: Colors.black87),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: AppColors.primary),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CreateRecoveryPlan(
+                                  patientId: widget.patientId,
+                                  patientName: widget.patientName,
+                                  existingPlan: plan,
+                                ),
+                              ),
+                            ).then((_) => _loadData());
+                          },
+                          tooltip: 'Edit Plan',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _confirmDeleteRecoveryPlan(plan['id']),
+                          tooltip: 'Delete Plan',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text('$startDate to $endDate', style: const TextStyle(fontSize: 13, color: Colors.grey, fontFamily: 'Poppins')),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Created: ${plan['createdAt'] != null ? plan['createdAt'].toString().substring(0, 10) : 'N/A'}',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey, fontFamily: 'Poppins'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteRecoveryPlan(String planId) async {
+    final bool? confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Recovery Plan?'),
+        content: const Text('Are you sure you want to delete this recovery plan? All future pending exercises will also be deleted.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+      final success = await ApiService.deleteRecoveryPlan(planId);
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recovery plan deleted successfully.')),
+          );
+          _loadData();
+        } else {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete recovery plan.'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildBottomAction() {
@@ -413,13 +556,13 @@ class _PatientProfilePageState extends State<PatientProfilePage>
                       builder: (context) => CreateRecoveryPlan(
                         patientId: widget.patientId,
                         patientName: widget.patientName,
-                        existingPlan: _patientData?['recoveryPlan'],
+                        existingPlan: null,
                       ),
                     ),
                   ).then((_) => _loadData()); // Refresh after returning
                 },
-                icon: Icon(_patientData?['recoveryPlan'] != null ? Icons.edit_document : Icons.assignment_add, size: 20, color: Colors.white),
-                label: Text(_patientData?['recoveryPlan'] != null ? 'View / Edit Recovery Plan' : 'Create Recovery Plan', style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
+                icon: const Icon(Icons.assignment_add, size: 20, color: Colors.white),
+                label: const Text('Create New Recovery Plan', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
