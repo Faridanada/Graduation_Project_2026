@@ -1214,44 +1214,6 @@ const dbService = {
     }
   },
 
-  async createAppointment(patientId, doctorId, date, time, notes) {
-    try {
-      const newAppt = {
-        id: `appt_${Date.now()}`,
-        patientId,
-        doctorId,
-        date,
-        time,
-        notes: notes || '',
-        status: 'scheduled',
-        createdAt: new Date().toISOString()
-      };
-      await ddbDocClient.send(new PutCommand({
-        TableName: "Appointments",
-        Item: newAppt
-      }));
-      return newAppt;
-    } catch (error) {
-      console.error("DynamoDB error (createAppointment):", error);
-      throw error;
-    }
-  },
-
-  async updateAppointmentStatus(id, status) {
-    try {
-      await ddbDocClient.send(new UpdateCommand({
-        TableName: "Appointments",
-        Key: { id },
-        UpdateExpression: "SET #st = :status",
-        ExpressionAttributeNames: { "#st": "status" },
-        ExpressionAttributeValues: { ":status": status }
-      }));
-      return true;
-    } catch (error) {
-      console.error("DynamoDB error (updateAppointmentStatus):", error);
-      throw error;
-    }
-  },
 
   // --- AVAILABILITY ---
 
@@ -1338,10 +1300,10 @@ const dbService = {
   async createRecoveryPlan(patientId, planData) {
     try {
       const newPlan = {
-        id: `plan_${Date.now()}`,
+        id: planData.id || `plan_${Date.now()}`,
         patientId,
         ...planData,
-        createdAt: new Date().toISOString()
+        createdAt: planData.createdAt || new Date().toISOString()
       };
       await ddbDocClient.send(new PutCommand({
         TableName: "RecoveryPlans",
