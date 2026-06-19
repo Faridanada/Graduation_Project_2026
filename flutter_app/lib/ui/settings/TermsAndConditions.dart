@@ -37,7 +37,9 @@ class TermsAndConditionsPage extends StatelessWidget {
               'You are responsible for safeguarding your login credentials. We will never ask for your password directly outside of the secure login portal. If you suspect unauthorized access, reset your password immediately.\n\n'
               '4. Communication Protocol\n'
               'Features such as real-time messaging and wound monitoring are provided as supplementary tools for your physical therapy journey. In case of an emergency, do not use this application. Please contact your local emergency response service immediately.\n\n'
-              '5. Modifications\n'
+              '5. AI Training & Sensor Data Usage\n'
+              'By using this application, you expressly agree and consent that any sensor data collected during your physical therapy exercises may be used by us to train, improve, and refine our artificial intelligence models. We are committed to your privacy and assure you that this data will never be published, shared, or sold to any third-party companies. Your data empowers our AI to offer increasingly personalized and accurate insights to help you and others heal faster.\n\n'
+              '6. Modifications\n'
               'We reserve the right to modify these terms at any time. Continued use of the application following any changes indicates your acceptance of the new terms.',
               style: TextStyle(
                 fontSize: 15,
