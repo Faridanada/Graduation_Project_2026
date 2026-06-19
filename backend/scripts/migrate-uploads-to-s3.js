@@ -5,13 +5,14 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const dbService = require('../services/dbService');
 
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'eu-north-1',
-  credentials: {
+const s3Params = { region: process.env.AWS_REGION || 'eu-north-1' };
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  s3Params.credentials = {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  }
-});
+  };
+}
+const s3Client = new S3Client(s3Params);
 
 const getBucket = () => process.env.AWS_S3_BUCKET;
 

@@ -1,13 +1,14 @@
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { stringify } = require('csv-stringify/sync');
 
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'eu-north-1',
-  credentials: {
+const s3Params = { region: process.env.AWS_REGION || 'eu-north-1' };
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  s3Params.credentials = {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  }
-});
+  };
+}
+const s3Client = new S3Client(s3Params);
 
 const getWaveformsBucket = () => process.env.AWS_S3_WAVEFORMS_BUCKET || 'flexio-smart-waveforms';
 

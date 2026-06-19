@@ -1,0 +1,8 @@
+### Login on EC2
+POST http://13.48.5.217:5000/api/users/login
+Content-Type: application/json
+
+{
+  "email": "yomnayehia18@gmail.com",
+  "password": "Ananas12$"
+}
