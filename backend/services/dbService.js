@@ -1,9 +1,9 @@
 const { DynamoDBClient, CreateTableCommand, DescribeTableCommand, waitUntilTableExists } = require("@aws-sdk/client-dynamodb");
-const { 
-  DynamoDBDocumentClient, 
-  GetCommand, 
-  PutCommand, 
-  ScanCommand, 
+const {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  ScanCommand,
   UpdateCommand,
   DeleteCommand
 } = require("@aws-sdk/lib-dynamodb");
@@ -84,7 +84,7 @@ ddbDocClient.send = async (command, ...args) => {
       if (tableName === 'Users' && command.input.Item.profileData) {
         let pData = command.input.Item.profileData;
         if (typeof pData === 'string') {
-          try { pData = JSON.parse(pData); } catch(e) {}
+          try { pData = JSON.parse(pData); } catch (e) { }
         }
         if (pData && typeof pData === 'object' && pData.specialty) {
           command.input.Item.specialty = pData.specialty;
@@ -102,11 +102,28 @@ ddbDocClient.send = async (command, ...args) => {
     // Intercept UpdateCommand
     if (command.constructor.name === 'UpdateCommand') {
       const updateExpr = command.input.UpdateExpression || '';
-      const touchesEncrypted = fieldsToEncrypt.some(f => updateExpr.includes(f));
+      const touchesEncrypted = fieldsToEncrypt.some(f => updateExpr.includes(f) || (command.input.ExpressionAttributeNames && Object.values(command.input.ExpressionAttributeNames).includes(f)));
       if (touchesEncrypted) {
-        // We only support simple SET expressions here if we had to.
-        // Limitation: complex UpdateCommands on encrypted fields are not supported dynamically here.
-        console.warn(`[WARNING] UpdateCommand on encrypted field in table ${tableName}. Auto-encryption may not apply correctly to ExpressionAttributeValues.`);
+        if (command.input.ExpressionAttributeNames && command.input.ExpressionAttributeValues) {
+          const attrNames = command.input.ExpressionAttributeNames;
+          const attrValues = command.input.ExpressionAttributeValues;
+
+          for (const [attrKey, attrVal] of Object.entries(attrNames)) {
+            if (fieldsToEncrypt.includes(attrVal)) {
+              const escapedAttrKey = attrKey.replace('#', '\\#');
+              const regex = new RegExp(`${escapedAttrKey}\\s*=\\s*(:[a-zA-Z0-9_]+)`);
+              const match = updateExpr.match(regex);
+              if (match && match[1]) {
+                const valKey = match[1];
+                if (attrValues[valKey] !== undefined) {
+                  attrValues[valKey] = encryptField(attrValues[valKey]);
+                }
+              }
+            }
+          }
+        } else {
+          console.warn(`[WARNING] UpdateCommand on encrypted field in table ${tableName}. Auto-encryption may not apply correctly without ExpressionAttributeNames.`);
+        }
       }
     }
   }
@@ -189,7 +206,7 @@ const dbService = {
 
       if (updates.name) user.name = updates.name;
       if (updates.phone !== undefined) user.phone = updates.phone;
-      
+
       if (updates.profileData) {
         user.profileData = { ...user.profileData, ...updates.profileData };
       }
@@ -197,11 +214,11 @@ const dbService = {
       if (updates.twoFactorEnabled !== undefined) {
         user.twoFactorEnabled = updates.twoFactorEnabled;
       }
-      
+
       if (updates.profileImage) {
         user.profileImage = updates.profileImage;
       }
-      
+
       await ddbDocClient.send(new PutCommand({
         TableName: "Users",
         Item: user
@@ -217,7 +234,7 @@ const dbService = {
     try {
       const user = await this.getUserById(id);
       if (!user) throw new Error("User not found");
-      
+
       user.password = hashedPassword;
 
       await ddbDocClient.send(new PutCommand({
@@ -235,10 +252,10 @@ const dbService = {
     try {
       const user = await this.getUserById(id);
       if (!user) return null;
-      
+
       user.resetToken = token;
       user.resetTokenExpiry = expiry;
-      
+
       await ddbDocClient.send(new PutCommand({
         TableName: "Users",
         Item: user
@@ -254,10 +271,10 @@ const dbService = {
     try {
       const user = await this.getUserById(id);
       if (!user) return null;
-      
+
       delete user.resetToken;
       delete user.resetTokenExpiry;
-      
+
       await ddbDocClient.send(new PutCommand({
         TableName: "Users",
         Item: user
@@ -294,9 +311,9 @@ const dbService = {
         TableName: "Users",
         FilterExpression: "#userRole = :role AND assignedDoctorId = :doctorId",
         ExpressionAttributeNames: { "#userRole": "role" },
-        ExpressionAttributeValues: { 
+        ExpressionAttributeValues: {
           ":role": "patient",
-          ":doctorId": doctorId 
+          ":doctorId": doctorId
         }
       }));
       return data.Items || [];
@@ -351,14 +368,14 @@ const dbService = {
         FilterExpression: "patientId = :patientId",
         ExpressionAttributeValues: { ":patientId": patientId }
       }));
-      
+
       // 3. Get the patient's exercises
       const exercisesData = await ddbDocClient.send(new ScanCommand({
         TableName: "Exercises",
         FilterExpression: "patientId = :patientId",
         ExpressionAttributeValues: { ":patientId": patientId }
       }));
-      
+
       // 4. Get the patient's reminders
       const remindersData = await ddbDocClient.send(new ScanCommand({
         TableName: "Reminders",
@@ -385,7 +402,7 @@ const dbService = {
   async getDashboardStats(doctorId) {
     try {
       const patients = await this.getPatientsForDoctor(doctorId);
-      
+
       const today = new Date().toISOString().split('T')[0];
       const appointmentsData = await ddbDocClient.send(new ScanCommand({
         TableName: "Appointments",
@@ -405,9 +422,9 @@ const dbService = {
         TableName: "Wounds",
         FilterExpression: "doctorId = :doctorId AND #statusAttr = :pendingStatus",
         ExpressionAttributeNames: { "#statusAttr": "status" },
-        ExpressionAttributeValues: { 
-          ":doctorId": doctorId, 
-          ":pendingStatus": "pending review" 
+        ExpressionAttributeValues: {
+          ":doctorId": doctorId,
+          ":pendingStatus": "pending review"
         }
       }));
       const pendingReviewsCount = (woundsData.Items || []).length;
@@ -428,7 +445,7 @@ const dbService = {
     try {
       const today = new Date().toISOString().split('T')[0];
       const filterExpr = role === 'doctor' ? "doctorId = :userId" : "patientId = :userId";
-      
+
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Appointments",
         FilterExpression: `${filterExpr} AND #dateAttr = :today`,
@@ -603,7 +620,7 @@ const dbService = {
     try {
       const { name, specialty } = filters;
       let filterExpression = "#roleAttr = :role";
-      const expressionAttributeNames = { 
+      const expressionAttributeNames = {
         "#roleAttr": "role",
         "#nameAttr": "name"
       };
@@ -731,10 +748,10 @@ const dbService = {
         status: 'scheduled',
         createdAt: new Date().toISOString()
       };
-      
+
       const patient = await this.getUserById(patientId);
       const doctor = await this.getUserById(doctorId);
-      
+
       if (patient) newAppt.patientName = patient.name;
       if (doctor) newAppt.doctorName = doctor.name;
 
@@ -834,13 +851,13 @@ const dbService = {
 
       const allNotifs = data.Items || [];
       const unreadNotifs = allNotifs.filter(n => !n.isRead || n.isRead === "false");
-      
+
       console.log(`[dbService] Found ${unreadNotifs.length} unread notifications out of ${allNotifs.length} total for user ${userId}`);
 
       if (unreadNotifs.length === 0) return true;
 
       // Update all unread to true
-      const promises = unreadNotifs.map(notif => 
+      const promises = unreadNotifs.map(notif =>
         ddbDocClient.send(new UpdateCommand({
           TableName: "Notifications",
           Key: { id: notif.id },
@@ -880,7 +897,7 @@ const dbService = {
       const unreadData = await ddbDocClient.send(new ScanCommand({
         TableName: "Notifications",
         FilterExpression: "userId = :uid AND title = :title AND isRead = :f",
-        ExpressionAttributeValues: { 
+        ExpressionAttributeValues: {
           ":uid": receiverId,
           ":title": "New Message",
           ":f": false
@@ -890,8 +907,8 @@ const dbService = {
       // Only create a new notification if they don't already have an unread "New Message" alert
       if (!unreadData.Items || unreadData.Items.length === 0) {
         await this.createNotification(
-          receiverId, 
-          "New Message", 
+          receiverId,
+          "New Message",
           "You have received a new message."
         );
       }
@@ -911,7 +928,7 @@ const dbService = {
         FilterExpression: "conversationId = :conversationId",
         ExpressionAttributeValues: { ":conversationId": conversationId }
       }));
-      
+
       // Sort chronologically
       const messages = data.Items || [];
       return messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
@@ -937,7 +954,7 @@ const dbService = {
       // Get last message for each conversation and count unread
       for (const msg of messages) {
         const otherId = msg.senderId === userId ? msg.receiverId : msg.senderId;
-        
+
         if (msg.receiverId === userId && !msg.isRead) {
           unreadCountMap.set(otherId, (unreadCountMap.get(otherId) || 0) + 1);
         }
@@ -979,7 +996,7 @@ const dbService = {
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Messages",
         FilterExpression: "conversationId = :cid AND receiverId = :rid AND isRead = :f",
-        ExpressionAttributeValues: { 
+        ExpressionAttributeValues: {
           ":cid": conversationId,
           ":rid": currentUserId,
           ":f": false
@@ -987,7 +1004,7 @@ const dbService = {
       }));
 
       const unreadMessages = data.Items || [];
-      const promises = unreadMessages.map(msg => 
+      const promises = unreadMessages.map(msg =>
         ddbDocClient.send(new UpdateCommand({
           TableName: "Messages",
           Key: { id: msg.id },
@@ -1009,7 +1026,7 @@ const dbService = {
       const data = await ddbDocClient.send(new ScanCommand({
         TableName: "Messages",
         FilterExpression: "receiverId = :rid AND isRead = :f",
-        ExpressionAttributeValues: { 
+        ExpressionAttributeValues: {
           ":rid": userId,
           ":f": false
         },
@@ -1092,7 +1109,7 @@ const dbService = {
         Key: { id: woundId },
         UpdateExpression: "set #statusAttr = :status, reviewedAt = :reviewedAt",
         ExpressionAttributeNames: { "#statusAttr": "status" },
-        ExpressionAttributeValues: { 
+        ExpressionAttributeValues: {
           ":status": status,
           ":reviewedAt": new Date().toISOString()
         },
@@ -1121,7 +1138,7 @@ const dbService = {
     try {
       const { status, startDate, endDate } = filters;
       const filterKey = role === 'doctor' ? 'doctorId' : 'patientId';
-      
+
       let filterExpression = `${filterKey} = :uid`;
       const expressionAttributeValues = { ":uid": userId };
       const expressionAttributeNames = {};
@@ -1272,11 +1289,11 @@ const dbService = {
         FilterExpression: "patientId = :patientId",
         ExpressionAttributeValues: { ":patientId": patientId }
       }));
-      
+
       if (!data.Items || data.Items.length === 0) return null;
-      
+
       const plan = data.Items[0];
-      
+
       // Dynamically calculate phase statuses based on today's date
       if (plan.phases && Array.isArray(plan.phases)) {
         const today = new Date();
@@ -1310,7 +1327,7 @@ const dbService = {
           return phase;
         });
       }
-      
+
       return plan;
     } catch (error) {
       console.error("DynamoDB error (getRecoveryPlan):", error);
@@ -1398,7 +1415,7 @@ const dbService = {
         // Handle reserved words and status
         const attrKey = `#attr${i}`;
         const valKey = `:val${i}`;
-        
+
         updateExpr += ` ${i === 0 ? '' : ','} ${attrKey} = ${valKey}`;
         exprAttrNames[attrKey] = key;
         exprAttrValues[valKey] = value;

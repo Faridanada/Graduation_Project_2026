@@ -29,6 +29,15 @@ function runTests() {
   assert.deepStrictEqual(decryptedObject, sampleObject, "Object decryption failed");
   console.log("✅ Object encryption/decryption passed");
 
+  // 3. Array encryption/decryption
+  const sampleArray = [{ event: "simulated", ts: 123 }, { event: "stop", ts: 456 }];
+  const encryptedArray = encryptField(sampleArray);
+  assert(encryptedArray.startsWith('v1:'), "Array should have v1: prefix");
+  const decryptedArray = decryptField(encryptedArray);
+  assert.deepStrictEqual(decryptedArray, sampleArray, "Array decryption failed");
+  assert(Array.isArray(decryptedArray), "Decrypted array should be an array type");
+  console.log("✅ Array encryption/decryption passed");
+
   // 3. Legacy plaintext fallback
   const legacyString = "just a normal string";
   const decryptedLegacy = decryptField(legacyString);
