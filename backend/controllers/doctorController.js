@@ -308,6 +308,27 @@ const doctorController = {
 
             const newPlan = await dbService.createRecoveryPlan(planData.patientId, planData);
             
+            // Auto-generate daily exercises from the plan's startDate to endDate
+            if (planData.startDate && planData.endDate && planData.exercisePlan) {
+                const start = new Date(planData.startDate);
+                const end = new Date(planData.endDate);
+                
+                // Loop through each day and assign the exercise
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    const dateAssigned = d.toISOString().split('T')[0];
+                    const exerciseData = {
+                        title: planData.exercisePlan.title || 'Therapy Exercise',
+                        estimatedTimeMin: planData.exercisePlan.estimatedTimeMin || 15,
+                        repsTotal: planData.exercisePlan.repsTotal || 10,
+                        repsCompleted: 0,
+                        mode: planData.exercisePlan.mode || 'Active Mode',
+                        dateAssigned: dateAssigned,
+                        planId: newPlan.id
+                    };
+                    await dbService.assignExercise(planData.patientId, doctorId, exerciseData);
+                }
+            }
+
             // Notify patient
             await dbService.createNotification(
                 planData.patientId,
