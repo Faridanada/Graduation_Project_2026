@@ -26,11 +26,7 @@ class ApiService {
   }
 
   static String get baseUrl {
-    if (io.Platform.isAndroid) {
-      return "http://10.0.2.2:5000/api";
-    } else {
-      return "http://localhost:5000/api";
-    }
+    return "https://flexio-rehab.duckdns.org/api";
   }
 
   static const String _tokenKey = 'jwt_token';

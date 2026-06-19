@@ -47,7 +47,8 @@ class _WoundDetailScreenState extends State<WoundDetailScreen> {
   String? get _imageUrl {
     final path = _wound['imagePath'];
     if (path == null || path.toString().isEmpty) return null;
-    return 'http://10.0.2.2:5000$path';
+    if (path.toString().startsWith('http')) return path;
+    return '${ApiService.baseUrl.replaceAll('/api', '')}/$path';
   }
 
   Color _statusColor(String status) {
