@@ -24,6 +24,7 @@ const ENCRYPTED_FIELDS = {
   Wounds: ['classification', 'analysisResult', 'notes'],
   Messages: ['messageText'],
   Notifications: ['message'],
+  Sessions: ['summary', 'events'],
 };
 
 // Initialize DynamoDB Client
@@ -1369,7 +1370,102 @@ const dbService = {
       return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     } catch (error) {
       console.error("DynamoDB error (getSessionsForPatient):", error);
-      return [];
+      throw error;
+    }
+  },
+
+  async getSessionById(sessionId) {
+    try {
+      const data = await ddbDocClient.send(new GetCommand({
+        TableName: "Sessions",
+        Key: { id: sessionId }
+      }));
+      return data.Item || null;
+    } catch (error) {
+      console.error("DynamoDB error (getSessionById):", error);
+      throw error;
+    }
+  },
+
+  async updateSession(sessionId, updates) {
+    try {
+      let updateExpr = "SET";
+      const exprAttrValues = {};
+      const exprAttrNames = {};
+      let i = 0;
+
+      for (const [key, value] of Object.entries(updates)) {
+        // Handle reserved words and status
+        const attrKey = `#attr${i}`;
+        const valKey = `:val${i}`;
+        
+        updateExpr += ` ${i === 0 ? '' : ','} ${attrKey} = ${valKey}`;
+        exprAttrNames[attrKey] = key;
+        exprAttrValues[valKey] = value;
+        i++;
+      }
+
+      const data = await ddbDocClient.send(new UpdateCommand({
+        TableName: "Sessions",
+        Key: { id: sessionId },
+        UpdateExpression: updateExpr,
+        ExpressionAttributeNames: exprAttrNames,
+        ExpressionAttributeValues: exprAttrValues,
+        ReturnValues: "ALL_NEW"
+      }));
+      return data.Attributes;
+    } catch (error) {
+      console.error("DynamoDB error (updateSession):", error);
+      throw error;
+    }
+  },
+
+  // --- DEVICES ---
+
+  async registerDevice(patientId, deviceId, mqttUsername) {
+    try {
+      const newDevice = {
+        id: deviceId,
+        patientId,
+        mqttUsername,
+        createdAt: new Date().toISOString(),
+        lastSeenAt: null
+      };
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Devices",
+        Item: newDevice
+      }));
+      return newDevice;
+    } catch (error) {
+      console.error("DynamoDB error (registerDevice):", error);
+      throw error;
+    }
+  },
+
+  async getDevicesForPatient(patientId) {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "Devices",
+        FilterExpression: "patientId = :patientId",
+        ExpressionAttributeValues: { ":patientId": patientId }
+      }));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getDevicesForPatient):", error);
+      throw error;
+    }
+  },
+
+  async getDeviceById(deviceId) {
+    try {
+      const data = await ddbDocClient.send(new GetCommand({
+        TableName: "Devices",
+        Key: { id: deviceId }
+      }));
+      return data.Item || null;
+    } catch (error) {
+      console.error("DynamoDB error (getDeviceById):", error);
+      throw error;
     }
   },
 

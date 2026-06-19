@@ -1,3 +1,4 @@
+require("./utils/loggerSanitizer"); // MUST be before any other requires
 require("dotenv").config();
 const express = require("express");
 const app = express();
@@ -14,13 +15,17 @@ const patientRoutes = require("./routes/patientRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const woundRoutes = require("./routes/woundRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const sessionRoutes = require("./routes/sessionRoutes");
 
+const mqttService = require("./services/mqttService");
+const liveSocket = require("./services/liveSocket");
 app.use("/api", userRoutes);
 app.use("/api/doctor", doctorRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/wounds", woundRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/sessions", sessionRoutes);
 
 // Serve uploaded wound images as static files
 // On EC2: http://<EC2-IP>:5000/uploads/wounds/<filename>
@@ -37,9 +42,15 @@ async function start() {
     console.error('Warning: DB readiness failed, continuing to start server', err);
   }
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
+
+  // Attach WebSocket to the HTTP server
+  liveSocket.attach(server);
+
+  // Initialize MQTT subscriber
+  mqttService.init();
 }
 
 start();

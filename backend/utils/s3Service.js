@@ -17,7 +17,7 @@ const getBucket = () => process.env.AWS_S3_BUCKET;
  * @param {number} expiresInSeconds - Time until the URL expires (default 3600s / 1h)
  * @returns {Promise<string|null>}
  */
-async function getSignedReadUrl(key, expiresInSeconds = 3600) {
+async function getSignedReadUrl(key, expiresInSeconds = 3600, bucketName = null) {
   if (!key) return null;
   
   // If it's already a full URL (legacy fallback), return it as is or handle it
@@ -25,7 +25,7 @@ async function getSignedReadUrl(key, expiresInSeconds = 3600) {
 
   try {
     const command = new GetObjectCommand({
-      Bucket: getBucket(),
+      Bucket: bucketName || getBucket(),
       Key: key,
     });
     const url = await getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
