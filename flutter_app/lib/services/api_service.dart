@@ -4,6 +4,7 @@ import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'package:rehabilitation_app/models/session_report.dart';
 
 class ApiService {
   static dynamic _normalizeJsonValue(dynamic value) {
@@ -79,6 +80,62 @@ class ApiService {
     } catch (_) {}
     return false;
   }
+
+  // --- SESSION REPORTS ---
+
+  static Future<List<SessionListItem>> getPatientSessions(String patientId, {DateTime? start, DateTime? end}) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    String query = '';
+    if (start != null) query += '?start=${start.toIso8601String()}';
+    if (end != null) query += (query.isEmpty ? '?' : '&') + 'end=${end.toIso8601String()}';
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/sessions/patient/$patientId$query"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      final data = decoded['sessions'] ?? [];
+      return (data as List)
+          .map((x) => SessionListItem.fromJson(x))
+          .where((s) => s.status == 'completed')
+          .toList();
+    }
+    return [];
+  }
+
+  static Future<SessionReportEnvelope> getSessionReport(String sessionId) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('No token');
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/sessions/$sessionId/report"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return SessionReportEnvelope.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to load report');
+  }
+
+  static Future<void> regenerateReport(String sessionId) async {
+    final token = await _getToken();
+    if (token == null) return;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/sessions/$sessionId/regenerate-report"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to regenerate report');
+    }
+  }
+
   // --- DOCTOR ENDPOINTS ---
 
   static Future<Map<String, dynamic>> getDoctorStats() async {

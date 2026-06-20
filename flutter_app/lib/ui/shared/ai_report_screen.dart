@@ -1,10 +1,9 @@
-import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
-
 import 'package:rehabilitation_app/services/api_service.dart';
-import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
-import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
-import 'package:rehabilitation_app/ui/patient/home/patient_bottom_nav.dart';
+import 'package:rehabilitation_app/models/session_report.dart';
+import 'package:rehabilitation_app/ui/chats/ConversationScreen.dart';
+import 'package:rehabilitation_app/ui/shared/report_widgets.dart';
 
 class AiReportScreen extends StatefulWidget {
   const AiReportScreen({super.key});
@@ -14,241 +13,327 @@ class AiReportScreen extends StatefulWidget {
 }
 
 class _AiReportScreenState extends State<AiReportScreen> {
-  bool isLoading = true;
-  int unreadNotifs = 0;
-  String aiReportContent = "Waiting for AI model response...";
+  bool _isLoading = true;
+  String _firstName = "";
+  String? _assignedDoctorId;
+  String? _assignedDoctorName;
+  
+  SessionReportEnvelope? _envelope;
+  int _streak = 0;
+  
+  Timer? _pollTimer;
+  int _pollTicks = 0;
+  String? _latestSessionId;
 
   @override
   void initState() {
     super.initState();
-    // We will fetch real AI data here later
-    _fetchStats();
+    _loadData();
   }
 
-  Future<void> _fetchStats() async {
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
     try {
-      final stats = await ApiService.getPatientDashboardStats();
-      
-      int unread = stats['unreadNotifications'] ?? 0;
-      
+      final profile = await ApiService.getUserProfile();
+      if (profile != null && mounted) {
+        setState(() {
+          _firstName = (profile['name'] ?? "Patient").split(' ').first;
+          _assignedDoctorId = profile['assignedDoctorId'];
+          _assignedDoctorName = profile['assignedDoctorName'] ?? "Doctor";
+        });
+        
+        final patientId = profile['id'];
+        if (patientId != null) {
+          final sessions = await ApiService.getPatientSessions(patientId);
+          
+          DateTime now = DateTime.now();
+          int streak = sessions.where((s) => s.reportStatus == 'completed' && now.difference(s.startTime).inDays <= 7).length;
+          
+          setState(() {
+            _streak = streak;
+          });
+
+          sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
+          
+          if (sessions.isNotEmpty) {
+            _latestSessionId = sessions.first.id;
+            _fetchLatestReport(sessions.first.id);
+          } else {
+            setState(() => _isLoading = false);
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchLatestReport(String sessionId) async {
+    try {
+      final env = await ApiService.getSessionReport(sessionId);
       if (mounted) {
         setState(() {
-          unreadNotifs = unread;
-          isLoading = false;
+          _envelope = env;
+          _isLoading = false;
         });
+
+        if (env.reportStatus == 'processing' || env.reportStatus == 'pending') {
+          _startPolling();
+        } else {
+          _pollTimer?.cancel();
+        }
       }
-    } catch (_) {
-      if (mounted) setState(() => isLoading = false);
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _startPolling() {
+    if (_pollTimer != null && _pollTimer!.isActive) return;
+    _pollTicks = 0;
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      _pollTicks++;
+      if (_pollTicks >= 40) {
+        timer.cancel();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Taking longer than usual. Please check back later.')));
+        }
+      } else if (_latestSessionId != null) {
+        _fetchLatestReport(_latestSessionId!);
+      }
+    });
+  }
+
+  void _messageDoctor() {
+    if (_assignedDoctorId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No doctor assigned yet.')));
+      return;
+    }
+    
+    final name = _assignedDoctorName ?? "My Doctor";
+    final init = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : "D";
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConversationScreen(
+          name: name,
+          initials: init,
+          receiverId: _assignedDoctorId,
+          message: "",
+        ),
+      ),
+    );
+  }
+
+  String _formatFriendlyDate(DateTime? dt) {
+    if (dt == null) return "Recently";
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final dateToCheck = DateTime(dt.year, dt.month, dt.day);
+
+    if (dateToCheck == today) {
+      return 'Today';
+    } else if (dateToCheck == yesterday) {
+      return 'Yesterday';
+    } else {
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${days[dt.weekday - 1]}, ${months[dt.month - 1]} ${dt.day}';
+    }
+  }
+
+  String _getEncouragingNote() {
+    final notes = [
+      "Keep up the great work!",
+      "Every session counts.",
+      "You're making progress!",
+      "Consistency is key!"
+    ];
+    notes.shuffle();
+    return notes.first;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFEAF2FF), Color(0xFFF7FAFF)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        title: const Text('My Progress', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
+        elevation: 0,
+        centerTitle: true,
       ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: ListView(
-              children: [
-                /// HEADER
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () {
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                      },
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Greeting Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3F2FD),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    const Spacer(),
-                    const Text(
-                      "My AI Report",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: Badge(
-                                isLabelVisible: unreadNotifs > 0,
-                                label: Text('$unreadNotifs'),
-                                child: const Icon(Icons.notifications_outlined),
-                              ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const NotificationsPage()),
-                                ).then((_) => _fetchStats());
-                              },
+                        Text("Hi, $_firstName!", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1565C0))),
+                        const SizedBox(height: 4),
+                        const Text("Here's how your last session went.", style: TextStyle(fontSize: 14, color: Color(0xFF1976D2))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Content Area
+                  _buildContentArea(),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Streak row
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("🔥 ", style: TextStyle(fontSize: 24)),
+                        Text("$_streak sessions this week", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Message Doctor Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                    ),
+                    child: Column(
+                      children: [
+                        const Text("Questions about your session?", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 8),
+                        Text("Your doctor can give you personalized guidance.", style: TextStyle(color: Colors.grey[600], fontSize: 14), textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2196F3),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.settings),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const SettingsPage()),
-                                );
-                              },
-                            ),
-                          ],
+                            onPressed: _messageDoctor,
+                            icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                            label: const Text("Message Doctor", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-
-                const Text(
-                  "Last updated: Today at 4:30 PM",
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-
-                const SizedBox(height: 16),
-
-                const SizedBox(height: 16),
-
-                /// AI CONTENT PLACEHOLDER
-                _glassCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "AI Analysis",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                      ),
-                      const SizedBox(height: 16),
-                      if (isLoading)
-                        const Center(child: CircularProgressIndicator())
-                      else
-                        Text(
-                          aiReportContent,
-                          style: const TextStyle(color: Colors.black87, fontSize: 16, height: 1.5),
-                        ),
-                    ],
                   ),
-                ),
+                ],
+              ),
+            ),
+    );
+  }
 
-                const SizedBox(height: 30),
+  Widget _buildContentArea() {
+    final env = _envelope;
+    if (env == null) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(24.0),
+        child: Text("Complete your first session to see your progress here!", textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey)),
+      ));
+    }
 
-                /// 🔵 BUTTON
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Sent successfully to your doctor ✅"),
-                        backgroundColor: Colors.green,
-                        behavior: SnackBarBehavior.floating,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "Share with Doctor",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ),
+    if (env.reportStatus == 'processing' || env.reportStatus == 'pending') {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          children: const [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text("Your latest session is being analyzed...", style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
+          ],
+        ),
+      );
+    }
 
-                const SizedBox(height: 20),
+    if (env.reportStatus == 'failed') {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+        child: const Text("We're having trouble preparing your report. Please check back soon.", textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey)),
+      );
+    }
+
+    final report = env.report;
+    if (report == null) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_formatFriendlyDate(report.generatedAt), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black)),
+                const SizedBox(height: 12),
+                Text(report.summary, style: const TextStyle(fontSize: 15, height: 1.5, color: Colors.black87)),
               ],
             ),
           ),
-        ),
-        bottomNavigationBar: const PatientBottomNavBar(currentIndex: 0),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16)),
+              border: Border(top: BorderSide(color: Colors.grey[200]!)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: PatientHighlightCard(text: "🏃 ${(report.metrics.duration.value / 60).round()} min session")),
+                    const SizedBox(width: 12),
+                    Expanded(child: PatientHighlightCard(text: "🎯 ${report.metrics.repetitionsCompleted} reps")),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const PatientHighlightCard(text: "✨ Good range of motion"),
+                const SizedBox(height: 20),
+                Text(_getEncouragingNote(), style: const TextStyle(fontStyle: FontStyle.italic, color: Color(0xFF2196F3), fontWeight: FontWeight.w600)),
+              ],
+            ),
+          )
+        ],
       ),
     );
   }
-
-  /// GLASS
-  Widget _glassCard({required Widget child}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-
-  List<String> _getLast6Days() {
-    final now = DateTime.now();
-    return List.generate(6, (i) {
-      final d = now.subtract(Duration(days: 5 - i));
-      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      return days[d.weekday - 1];
-    });
-  }
-}
-
-/// 📈 LINE CHART
-class _DynamicLinePainter extends CustomPainter {
-  final List<double> data;
-  _DynamicLinePainter(this.data);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (data.isEmpty) return;
-
-    final line = Paint()
-      ..color = Colors.blue.shade200
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    final dot = Paint()..color = Colors.blue;
-
-    List<Offset> points = [];
-    double stepX = size.width / (data.length - 1);
-    for (int i = 0; i < data.length; i++) {
-      double padding = size.height * 0.2;
-      double h = size.height - (padding * 2);
-      double y = (size.height - padding) - (data[i] * h);
-      points.add(Offset(stepX * i, y));
-    }
-
-    final path = Path()..moveTo(points[0].dx, points[0].dy);
-    for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].dx, points[i].dy);
-    }
-
-    canvas.drawPath(path, line);
-    for (var p in points) {
-      canvas.drawCircle(p, 4, dot);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DynamicLinePainter oldDelegate) => true;
 }
