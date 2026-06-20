@@ -21,7 +21,7 @@ const ENCRYPTED_FIELDS = {
   Wounds: ['classification', 'analysisResult', 'notes'],
   Messages: ['messageText'],
   Notifications: ['message'],
-  Sessions: ['summary', 'events'],
+  Sessions: ['summary', 'events', 'report'],
 };
 
 // Initialize DynamoDB Client
@@ -1388,6 +1388,7 @@ const dbService = {
         id: `session_${Date.now()}`,
         patientId,
         ...sessionData,
+        reportStatus: 'pending',
         createdAt: new Date().toISOString()
       };
       await ddbDocClient.send(new PutCommand({

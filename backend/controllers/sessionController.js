@@ -3,7 +3,7 @@ const sessionBuffer = require('../services/sessionBuffer');
 const waveformWriter = require('../utils/waveformWriter');
 const { getSignedReadUrl } = require('../utils/s3Service');
 const { v4: uuidv4 } = require('uuid');
-
+const { triggerReportGeneration } = require('../services/reportTrigger');
 const getWaveformsBucket = () => process.env.AWS_S3_WAVEFORMS_BUCKET || 'flexio-smart-waveforms';
 
 // ================= DEVICES =================
@@ -133,6 +133,10 @@ exports.endSession = async (req, res) => {
     }
 
     const updatedSession = await dbService.updateSession(sessionId, updates);
+
+    // Fire report generation trigger (fire-and-forget)
+    triggerReportGeneration(sessionId, patientId, s3KeyPrefix)
+      .catch(err => console.warn('[report] trigger failed:', err.message));
 
     res.json({ message: "Session ended", session: updatedSession });
   } catch (error) {
