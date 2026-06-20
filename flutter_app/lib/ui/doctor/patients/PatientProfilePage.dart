@@ -113,7 +113,6 @@ class _PatientProfilePageState extends State<PatientProfilePage>
           : _patientData == null
               ? const Center(child: Text('Failed to load patient data'))
               : _buildContent(),
-      bottomNavigationBar: _buildBottomAction(),
     );
   }
 
@@ -125,7 +124,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: 280,
+          expandedHeight: 220,
           pinned: true,
           backgroundColor: AppColors.primary,
           elevation: 0,
@@ -159,11 +158,11 @@ class _PatientProfilePageState extends State<PatientProfilePage>
                         border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: CircleAvatar(
-                        radius: 45,
+                        radius: 35,
                         backgroundColor: Colors.white.withOpacity(0.2),
                         child: Text(
                           widget.patientName[0].toUpperCase(),
-                          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
                     ),
@@ -183,6 +182,37 @@ class _PatientProfilePageState extends State<PatientProfilePage>
                         injuryType,
                         style: const TextStyle(fontSize: 14, color: Colors.white, fontFamily: 'Poppins'),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildHeaderAction(Icons.chat_bubble_outline, 'Message', () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ConversationScreen(
+                                name: widget.patientName,
+                                initials: widget.patientName[0],
+                                message: "Hello!",
+                                receiverId: widget.patientId,
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(width: 16),
+                        _buildHeaderAction(Icons.videocam_outlined, 'Monitor', () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ExoskeletonDegreeSetupPage(
+                                patientName: widget.patientName,
+                                exerciseTitle: 'Session Monitoring',
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
                     ),
                   ],
                 ),
@@ -207,9 +237,9 @@ class _PatientProfilePageState extends State<PatientProfilePage>
                 indicatorSize: TabBarIndicatorSize.label,
                 labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
                 tabs: const [
-                  Tab(text: 'History'),
-                  Tab(text: 'Appointments'),
                   Tab(text: 'Recovery Plans'),
+                  Tab(text: 'Appointments'),
+                  Tab(text: 'History'),
                 ],
               ),
             ],
@@ -219,13 +249,27 @@ class _PatientProfilePageState extends State<PatientProfilePage>
           child: TabBarView(
             controller: _tabController,
             children: [
-              _buildHistoryTab(),
-              _buildAppointmentsTab(),
               _buildRecoveryPlansTab(),
+              _buildAppointmentsTab(),
+              _buildHistoryTab(),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildHeaderAction(IconData icon, String tooltip, VoidCallback onTap) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white),
+        tooltip: tooltip,
+        onPressed: onTap,
+      ),
     );
   }
 
@@ -357,27 +401,43 @@ class _PatientProfilePageState extends State<PatientProfilePage>
     }
 
     if (plans.isEmpty) {
-      return const Center(
-        child: Text(
-          'No recovery plans assigned.',
-          style: TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'No recovery plans assigned.',
+              style: TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
+            ),
+            const SizedBox(height: 16),
+            _buildCreatePlanButton(),
+          ],
         ),
       );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      itemCount: plans.length,
+      itemCount: plans.length + 1,
       itemBuilder: (context, index) {
-        final plan = plans[index];
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildCreatePlanButton(),
+          );
+        }
+        final plan = plans[index - 1];
         final startDate = plan['startDate'] ?? 'N/A';
         final endDate = plan['endDate'] ?? 'N/A';
         final title = plan['exercisePlan']?['title'] ?? 'Recovery Plan';
         
-        return Card(
-          elevation: 2,
+        return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -479,99 +539,29 @@ class _PatientProfilePageState extends State<PatientProfilePage>
     }
   }
 
-  Widget _buildBottomAction() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ConversationScreen(
-                            name: widget.patientName,
-                            initials: widget.patientName[0],
-                            message: "Hello!",
-                            receiverId: widget.patientId,
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.chat_bubble_outline, size: 20, color: Colors.white),
-                    label: const Text('Message', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ExoskeletonDegreeSetupPage(
-                            patientName: widget.patientName,
-                            exerciseTitle: 'Session Monitoring',
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.videocam_outlined, size: 20, color: AppColors.primary),
-                    label: const Text('Monitor', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: AppColors.primary)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primarySoft,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CreateRecoveryPlan(
-                        patientId: widget.patientId,
-                        patientName: widget.patientName,
-                        existingPlan: null,
-                      ),
-                    ),
-                  ).then((_) => _loadData()); // Refresh after returning
-                },
-                icon: const Icon(Icons.assignment_add, size: 20, color: Colors.white),
-                label: const Text('Create New Recovery Plan', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
+  Widget _buildCreatePlanButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CreateRecoveryPlan(
+                patientId: widget.patientId,
+                patientName: widget.patientName,
+                existingPlan: null,
               ),
             ),
-          ],
+          ).then((_) => _loadData());
+        },
+        icon: const Icon(Icons.add, size: 20, color: Colors.white),
+        label: const Text('Create New Recovery Plan', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
     );

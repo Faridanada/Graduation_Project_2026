@@ -8,7 +8,7 @@ import 'package:rehabilitation_app/ui/patient/recovery/reminders.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/improvements_screen.dart';
 import 'package:rehabilitation_app/ui/patient/appointments/book_appointement.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/report_wound_screen.dart';
-import 'package:rehabilitation_app/ui/exercises/start_exercise_screen.dart';
+import 'package:rehabilitation_app/ui/exercises/active_exercice_screen.dart';
 import 'package:rehabilitation_app/ui/patient/doctors/FindDoctorScreen.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/patient/profile/PatientProfile.dart';
@@ -497,11 +497,11 @@ class _HomeContentState extends State<_HomeContent> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => StartExerciseScreen(
+                                  builder: (_) => ActiveExerciseScreen(
                                         exercise: exercise != null
                                             ? Map<String, dynamic>.from(
                                                 exercise as Map)
-                                            : null,
+                                            : <String, dynamic>{},
                                       )),
                             );
                           },

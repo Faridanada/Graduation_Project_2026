@@ -15,56 +15,24 @@ class AiReportScreen extends StatefulWidget {
 
 class _AiReportScreenState extends State<AiReportScreen> {
   bool isLoading = true;
-  double progressScore = 0.0;
-  String trendMessage = "+ 0% improvement from last week";
-  Color trendColor = Colors.grey;
-  List<double> weeklyProgress = [0, 0, 0, 0, 0, 0];
   int unreadNotifs = 0;
+  String aiReportContent = "Waiting for AI model response...";
 
   @override
   void initState() {
     super.initState();
+    // We will fetch real AI data here later
     _fetchStats();
   }
 
   Future<void> _fetchStats() async {
     try {
       final stats = await ApiService.getPatientDashboardStats();
-      double score = 0.0;
-
-      if (stats['exerciseStats'] != null) {
-        int total = stats['exerciseStats']['total'] ?? 0;
-        int completed = stats['exerciseStats']['completed'] ?? 0;
-        if (total > 0) score = completed / total;
-      }
-
-      String tMsg = "";
-      Color tCol = Colors.grey;
-      if (score > 0.8) {
-        tMsg = "+ 5% improvement from last week";
-        tCol = Colors.green;
-      } else if (score > 0.5) {
-        tMsg = "Steady progress maintained";
-        tCol = Colors.blue;
-      } else {
-        tMsg = "Requires more consistent sessions";
-        tCol = Colors.orange;
-      }
-
-      List<double> wp = [0, 0, 0, 0, 0, 0];
-      if (stats['weeklyProgress'] != null) {
-        wp =
-            List<double>.from(stats['weeklyProgress'].map((x) => x.toDouble()));
-      }
-
+      
       int unread = stats['unreadNotifications'] ?? 0;
-
+      
       if (mounted) {
         setState(() {
-          progressScore = score;
-          trendMessage = tMsg;
-          trendColor = tCol;
-          weeklyProgress = wp;
           unreadNotifs = unread;
           isLoading = false;
         });
@@ -157,153 +125,30 @@ class _AiReportScreenState extends State<AiReportScreen> {
 
                 const SizedBox(height: 16),
 
-                /// 🔵 RECOVERY SCORE
-                _glassCard(
-                  child: Row(
-                    children: [
-                      /// CIRCLE
-                      SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircularProgressIndicator(
-                              value: progressScore,
-                              strokeWidth: 8,
-                              backgroundColor: Colors.grey.shade200,
-                              valueColor: const AlwaysStoppedAnimation(
-                                Colors.blue,
-                              ),
-                            ),
-                            Text(
-                              isLoading
-                                  ? "..."
-                                  : "${(progressScore * 100).toInt()}%",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 16),
-
-                      /// TEXT
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Recovery Score",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              trendMessage,
-                              style: TextStyle(
-                                color: trendColor,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
                 const SizedBox(height: 16),
 
-                /// 📈 WEEKLY PROGRESS
+                /// AI CONTENT PLACEHOLDER
                 _glassCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "Weekly Progress",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        "AI Analysis",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                       ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        height: 100,
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: CustomPaint(
-                                  painter: _DynamicLinePainter(weeklyProgress)),
-                            ),
-                            Positioned(
-                              right: 0,
-                              top: 10,
-                              child: Text(
-                                isLoading
-                                    ? "..."
-                                    : "${(progressScore * 100).toInt()}%",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 16),
+                      if (isLoading)
+                        const Center(child: CircularProgressIndicator())
+                      else
+                        Text(
+                          aiReportContent,
+                          style: const TextStyle(color: Colors.black87, fontSize: 16, height: 1.5),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: _getLast6Days()
-                            .map((day) =>
-                                Text(day, style: const TextStyle(fontSize: 12)))
-                            .toList(),
-                      ),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 16),
-
-                /// ⚠️ AI ALERTS
-                _glassCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "AI Alerts",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        "No alerts at this time.",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                /// 💡 AI RECOMMENDATIONS
-                _glassCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "AI Recommendations",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        "No recommendations at this time.",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
 
                 /// 🔵 BUTTON
                 ElevatedButton(

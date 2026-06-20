@@ -8,10 +8,7 @@ const {
   DeleteCommand
 } = require("@aws-sdk/lib-dynamodb");
 
-// Mock data imports commented out after DynamoDB migration
-// const appointmentsData = require("../data/appointments");
-// const exercisesData = require("../data/exercises");
-// const { requestsList } = require("../data/requests");
+
 
 const { encryptField, decryptField, hashResetToken } = require('../utils/fieldCrypto');
 
@@ -720,7 +717,7 @@ const dbService = {
     }
   },
 
-  // --- NEW APPOINTMENT & AVAILABILITY METHODS (Mocked for now) ---
+  // --- NEW APPOINTMENT & AVAILABILITY METHODS ---
 
   async getAppointmentsForUser(userId, role) {
     try {

@@ -258,14 +258,14 @@ class _AiReportsState extends State<AiReports> {
             ? patientData[selectedPatient]!['riskLevel']
             : 'Low Risk';
 
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
       children: [
         _buildRiskBadge('Low Risk', currentRisk == 'Low Risk',
             const Color.fromARGB(255, 99, 197, 150), Icons.check_circle),
-        const SizedBox(width: 12),
         _buildRiskBadge('Medium', currentRisk == 'Medium',
             const Color.fromARGB(255, 255, 165, 0), Icons.circle_outlined),
-        const SizedBox(width: 12),
         _buildRiskBadge('High Risk', currentRisk == 'High Risk',
             const Color.fromARGB(255, 239, 68, 68), Icons.warning),
       ],
