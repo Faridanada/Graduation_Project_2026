@@ -245,14 +245,23 @@ class SessionListItem {
   });
 
   factory SessionListItem.fromJson(Map<String, dynamic> json) {
+    String? parsedSummary;
+    if (json['summary'] is String) {
+      parsedSummary = json['summary'];
+    } else if (json['report'] != null && json['report'] is Map && json['report']['summary'] is String) {
+      parsedSummary = json['report']['summary'];
+    } else if (json['summary'] != null) {
+      parsedSummary = json['summary'].toString();
+    }
+
     return SessionListItem(
       id: json['id'] ?? '',
       startTime: DateTime.tryParse(json['createdAt'] ?? json['startTime'] ?? '') ?? DateTime.now(),
       endTime: json['endTime'] != null ? DateTime.tryParse(json['endTime']) : null,
-      durationSeconds: json['durationSeconds'],
+      durationSeconds: json['durationSeconds'] is int ? json['durationSeconds'] : int.tryParse(json['durationSeconds']?.toString() ?? ''),
       status: json['status'] ?? '',
       reportStatus: json['reportStatus'] ?? 'pending',
-      summary: json['summary'],
+      summary: parsedSummary,
     );
   }
 }

@@ -91,8 +91,10 @@ class ApiService {
     if (start != null) query += '?start=${start.toIso8601String()}';
     if (end != null) query += (query.isEmpty ? '?' : '&') + 'end=${end.toIso8601String()}';
 
+    final urlStr = "$baseUrl/sessions/patient/$patientId$query";
+
     final response = await http.get(
-      Uri.parse("$baseUrl/sessions/patient/$patientId$query"),
+      Uri.parse(urlStr),
       headers: _headers(token),
     );
 
