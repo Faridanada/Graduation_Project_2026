@@ -151,8 +151,9 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
     }
 
     final name = _patientProfile?['name']?.split(' ')[0] ?? 'Patient';
-    final progress = (_planData!['overallProgress'] ?? 0).toDouble();
     final phases = _planData!['phases'] as List? ?? [];
+    int completedPhases = phases.where((p) => p['status'] == 'Completed').length;
+    final progress = phases.isEmpty ? 0.0 : (completedPhases / phases.length) * 100;
     final exercises = _planData!['exercisePlan'] != null
         ? [_planData!['exercisePlan']]
         : [];
