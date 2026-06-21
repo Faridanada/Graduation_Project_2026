@@ -1585,6 +1585,71 @@ const dbService = {
       console.error("DynamoDB error (markPhaseCompleted):", error);
       throw error;
     }
+  },
+
+  // --- COMPLETIONS ---
+
+  async markExerciseComplete(patientId, { planId, exerciseId, done = true }) {
+    try {
+      const d = new Date();
+      const date = d.toISOString().slice(0, 10);
+      const id = `completion_${patientId}_${date}_${planId}_${exerciseId}`;
+      const now = d.toISOString();
+
+      const record = {
+        id,
+        patientId,
+        planId,
+        exerciseId,
+        date,
+        done,
+        updatedAt: now,
+        createdAt: now // Note: PutCommand overwrites, so createdAt resets. Acceptable for simplicity.
+      };
+
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Completions",
+        Item: record
+      }));
+
+      return record;
+    } catch (error) {
+      console.error("DynamoDB error (markExerciseComplete):", error);
+      throw error;
+    }
+  },
+
+  async getCompletionsForPatient(patientId, { planId, date } = {}) {
+    try {
+      // Since the table's primary key is just 'id' (HASH), we must use ScanCommand with a filter.
+      let filterExp = "patientId = :patientId";
+      let expVals = { ":patientId": patientId };
+
+      if (planId) {
+        filterExp += " AND planId = :planId";
+        expVals[":planId"] = planId;
+      }
+      if (date) {
+        filterExp += " AND #d = :date";
+        expVals[":date"] = date;
+      }
+
+      const params = {
+        TableName: "Completions",
+        FilterExpression: filterExp,
+        ExpressionAttributeValues: expVals
+      };
+
+      if (date) {
+         params.ExpressionAttributeNames = { "#d": "date" };
+      }
+
+      const data = await ddbDocClient.send(new ScanCommand(params));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getCompletionsForPatient):", error);
+      throw error;
+    }
   }
 };
 

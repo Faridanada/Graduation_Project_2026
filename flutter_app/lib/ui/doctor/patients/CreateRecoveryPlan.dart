@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:intl/intl.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/app_theme.dart';
@@ -64,7 +65,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
               'maxAngle': p['maxAngle'] ?? 90,
               'numberOfExercises': p['numberOfExercises'] ?? 3,
               'numberOfReps': p['numberOfReps'] ?? 10,
-              'stabilizationDays': p['stabilizationDays'] ?? 7,
+              'stabilizationDays': p['stabilizationDays'],
             }];
           } else {
              p['exercises'] = List<Map<String, dynamic>>.from(p['exercises'].map((ex) => Map<String, dynamic>.from(ex)));
@@ -119,10 +120,34 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
   }
 
   Future<void> _selectPhaseDateRange(int index) async {
+    DateTimeRange? initialRange;
+    if (_phases[index]['startDate'] != null && _phases[index]['endDate'] != null) {
+      final s = DateTime.tryParse(_phases[index]['startDate']);
+      final e = DateTime.tryParse(_phases[index]['endDate']);
+      if (s != null && e != null) initialRange = DateTimeRange(start: s, end: e);
+    } else if (index > 0 && _phases[index - 1]['endDate'] != null) {
+      final prevEnd = DateTime.tryParse(_phases[index - 1]['endDate']);
+      if (prevEnd != null) {
+        final nextStart = prevEnd.add(const Duration(days: 1));
+        initialRange = DateTimeRange(start: nextStart, end: nextStart.add(const Duration(days: 7)));
+      }
+    }
+
+    if (initialRange != null && _startDate != null && _endDate != null) {
+      DateTime start = initialRange.start;
+      DateTime end = initialRange.end;
+      if (start.isBefore(_startDate!)) start = _startDate!;
+      if (start.isAfter(_endDate!)) start = _endDate!;
+      if (end.isAfter(_endDate!)) end = _endDate!;
+      if (end.isBefore(start)) end = start;
+      initialRange = DateTimeRange(start: start, end: end);
+    }
+
     final picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: initialRange,
+      firstDate: _startDate ?? DateTime.now().subtract(const Duration(days: 30)),
+      lastDate: _endDate ?? DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -157,12 +182,13 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
         'completed': false,
         'exercises': [
           {
+            'id': 'ex_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(999999)}',
             'exerciseType': 'Active',
             'minAngle': 0,
             'maxAngle': 90,
             'numberOfExercises': 3,
             'numberOfReps': 10,
-            'stabilizationDays': 7,
+            'stabilizationDays': null,
           }
         ],
       });
@@ -196,6 +222,42 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
         );
         return;
       }
+
+      int phaseDays = 0;
+      if (p['startDate'] != null && p['endDate'] != null) {
+        final start = DateTime.tryParse(p['startDate']);
+        final end = DateTime.tryParse(p['endDate']);
+        if (start != null && end != null) {
+          phaseDays = end.difference(start).inDays + 1;
+
+          if (start.isBefore(_startDate!) || end.isAfter(_endDate!)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Phase ${i + 1} dates (${DateFormat('MMM dd').format(start)} - ${DateFormat('MMM dd').format(end)}) must be within the overall plan range (${DateFormat('MMM dd').format(_startDate!)} - ${DateFormat('MMM dd').format(_endDate!)}).'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+        }
+      }
+
+      int totalStabDays = 0;
+      for (var ex in (p['exercises'] ?? [])) {
+        if (ex['exerciseType'] == 'Stabilization') {
+          totalStabDays += (ex['stabilizationDays'] as int? ?? 0);
+        }
+      }
+
+      if (phaseDays > 0 && totalStabDays > phaseDays) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Phase ${i + 1} has $totalStabDays stabilization days, but the phase is only $phaseDays days long!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -216,26 +278,34 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
           'completed': e.value['completed'],
           'startDate': e.value['startDate'],
           'endDate': e.value['endDate'],
+          'subtitle': (e.value['subtitle'] == null || e.value['subtitle'].toString().isEmpty) ? null : e.value['subtitle'],
+          'date': (e.value['date'] == null || e.value['date'].toString().isEmpty) ? null : e.value['date'],
+          'status': e.value['status'] ?? 'Upcoming',
           'exercises': e.value['exercises'],
         };
       }).toList(),
-      'todayTip': _tipController.text,
-      'todayTip': _tipController.text,
+      'todayTip': _tipController.text.isEmpty ? null : _tipController.text,
     };
 
-    final success = await ApiService.createRecoveryPlan(planData);
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (success) {
+    try {
+      final success = await ApiService.createRecoveryPlan(planData);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recovery plan created successfully!')),
+          );
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recovery plan created successfully!')),
-        );
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Failed to create recovery plan.'),
-              backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Failed: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 8)),
         );
       }
     }
@@ -387,26 +457,75 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
             _buildExerciseEditor(i, eIdx),
 
           const SizedBox(height: 8),
-          Center(
-            child: TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  if (_phases[i]['exercises'] == null) {
-                    _phases[i]['exercises'] = [];
-                  }
-                  _phases[i]['exercises'].add({
-                    'exerciseType': 'Active',
-                    'minAngle': 0,
-                    'maxAngle': 90,
-                    'numberOfExercises': 3,
-                    'numberOfReps': 10,
-                    'stabilizationDays': 7,
-                  });
-                });
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add Exercise'),
-            ),
+
+          Builder(
+            builder: (context) {
+              int phaseDays = 0;
+              if (_phases[i]['startDate'] != null && _phases[i]['endDate'] != null) {
+                final start = DateTime.tryParse(_phases[i]['startDate']);
+                final end = DateTime.tryParse(_phases[i]['endDate']);
+                if (start != null && end != null) phaseDays = end.difference(start).inDays + 1;
+              }
+
+              int totalStabDays = 0;
+              for (var ex in exercises) {
+                if (ex['exerciseType'] == 'Stabilization') {
+                  totalStabDays += (ex['stabilizationDays'] as int? ?? 0);
+                }
+              }
+
+              bool canAddExercise = phaseDays == 0 || totalStabDays < phaseDays;
+
+              return Column(
+                children: [
+                  if (!canAddExercise)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8.0, left: 16, right: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2.0),
+                            child: Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 16),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              "Cannot add more exercises because Stabilization completely fills the phase duration.",
+                              style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.normal),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: canAddExercise
+                          ? () {
+                              setState(() {
+                                if (_phases[i]['exercises'] == null) {
+                                  _phases[i]['exercises'] = [];
+                                }
+                                _phases[i]['exercises'].add({
+                                  'id': 'ex_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(999999)}',
+                                  'exerciseType': 'Active',
+                                  'minAngle': 0,
+                                  'maxAngle': 90,
+                                  'numberOfExercises': 3,
+                                  'numberOfReps': 10,
+                                  'stabilizationDays': null,
+                                });
+                              });
+                            }
+                          : null,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Exercise'),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -467,10 +586,13 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
           const SizedBox(height: 16),
           if (type == 'Stabilization')
             TextFormField(
-              initialValue: exercises[eIdx]['stabilizationDays'].toString(),
+              initialValue: exercises[eIdx]['stabilizationDays']?.toString() ?? '',
               decoration: const InputDecoration(labelText: 'Stabilization Days', border: OutlineInputBorder()),
               keyboardType: TextInputType.number,
-              onChanged: (v) => exercises[eIdx]['stabilizationDays'] = int.tryParse(v) ?? 7,
+              onChanged: (v) {
+                exercises[eIdx]['stabilizationDays'] = int.tryParse(v);
+                setState((){});
+              },
             )
           else
             Column(

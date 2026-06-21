@@ -300,7 +300,11 @@ class ApiService {
       body: jsonEncode(planData),
     );
 
-    return response.statusCode == 201 || response.statusCode == 200;
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception('API Error: ${response.statusCode} - ${response.body}');
+    }
   }
 
   static Future<bool> deleteRecoveryPlan(String planId) async {

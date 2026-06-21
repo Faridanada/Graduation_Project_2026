@@ -452,6 +452,38 @@ const patientController = {
       console.error('Error notifying doctor of session completion:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error notifying doctor' });
     }
+  },
+
+  // POST /api/patient/completions
+  async markExerciseComplete(req, res) {
+    try {
+      const patientId = req.user.id;
+      const { planId, exerciseId, done } = req.body;
+
+      if (!planId || !exerciseId) {
+        return res.status(400).json({ statusCode: 400, message: 'planId and exerciseId are required' });
+      }
+
+      const record = await dbService.markExerciseComplete(patientId, { planId, exerciseId, done });
+      res.status(201).json({ statusCode: 201, data: record, message: 'Completion recorded' });
+    } catch (error) {
+      console.error('Error marking exercise complete:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error recording completion' });
+    }
+  },
+
+  // GET /api/patient/completions
+  async getCompletions(req, res) {
+    try {
+      const patientId = req.user.id;
+      const { planId, date } = req.query;
+
+      const completions = await dbService.getCompletionsForPatient(patientId, { planId, date });
+      res.json({ statusCode: 200, data: completions });
+    } catch (error) {
+      console.error('Error fetching completions:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error fetching completions' });
+    }
   }
 };
 

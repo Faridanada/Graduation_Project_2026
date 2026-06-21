@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/exercises/ExoskeletonDegreeSetupPage.dart';
 import 'package:rehabilitation_app/ui/chats/ConversationScreen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/CreateRecoveryPlan.dart';
+import 'package:rehabilitation_app/ui/patient/recovery/recovery_plan_screen.dart';
 import 'package:rehabilitation_app/ui/app_theme.dart';
 
 class PatientProfilePage extends StatefulWidget {
@@ -28,7 +30,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
   }
 
@@ -121,142 +123,161 @@ class _PatientProfilePageState extends State<PatientProfilePage>
     final profileData = Map<String, dynamic>.from(profile['profileData'] ?? {});
     final injuryType = profile['injuryType'] ?? profileData['injuryType'] ?? 'General Patient';
 
-    return Column(
-      children: [
-        // Top Gradient Area + App Bar
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.primaryLight],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Custom AppBar row
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.person_remove, color: Colors.white),
-                      tooltip: 'Remove Patient',
-                      onPressed: () => _confirmRemovePatient(),
-                    ),
-                  ],
-                ),
-                // Avatar
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    child: Text(
-                      widget.patientName.isNotEmpty ? widget.patientName[0].toUpperCase() : '?',
-                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
+    return NestedScrollView(
+      headerSliverBuilder: (context, innerBoxIsScrolled) {
+        return [
+          SliverList(
+            delegate: SliverChildListDelegate([
+              // Top Gradient Area + App Bar
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryLight],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  widget.patientName,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Poppins'),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    injuryType,
-                    style: const TextStyle(fontSize: 14, color: Colors.white, fontFamily: 'Poppins'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildHeaderAction(Icons.chat_bubble_outline, 'Message', () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ConversationScreen(
-                            name: widget.patientName,
-                            initials: widget.patientName.isNotEmpty ? widget.patientName[0] : '?',
-                            message: "Hello!",
-                            receiverId: widget.patientId,
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Custom AppBar row
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.person_remove, color: Colors.white),
+                            tooltip: 'Remove Patient',
+                            onPressed: () => _confirmRemovePatient(),
+                          ),
+                        ],
+                      ),
+                      // Avatar
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: CircleAvatar(
+                          radius: 35,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          child: Text(
+                            widget.patientName.isNotEmpty ? widget.patientName[0].toUpperCase() : '?',
+                            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ),
-                      );
-                    }),
-                    const SizedBox(width: 16),
-                    _buildHeaderAction(Icons.videocam_outlined, 'Monitor', () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ExoskeletonDegreeSetupPage(
-                            patientName: widget.patientName,
-                            exerciseTitle: 'Session Monitoring',
-                          ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        widget.patientName,
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Poppins'),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                      );
-                    }),
-                  ],
+                        child: Text(
+                          injuryType,
+                          style: const TextStyle(fontSize: 14, color: Colors.white, fontFamily: 'Poppins'),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildHeaderAction(Icons.chat_bubble_outline, 'Message', () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ConversationScreen(
+                                  name: widget.patientName,
+                                  initials: widget.patientName.isNotEmpty ? widget.patientName[0] : '?',
+                                  message: "Hello!",
+                                  receiverId: widget.patientId,
+                                ),
+                              ),
+                            );
+                          }),
+                          const SizedBox(width: 16),
+                          _buildHeaderAction(Icons.call, 'Call Patient', () async {
+                            final phone = profile['phone'] ?? profileData['phone'] ?? '';
+                            if (phone.toString().trim().isNotEmpty) {
+                              final uri = Uri.parse('tel:${phone.toString().trim()}');
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              } else {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Cannot launch phone dialer')),
+                                  );
+                                }
+                              }
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('No phone number available for this patient.')),
+                                );
+                              }
+                            }
+                          }),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 20),
-              ],
+              ),
+              
+              // Info Box
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _buildInfoSection(profile, profileData),
+              ),
+              
+              // Tabs Spacing
+              const SizedBox(height: 10),
+            ]),
+          ),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _TabBarDelegate(
+              TabBar(
+                controller: _tabController,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: AppColors.primary,
+                indicatorSize: TabBarIndicatorSize.label,
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+                tabs: const [
+                  Tab(text: 'Information'),
+                  Tab(text: 'Recovery Plans'),
+                  Tab(text: 'Appointments'),
+                  Tab(text: 'History'),
+                ],
+              ),
             ),
           ),
-        ),
-        
-        // Info Box
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _buildInfoSection(profile, profileData),
-        ),
-        
-        // Tabs
-        const SizedBox(height: 10),
-        TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: AppColors.primary,
-          indicatorSize: TabBarIndicatorSize.label,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
-          tabs: const [
-            Tab(text: 'Recovery Plans'),
-            Tab(text: 'Appointments'),
-            Tab(text: 'History'),
-          ],
-        ),
-        
-        // TabBarView inside Expanded so it scrolls independently
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildRecoveryPlansTab(),
-              _buildAppointmentsTab(),
-              _buildHistoryTab(),
-            ],
-          ),
-        ),
-      ],
+        ];
+      },
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildInformationTab(profile, profileData),
+          _buildRecoveryPlansTab(),
+          _buildAppointmentsTab(),
+          _buildHistoryTab(),
+        ],
+      ),
     );
   }
 
@@ -289,9 +310,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
         children: [
           _buildInfoItem(Icons.cake_outlined, 'Age', '${profile['age'] ?? profileData['age'] ?? 'N/A'}'),
           Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.2)),
-          _buildInfoItem(Icons.monitor_weight_outlined, 'Weight', '${profile['weight'] ?? profileData['weight'] ?? '-'} kg'),
-          Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.2)),
-          _buildInfoItem(Icons.phone_outlined, 'Phone', '${profile['phone'] ?? 'N/A'}'),
+          _buildInfoItem(Icons.phone_outlined, 'Phone', '${profile['phone'] ?? profileData['phone'] ?? 'N/A'}'),
         ],
       ),
     );
@@ -305,6 +324,71 @@ class _PatientProfilePageState extends State<PatientProfilePage>
         Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87, fontFamily: 'Poppins')),
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey, fontFamily: 'Poppins')),
       ],
+    );
+  }
+
+  Widget _buildInformationTab(Map<String, dynamic> profile, Map<String, dynamic> profileData) {
+    final Map<String, dynamic> allInfo = {};
+    
+    profile.forEach((key, value) {
+      if (!['id', '_id', 'profileImage', 'password', 'assignedDoctorId', 'createdAt', 'updatedAt', '__v', 'profileData'].contains(key) && value != null && value.toString().isNotEmpty) {
+        allInfo[key] = value;
+      }
+    });
+    
+    profileData.forEach((key, value) {
+      if (!['id', '_id'].contains(key) && value != null && value.toString().isNotEmpty) {
+        allInfo[key] = value;
+      }
+    });
+
+    if (allInfo.isEmpty) {
+      return const Center(child: Text('No information available.', style: TextStyle(fontFamily: 'Poppins')));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: allInfo.length,
+      itemBuilder: (context, index) {
+        final key = allInfo.keys.elementAt(index);
+        final value = allInfo[key];
+        
+        // Format key (e.g. injuryType -> Injury Type)
+        String formattedKey = key.replaceAllMapped(RegExp(r'[A-Z]'), (match) => ' ${match.group(0)}');
+        formattedKey = formattedKey[0].toUpperCase() + formattedKey.substring(1);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: Text(
+                  formattedKey,
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontFamily: 'Poppins'),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  value.toString(),
+                  style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87, fontFamily: 'Poppins'),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -432,8 +516,21 @@ class _PatientProfilePageState extends State<PatientProfilePage>
         final endDate = plan['endDate'] ?? 'N/A';
         final title = plan['exercisePlan']?['title'] ?? 'Recovery Plan';
         
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RecoveryPlanScreen(
+                  isDoctorView: true,
+                  initialPlanData: plan,
+                  initialPatientProfile: _patientData!['profile'],
+                ),
+              ),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -496,10 +593,11 @@ class _PatientProfilePageState extends State<PatientProfilePage>
               ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Future<void> _confirmDeleteRecoveryPlan(String planId) async {
     final bool? confirm = await showDialog(
@@ -566,5 +664,28 @@ class _PatientProfilePageState extends State<PatientProfilePage>
         ),
       ),
     );
+  }
+}
+
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+  _TabBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: AppColors.background,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_TabBarDelegate oldDelegate) {
+    return false;
   }
 }
