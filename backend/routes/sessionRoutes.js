@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const reportController = require('../controllers/reportController');
 
 // === PUBLIC routes (service-token auth only) ===
-router.patch('/:sessionId/report', reportController.patchReport);
+router.patch('/:sessionId/report', sessionController.receiveAiReport);
 
 // === Everything below here requires JWT ===
 router.use(authMiddleware);
