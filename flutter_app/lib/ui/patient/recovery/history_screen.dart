@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -14,7 +15,6 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   int selectedTab = 0;
   bool isLoading = true;
-  int unreadNotifs = 0;
 
   List<Map<String, dynamic>> sessions = [];
 
@@ -27,9 +27,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _fetchHistory() async {
     try {
       final data = await ApiService.getPatientExercises();
-      final stats = await ApiService.getPatientDashboardStats();
-      int unread = stats['unreadNotifications'] ?? 0;
-      
       List<Map<String, dynamic>> mapped = data.map((e) {
         // Map completions to status logic
         int total = e['repsTotal'] ?? 10;
@@ -54,7 +51,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (mounted) {
         setState(() {
           sessions = mapped;
-          unreadNotifs = unread;
           isLoading = false;
         });
       }
@@ -98,19 +94,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
-                  IconButton(
-                    icon: Badge(
-                      isLabelVisible: unreadNotifs > 0,
-                      label: Text('$unreadNotifs'),
-                      child: const Icon(Icons.notifications_outlined),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                      ).then((_) => _fetchHistory());
-                    },
-                  ),
+                  const NotificationBell(),
                   IconButton(
                     icon: const Icon(Icons.settings),
                     onPressed: () {

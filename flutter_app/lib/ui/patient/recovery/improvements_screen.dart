@@ -6,6 +6,7 @@ import 'package:rehabilitation_app/ui/exercises/real_time_data_page.dart';
 import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 import 'package:rehabilitation_app/ui/patient/home/patient_bottom_nav.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 
 import 'package:rehabilitation_app/services/api_service.dart';
 
@@ -22,7 +23,6 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
   String latestExerciseTitle = "No History Yet";
   String latestExerciseTime = "";
   List<double> weeklyProgress = [0, 0, 0, 0, 0, 0];
-  int unreadNotifs = 0;
 
   @override
   void initState() {
@@ -58,15 +58,12 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
             List<double>.from(stats['weeklyProgress'].map((x) => x.toDouble()));
       }
 
-      int unread = stats['unreadNotifications'] ?? 0;
-
       if (mounted) {
         setState(() {
           progressScore = score;
           latestExerciseTitle = exTitle;
           latestExerciseTime = exTime;
           weeklyProgress = wp;
-          unreadNotifs = unread;
           isLoading = false;
         });
       }
@@ -112,21 +109,7 @@ class _ImprovementScreenState extends State<ImprovementScreen> {
                     const Spacer(),
                     Row(
                       children: [
-                        IconButton(
-                          icon: Badge(
-                            isLabelVisible: unreadNotifs > 0,
-                            label: Text('$unreadNotifs'),
-                            child: const Icon(Icons.notifications_outlined),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const NotificationsPage()),
-                            ).then((_) => _fetchData());
-                          },
-                        ),
+                        const NotificationBell(),
                         IconButton(
                           icon: const Icon(Icons.settings),
                           onPressed: () {

@@ -121,131 +121,132 @@ class _PatientProfilePageState extends State<PatientProfilePage>
     final profileData = Map<String, dynamic>.from(profile['profileData'] ?? {});
     final injuryType = profile['injuryType'] ?? profileData['injuryType'] ?? 'General Patient';
 
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          expandedHeight: 220,
-          pinned: true,
-          backgroundColor: AppColors.primary,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.person_remove),
-              color: Colors.white,
-              tooltip: 'Remove Patient',
-              onPressed: () => _confirmRemovePatient(),
+    return Column(
+      children: [
+        // Top Gradient Area + App Bar
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primaryLight],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
-          flexibleSpace: FlexibleSpaceBar(
-            background: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryLight],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Custom AppBar row
+                Row(
                   children: [
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: CircleAvatar(
-                        radius: 35,
-                        backgroundColor: Colors.white.withOpacity(0.2),
-                        child: Text(
-                          widget.patientName[0].toUpperCase(),
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      widget.patientName,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Poppins'),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        injuryType,
-                        style: const TextStyle(fontSize: 14, color: Colors.white, fontFamily: 'Poppins'),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildHeaderAction(Icons.chat_bubble_outline, 'Message', () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ConversationScreen(
-                                name: widget.patientName,
-                                initials: widget.patientName[0],
-                                message: "Hello!",
-                                receiverId: widget.patientId,
-                              ),
-                            ),
-                          );
-                        }),
-                        const SizedBox(width: 16),
-                        _buildHeaderAction(Icons.videocam_outlined, 'Monitor', () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ExoskeletonDegreeSetupPage(
-                                patientName: widget.patientName,
-                                exerciseTitle: 'Session Monitoring',
-                              ),
-                            ),
-                          );
-                        }),
-                      ],
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.person_remove, color: Colors.white),
+                      tooltip: 'Remove Patient',
+                      onPressed: () => _confirmRemovePatient(),
                     ),
                   ],
                 ),
-              ),
+                // Avatar
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: Text(
+                      widget.patientName.isNotEmpty ? widget.patientName[0].toUpperCase() : '?',
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  widget.patientName,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Poppins'),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    injuryType,
+                    style: const TextStyle(fontSize: 14, color: Colors.white, fontFamily: 'Poppins'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildHeaderAction(Icons.chat_bubble_outline, 'Message', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ConversationScreen(
+                            name: widget.patientName,
+                            initials: widget.patientName.isNotEmpty ? widget.patientName[0] : '?',
+                            message: "Hello!",
+                            receiverId: widget.patientId,
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(width: 16),
+                    _buildHeaderAction(Icons.videocam_outlined, 'Monitor', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ExoskeletonDegreeSetupPage(
+                            patientName: widget.patientName,
+                            exerciseTitle: 'Session Monitoring',
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildInfoSection(profile, profileData),
-              ),
-              const SizedBox(height: 10),
-              TabBar(
-                controller: _tabController,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: AppColors.primary,
-                indicatorSize: TabBarIndicatorSize.label,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
-                tabs: const [
-                  Tab(text: 'Recovery Plans'),
-                  Tab(text: 'Appointments'),
-                  Tab(text: 'History'),
-                ],
-              ),
-            ],
-          ),
+        
+        // Info Box
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: _buildInfoSection(profile, profileData),
         ),
-        SliverFillRemaining(
+        
+        // Tabs
+        const SizedBox(height: 10),
+        TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: AppColors.primary,
+          indicatorSize: TabBarIndicatorSize.label,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          tabs: const [
+            Tab(text: 'Recovery Plans'),
+            Tab(text: 'Appointments'),
+            Tab(text: 'History'),
+          ],
+        ),
+        
+        // TabBarView inside Expanded so it scrolls independently
+        Expanded(
           child: TabBarView(
             controller: _tabController,
             children: [

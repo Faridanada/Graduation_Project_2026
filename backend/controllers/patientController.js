@@ -409,7 +409,20 @@ const patientController = {
         return res.status(400).json({ statusCode: 400, message: 'Invalid phase index' });
       }
 
-      await dbService.markPhaseCompleted(planId, index);
+      const plan = await dbService.markPhaseCompleted(planId, index);
+      
+      if (plan && plan.overallProgress === 100) {
+        const patientId = req.user.id;
+        const patient = await dbService.getUserById(patientId);
+        if (patient && patient.assignedDoctorId) {
+          await dbService.createNotification(
+            patient.assignedDoctorId,
+            "Recovery Plan Completed",
+            `${patient.name || 'Your patient'} has completely finished their recovery plan!`
+          );
+        }
+      }
+
       res.json({ statusCode: 200, message: 'Phase marked as completed' });
     } catch (error) {
       console.error('Error marking phase completed:', error);

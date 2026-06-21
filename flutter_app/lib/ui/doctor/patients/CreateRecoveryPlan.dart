@@ -54,7 +54,23 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
       } catch (_) {}
       
       if (plan['phases'] != null) {
-        _phases.addAll(List<Map<String, dynamic>>.from(plan['phases'].map((e) => Map<String, dynamic>.from(e))));
+        _phases.addAll(List<Map<String, dynamic>>.from(plan['phases'].map((e) {
+          final p = Map<String, dynamic>.from(e);
+          if (p['exercises'] == null) {
+            // Migration for old plans
+            p['exercises'] = [{
+              'exerciseType': p['exerciseType'] ?? 'Active',
+              'minAngle': p['minAngle'] ?? 0,
+              'maxAngle': p['maxAngle'] ?? 90,
+              'numberOfExercises': p['numberOfExercises'] ?? 3,
+              'numberOfReps': p['numberOfReps'] ?? 10,
+              'stabilizationDays': p['stabilizationDays'] ?? 7,
+            }];
+          } else {
+             p['exercises'] = List<Map<String, dynamic>>.from(p['exercises'].map((ex) => Map<String, dynamic>.from(ex)));
+          }
+          return p;
+        })));
       }
       if (plan['todayTip'] != null) {
         _tipController.text = plan['todayTip'];
@@ -134,12 +150,21 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
   void _addPhase() {
     setState(() {
       _phases.add({
-        'title': 'Phase ${_phases.length + 1}',
         'subtitle': '',
         'status': 'Upcoming',
         'date': 'TBD',
         'active': false,
         'completed': false,
+        'exercises': [
+          {
+            'exerciseType': 'Active',
+            'minAngle': 0,
+            'maxAngle': 90,
+            'numberOfExercises': 3,
+            'numberOfReps': 10,
+            'stabilizationDays': 7,
+          }
+        ],
       });
     });
   }
@@ -162,13 +187,12 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
 
     for (int i = 0; i < _phases.length; i++) {
       final p = _phases[i];
-      final title = (p['title'] ?? '').trim();
       final subtitle = (p['subtitle'] ?? '').trim();
       final date = p['date'] ?? 'TBD';
 
-      if (title.isEmpty || subtitle.isEmpty || date == 'TBD' || date.isEmpty || date == 'Select Dates') {
+      if (date == 'TBD' || date.isEmpty || date == 'Select Dates') {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please fill out all fields (Title, Subtitle, Dates) for Phase ${i + 1}.')),
+          SnackBar(content: Text('Please select dates for Phase ${i + 1}.')),
         );
         return;
       }
@@ -188,22 +212,14 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
       'phases': _phases.asMap().entries.map((e) {
         return {
           'index': e.key + 1,
-          'title': e.value['title'],
-          'subtitle': e.value['subtitle'],
-          'status': e.value['status'],
-          'date': e.value['date'],
           'active': e.value['active'],
           'completed': e.value['completed'],
           'startDate': e.value['startDate'],
           'endDate': e.value['endDate'],
+          'exercises': e.value['exercises'],
         };
       }).toList(),
-      'exercisePlan': {
-        'title': 'Leg Extensions',
-        'mode': 'Active Mode',
-        'repsTotal': _repsTotal,
-        'estimatedTimeMin': _estimatedTimeMin,
-      },
+      'todayTip': _tipController.text,
       'todayTip': _tipController.text,
     };
 
@@ -259,44 +275,6 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildCard(
-                    title: "Exoskeleton Exercise (Leg Extensions)",
-                    child: Column(
-                      children: [
-                        const Text(
-                            "The exoskeleton currently supports Leg Extensions.",
-                            style: TextStyle(color: Colors.grey)),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: _repsTotal.toString(),
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                    labelText: 'Target Reps',
-                                    border: OutlineInputBorder()),
-                                onChanged: (val) =>
-                                    _repsTotal = int.tryParse(val) ?? 15,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: _estimatedTimeMin.toString(),
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                    labelText: 'Duration (Min)',
-                                    border: OutlineInputBorder()),
-                                onChanged: (val) =>
-                                    _estimatedTimeMin = int.tryParse(val) ?? 20,
-                              ),
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: 16),
                   _buildCard(
                     title: "Phases",
@@ -304,48 +282,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         for (int i = 0; i < _phases.length; i++)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        labelText: 'Title',
-                                        border: const OutlineInputBorder()),
-                                    onChanged: (v) => _phases[i]['title'] = v,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  flex: 2,
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        labelText: 'Subtitle',
-                                        border: const OutlineInputBorder()),
-                                    onChanged: (v) =>
-                                        _phases[i]['subtitle'] = v,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  flex: 2,
-                                  child: _buildDatePickerBox(
-                                    label: 'Date Range',
-                                    date: _phases[i]['date'] == 'TBD' || _phases[i]['date'].isEmpty ? 'Select Dates' : _phases[i]['date'],
-                                    onTap: () => _selectPhaseDateRange(i),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle,
-                                      color: Colors.red),
-                                  onPressed: () =>
-                                      setState(() => _phases.removeAt(i)),
-                                )
-                              ],
-                            ),
-                          ),
+                          _buildPhaseEditor(i),
                         _buildOutlinedActionButton(
                           onPressed: _addPhase,
                           icon: const Icon(Icons.add),
@@ -402,6 +339,260 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPhaseEditor(int i) {
+    List<dynamic> exercises = _phases[i]['exercises'] ?? [];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Phase ${i + 1}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              IconButton(
+                icon: const Icon(Icons.remove_circle, color: Colors.red),
+                onPressed: () => setState(() => _phases.removeAt(i)),
+              )
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            initialValue: _phases[i]['subtitle'],
+            decoration: const InputDecoration(labelText: 'Subtitle (Optional)', border: OutlineInputBorder()),
+            onChanged: (v) => _phases[i]['subtitle'] = v,
+          ),
+          const SizedBox(height: 12),
+          _buildDatePickerBox(
+            label: 'Date Range',
+            date: (_phases[i]['date'] == null || _phases[i]['date'] == 'TBD' || _phases[i]['date'].isEmpty) ? 'Select Dates' : _phases[i]['date'],
+            onTap: () => _selectPhaseDateRange(i),
+          ),
+          const SizedBox(height: 20),
+          
+          for (int eIdx = 0; eIdx < exercises.length; eIdx++)
+            _buildExerciseEditor(i, eIdx),
+
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  if (_phases[i]['exercises'] == null) {
+                    _phases[i]['exercises'] = [];
+                  }
+                  _phases[i]['exercises'].add({
+                    'exerciseType': 'Active',
+                    'minAngle': 0,
+                    'maxAngle': 90,
+                    'numberOfExercises': 3,
+                    'numberOfReps': 10,
+                    'stabilizationDays': 7,
+                  });
+                });
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add Exercise'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseEditor(int phaseIdx, int eIdx) {
+    final exercises = _phases[phaseIdx]['exercises'];
+    final type = exercises[eIdx]['exerciseType'] ?? 'Active';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Exercise Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              if (exercises.length > 1)
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.red, size: 20),
+                  onPressed: () => setState(() => exercises.removeAt(eIdx)),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () => _showExerciseTypePicker(phaseIdx, eIdx),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade400),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      type,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (type == 'Stabilization')
+            TextFormField(
+              initialValue: exercises[eIdx]['stabilizationDays'].toString(),
+              decoration: const InputDecoration(labelText: 'Stabilization Days', border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+              onChanged: (v) => exercises[eIdx]['stabilizationDays'] = int.tryParse(v) ?? 7,
+            )
+          else
+            Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: exercises[eIdx]['numberOfExercises'].toString(),
+                        decoration: const InputDecoration(labelText: 'No. of Exercises', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) => exercises[eIdx]['numberOfExercises'] = int.tryParse(v) ?? 3,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: exercises[eIdx]['numberOfReps'].toString(),
+                        decoration: const InputDecoration(labelText: 'No. of Reps', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) => exercises[eIdx]['numberOfReps'] = int.tryParse(v) ?? 10,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: exercises[eIdx]['minAngle'].toString(),
+                        decoration: const InputDecoration(labelText: 'Min Angle (°)', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) => exercises[eIdx]['minAngle'] = int.tryParse(v) ?? 0,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: exercises[eIdx]['maxAngle'].toString(),
+                        decoration: const InputDecoration(labelText: 'Max Angle (°)', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) => exercises[eIdx]['maxAngle'] = int.tryParse(v) ?? 90,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showExerciseTypePicker(int phaseIndex, int exerciseIndex) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Select Exercise Type", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                _buildTypeTile(
+                  phaseIndex, 
+                  exerciseIndex,
+                  'Stabilization', 
+                  'Completely immobile phase designed to allow the area to heal properly without any strain or movement.', 
+                  Icons.lock_outline, 
+                  Colors.orange
+                ),
+                const Divider(height: 1, thickness: 0.5),
+                _buildTypeTile(
+                  phaseIndex, 
+                  exerciseIndex,
+                  'Passive', 
+                  'The exoskeleton motor performs the entire movement according to the preset angles, requiring no effort from the patient.', 
+                  Icons.autorenew, 
+                  Colors.purple
+                ),
+                const Divider(height: 1, thickness: 0.5),
+                _buildTypeTile(
+                  phaseIndex, 
+                  exerciseIndex,
+                  'Passive-Monitored', 
+                  'The motor performs the movement, but it is actively monitored via live stream so the angle ranges can be adjusted in real-time.', 
+                  Icons.videocam_outlined, 
+                  Colors.red
+                ),
+                const Divider(height: 1, thickness: 0.5),
+                _buildTypeTile(
+                  phaseIndex, 
+                  exerciseIndex,
+                  'Active', 
+                  'The patient performs the movement actively using their own strength, with the device tracking their range of motion and repetitions.', 
+                  Icons.accessibility_new_outlined, 
+                  Colors.green
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTypeTile(int phaseIndex, int exerciseIndex, String type, String desc, IconData icon, Color color) {
+    return ListTile(
+      leading: Icon(icon, color: color, size: 28),
+      title: Text(type, style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text(desc, style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.3)),
+      isThreeLine: true,
+      onTap: () {
+        setState(() => _phases[phaseIndex]['exercises'][exerciseIndex]['exerciseType'] = type);
+        Navigator.pop(context);
+      },
     );
   }
 

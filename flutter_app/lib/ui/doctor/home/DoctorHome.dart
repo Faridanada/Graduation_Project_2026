@@ -11,6 +11,7 @@ import 'package:rehabilitation_app/ui/doctor/patients/ActivePatientsPage.dart';
 import 'package:rehabilitation_app/ui/doctor/management/TodaysSessionsPage.dart';
 import 'package:rehabilitation_app/ui/shared/AlertsPage.dart';
 import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 import 'package:rehabilitation_app/ui/doctor/profile/DoctorProfile.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/AddNewPatient.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/PatientProfilePage.dart';
@@ -181,51 +182,7 @@ class _DoctorHomeState extends State<DoctorHome> {
       shadowColor: Colors.grey.withOpacity(0.1),
       title: Text('FLEXIO', style: AppTextStyles.heading(context)),
       actions: [
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const NotificationsPage()),
-            ).then((_) => _loadDashboardData());
-          },
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Icon(
-                  Icons.notifications_none,
-                  color: Colors.black,
-                  size: 28,
-                ),
-              ),
-              if (doctorStats['alerts'] != null && doctorStats['alerts'] > 0)
-                Positioned(
-                  right: 8,
-                  top: 10,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints:
-                        const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      '${doctorStats['alerts']}',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        const NotificationBell(),
         // Settings button
         IconButton(
           icon: const Icon(Icons.settings_outlined),

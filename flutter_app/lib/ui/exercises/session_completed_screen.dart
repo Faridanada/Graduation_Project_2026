@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/history_screen.dart'; // <-- make sure this exists
 import 'package:rehabilitation_app/ui/patient/home/patient_bottom_nav.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 
 class SessionCompletedScreen extends StatelessWidget {
   const SessionCompletedScreen({super.key});
@@ -37,7 +38,7 @@ class SessionCompletedScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const Spacer(),
-                  const Icon(Icons.notifications_none),
+                  const NotificationBell(),
                   const SizedBox(width: 12),
                   const Icon(Icons.settings),
                 ],

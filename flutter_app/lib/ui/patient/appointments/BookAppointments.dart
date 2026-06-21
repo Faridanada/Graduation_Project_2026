@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
-import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 import 'package:intl/intl.dart';
 import 'package:rehabilitation_app/ui/doctor/management/newAppointment.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
@@ -197,16 +197,7 @@ class _BookAppointState extends State<BookAppoint> {
       ),
       centerTitle: true,
       actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const NotificationsPage()),
-            );
-          },
-        ),
+        const NotificationBell(),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.black),
           onPressed: () {

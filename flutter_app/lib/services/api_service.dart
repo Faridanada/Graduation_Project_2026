@@ -150,7 +150,11 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'];
+      final data = jsonDecode(response.body)['data'];
+      if (data != null && data['unreadNotifications'] != null) {
+        unreadNotificationsNotifier.value = data['unreadNotifications'] as int;
+      }
+      return data ?? {};
     }
     return {};
   }
@@ -533,7 +537,11 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'] ?? {};
+      final data = jsonDecode(response.body)['data'] ?? {};
+      if (data['unreadNotifications'] != null) {
+        unreadNotificationsNotifier.value = data['unreadNotifications'] as int;
+      }
+      return data;
     }
     return {};
   }
@@ -712,7 +720,15 @@ class ApiService {
       headers: _headers(token),
     );
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'] ?? [];
+      final list = jsonDecode(response.body)['data'] ?? [];
+      int unreadCount = 0;
+      for (var item in list) {
+        if (item['isRead'] == false || item['isRead'] == 'false') {
+          unreadCount++;
+        }
+      }
+      unreadNotificationsNotifier.value = unreadCount;
+      return list;
     }
     return [];
   }
@@ -730,6 +746,7 @@ class ApiService {
       Uri.parse('$baseUrl/$endpoint/notifications/$notifId/read'),
       headers: _headers(token),
     );
+    unreadNotificationsNotifier.value = (unreadNotificationsNotifier.value - 1).clamp(0, 999999);
   }
 
   /// Mark all notifications as read.
@@ -745,6 +762,7 @@ class ApiService {
       Uri.parse('$baseUrl/$endpoint/notifications/read-all'),
       headers: _headers(token),
     );
+    unreadNotificationsNotifier.value = 0;
   }
 
   // --- APPOINTMENTS & AVAILABILITY ENDPOINTS ---
@@ -892,6 +910,9 @@ class ApiService {
 
   /// Global notifier for profile updates
   static final ValueNotifier<int> profileUpdateNotifier = ValueNotifier<int>(0);
+
+  /// Global notifier for unread notifications count
+  static final ValueNotifier<int> unreadNotificationsNotifier = ValueNotifier<int>(0);
 
   /// Update user profile
   static Future<bool> updateProfile(Map<String, dynamic> data) async {

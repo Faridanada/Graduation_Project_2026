@@ -7,6 +7,7 @@ import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 import 'package:rehabilitation_app/ui/patient/home/patient_bottom_nav.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 
 class RealTimeDataScreen extends StatefulWidget {
   const RealTimeDataScreen({super.key});
@@ -24,7 +25,6 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
   String exerciseTitle = "No Active Session";
   int repsTotal = 0;
   int repsCompleted = 0;
-  int unreadNotifs = 0;
 
   @override
   void initState() {
@@ -52,7 +52,6 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
             repsCompleted = latest['repsCompleted'] ?? 0;
           }
 
-          unreadNotifs = stats['unreadNotifications'] ?? 0;
           isLoading = false;
         });
       }
@@ -85,19 +84,7 @@ class _RealTimeDataScreenState extends State<RealTimeDataScreen> {
               color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         actions: [
-          IconButton(
-            icon: Badge(
-              isLabelVisible: unreadNotifs > 0,
-              label: Text('$unreadNotifs'),
-              child: const Icon(Icons.notifications_outlined, color: Colors.black),
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NotificationsPage()),
-              ).then((_) => _fetchSessionData());
-            },
-          ),
+          const NotificationBell(),
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.black),
             onPressed: () {

@@ -6,6 +6,7 @@ import 'package:rehabilitation_app/ui/patient/doctors/FindDoctorScreen.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 class RecoveryPlanScreen extends StatefulWidget {
   const RecoveryPlanScreen({super.key});
 
@@ -18,7 +19,6 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
   Map<String, dynamic>? _planData;
   Map<String, dynamic>? _patientProfile;
   bool _isReminding = false;
-  int _unreadNotifs = 0;
 
   @override
   void initState() {
@@ -36,7 +36,6 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
       setState(() {
         _patientProfile = profile;
         _planData = plan;
-        _unreadNotifs = stats['unreadNotifications'] ?? 0;
         _isLoading = false;
       });
     }
@@ -83,23 +82,9 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationsPage(),
-                    ),
-                  ).then((_) => _fetchData());
-                },
                 child: Center(
-                  child: Badge(
-                    isLabelVisible: _unreadNotifs > 0,
-                    label: Text('$_unreadNotifs'),
-                    child: const Icon(Icons.notifications_none),
-                  ),
+                  child: const NotificationBell(),
                 ),
-              ),
             ),
           ],
         ),
@@ -199,21 +184,7 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                           ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const NotificationsPage(),
-                            ),
-                          ).then((_) => _fetchData());
-                        },
-                        child: Badge(
-                          isLabelVisible: _unreadNotifs > 0,
-                          label: Text('$_unreadNotifs'),
-                          child: const Icon(Icons.notifications_none),
-                        ),
-                      ),
+                      const NotificationBell(),
                       const SizedBox(width: 12),
                       GestureDetector(
                         onTap: () {
@@ -374,11 +345,11 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                         for (int i = 0; i < phases.length; i++) ...[
                           _PhaseCard(
                             number: phases[i]['status'] == 'Completed'
-                                ? "✓"
-                                : "${i + 1}",
-                            title: phases[i]['title'] ?? 'Phase',
+                                ? "✔"
+                                : (i + 1).toString().padLeft(2, '0'),
                             subtitle: phases[i]['subtitle'] ?? '',
                             date: phases[i]['date'] ?? '',
+                            exercises: phases[i]['exercises'] ?? [],
                             status: phases[i]['status'] ?? 'Upcoming',
                             borderColor: phases[i]['status'] == 'Completed' ||
                                     phases[i]['status'] == 'Active'
@@ -679,13 +650,12 @@ class _SideInfo extends StatelessWidget {
   }
 }
 
-/// PHASE CARD
 class _PhaseCard extends StatelessWidget {
   final String number;
-  final String title;
   final String subtitle;
   final String date;
   final String status;
+  final List<dynamic> exercises;
 
   final Color borderColor;
   final Color badgeColor;
@@ -695,10 +665,10 @@ class _PhaseCard extends StatelessWidget {
 
   const _PhaseCard({
     required this.number,
-    required this.title,
     required this.subtitle,
     required this.date,
     required this.status,
+    required this.exercises,
     required this.borderColor,
     required this.badgeColor,
     required this.circleColor,
@@ -725,7 +695,7 @@ class _PhaseCard extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                title,
+                "Phase ${int.tryParse(number) ?? number}",
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -735,19 +705,75 @@ class _PhaseCard extends StatelessWidget {
                   fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  height: 1.4,
+              if (subtitle.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    height: 1.4,
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 18),
+              
+              for (var ex in exercises) ...[
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          ex['exerciseType'] ?? 'Active',
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      if (ex['exerciseType'] == 'Stabilization')
+                        Text(
+                          "${ex['stabilizationDays'] ?? 7} Days",
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        )
+                      else
+                        Column(
+                          children: [
+                            Text(
+                              "${ex['minAngle'] ?? 0}° - ${ex['maxAngle'] ?? 90}°",
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "${ex['numberOfExercises'] ?? 3} Ex  •  ${ex['numberOfReps'] ?? 10} Reps",
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              
+              const SizedBox(height: 4),
               Text(
                 date,
                 textAlign: TextAlign.center,
