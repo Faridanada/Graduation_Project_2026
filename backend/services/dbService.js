@@ -1569,6 +1569,11 @@ const dbService = {
       }
 
       plan.phases[phaseIndex].isManuallyCompleted = true;
+      plan.phases[phaseIndex].status = 'Completed';
+
+      const totalPhases = plan.phases.length;
+      const completedPhases = plan.phases.filter(p => p.isManuallyCompleted || p.status === 'Completed').length;
+      plan.overallProgress = totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
 
       await ddbDocClient.send(new PutCommand({
         TableName: "RecoveryPlans",
