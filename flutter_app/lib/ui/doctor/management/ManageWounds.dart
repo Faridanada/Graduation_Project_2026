@@ -237,7 +237,9 @@ class _ManageWoundsState extends State<ManageWounds> {
                 children: [
                   imagePath != null
                       ? Image.network(
-                          'http://10.0.2.2:5000$imagePath',
+                          imagePath.startsWith('http') 
+                              ? imagePath 
+                              : '${ApiService.baseUrl.replaceAll('/api', '')}/$imagePath',
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => _noImageBox(woundArea),
                         )

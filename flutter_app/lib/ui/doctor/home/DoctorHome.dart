@@ -11,12 +11,12 @@ import 'package:rehabilitation_app/ui/doctor/patients/ActivePatientsPage.dart';
 import 'package:rehabilitation_app/ui/doctor/management/TodaysSessionsPage.dart';
 import 'package:rehabilitation_app/ui/shared/AlertsPage.dart';
 import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 import 'package:rehabilitation_app/ui/doctor/profile/DoctorProfile.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/AddNewPatient.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/PatientProfilePage.dart';
 import 'package:rehabilitation_app/ui/exercises/PatientExerciseMonitorList.dart';
 import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
-import 'DoctorSearchPage.dart';
 
 /// Doctor home page - Main dashboard for healthcare professionals
 class DoctorHome extends StatefulWidget {
@@ -182,57 +182,7 @@ class _DoctorHomeState extends State<DoctorHome> {
       shadowColor: Colors.grey.withOpacity(0.1),
       title: Text('FLEXIO', style: AppTextStyles.heading(context)),
       actions: [
-        // Search button
-        IconButton(
-          icon: const Icon(Icons.search, size: 28),
-          color: Colors.black,
-          onPressed: _openSearchPage,
-        ),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const NotificationsPage()),
-            ).then((_) => _loadDashboardData());
-          },
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Icon(
-                  Icons.notifications_none,
-                  color: Colors.black,
-                  size: 28,
-                ),
-              ),
-              if (doctorStats['alerts'] != null && doctorStats['alerts'] > 0)
-                Positioned(
-                  right: 8,
-                  top: 10,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints:
-                        const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      '${doctorStats['alerts']}',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        const NotificationBell(),
         // Settings button
         IconButton(
           icon: const Icon(Icons.settings_outlined),
@@ -248,12 +198,6 @@ class _DoctorHomeState extends State<DoctorHome> {
     );
   }
 
-  void _openSearchPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const DoctorSearchPage()),
-    );
-  }
 
   Widget _buildStatusOverview() {
     return Padding(
@@ -657,9 +601,9 @@ class _DoctorHomeState extends State<DoctorHome> {
                     'name': patient['name'] ?? 'Unknown',
                     'profileImage': patient['profileImageUrl']?.toString() ?? patient['profileImage']?.toString(),
                     'age': patient['profileData']?['age']?.toString() ?? 'N/A',
-                    'progress': '0', // Not yet tracked in backend
-                    'status': 'New',
-                    'statusColor': AppColors.primary,
+                    'progress': patient['progress']?.toString() ?? '0',
+                    'status': (patient['progress'] ?? 0) == 0 ? 'New' : ((patient['hasOverduePhase'] == true) ? 'Needs Attention' : 'On Track'),
+                    'statusColor': (patient['progress'] ?? 0) == 0 ? Colors.blue : ((patient['hasOverduePhase'] == true) ? Colors.orange : Colors.teal),
                   };
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
@@ -1387,10 +1331,10 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
               .map((p) => {
                     'id': p['id'] ?? p['_id'] ?? '',
                     'name': p['name'] ?? 'Unknown',
-                    'age': p['age'] ?? 0,
-                    'progress': 0, // Mock for now
-                    'status': 'On Track',
-                    'statusColor': AppColors.primary,
+                    'age': p['age'] ?? p['profileData']?['age'] ?? 0,
+                    'progress': p['progress'] ?? 0,
+                    'status': (p['progress'] ?? 0) == 0 ? 'New' : ((p['hasOverduePhase'] == true) ? 'Needs Attention' : 'On Track'),
+                    'statusColor': (p['progress'] ?? 0) == 0 ? Colors.blue : ((p['hasOverduePhase'] == true) ? Colors.orange : Colors.teal),
                   })
               .toList();
           isLoading = false;
@@ -1597,9 +1541,9 @@ class _AllPatientCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    Icons.check_circle,
+                    patient['status'] == 'Needs Attention' ? Icons.warning_amber_rounded : Icons.check_circle,
                     size: 16,
-                    color: Colors.teal[500],
+                    color: patient['statusColor'] as Color,
                   ),
                 ),
               ],

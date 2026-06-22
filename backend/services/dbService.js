@@ -8,10 +8,7 @@ const {
   DeleteCommand
 } = require("@aws-sdk/lib-dynamodb");
 
-// Mock data imports commented out after DynamoDB migration
-// const appointmentsData = require("../data/appointments");
-// const exercisesData = require("../data/exercises");
-// const { requestsList } = require("../data/requests");
+
 
 const { encryptField, decryptField, hashResetToken } = require('../utils/fieldCrypto');
 
@@ -24,7 +21,7 @@ const ENCRYPTED_FIELDS = {
   Wounds: ['classification', 'analysisResult', 'notes'],
   Messages: ['messageText'],
   Notifications: ['message'],
-  Sessions: ['summary', 'events'],
+  Sessions: ['summary', 'events', 'report'],
 };
 
 // Initialize DynamoDB Client
@@ -383,15 +380,17 @@ const dbService = {
         ExpressionAttributeValues: { ":patientId": patientId }
       }));
 
-      // 5. Get the patient's recovery plan
-      const recoveryPlan = await this.getRecoveryPlan(patientId);
+      // 5. Get the patient's recovery plans
+      const recoveryPlans = await this.getAllRecoveryPlans(patientId);
 
       return {
         profile: user,
         appointments: appointmentsData.Items || [],
         exercises: exercisesData.Items || [],
         reminders: remindersData.Items || [],
-        recoveryPlan: recoveryPlan
+        recoveryPlans: recoveryPlans,
+        // Also include recoveryPlan for backward compatibility
+        recoveryPlan: recoveryPlans.length > 0 ? recoveryPlans[0] : null
       };
     } catch (error) {
       console.error("DynamoDB error (getPatientDetailsAndHistory):", error);
@@ -718,7 +717,7 @@ const dbService = {
     }
   },
 
-  // --- NEW APPOINTMENT & AVAILABILITY METHODS (Mocked for now) ---
+  // --- NEW APPOINTMENT & AVAILABILITY METHODS ---
 
   async getAppointmentsForUser(userId, role) {
     try {
@@ -1214,44 +1213,6 @@ const dbService = {
     }
   },
 
-  async createAppointment(patientId, doctorId, date, time, notes) {
-    try {
-      const newAppt = {
-        id: `appt_${Date.now()}`,
-        patientId,
-        doctorId,
-        date,
-        time,
-        notes: notes || '',
-        status: 'scheduled',
-        createdAt: new Date().toISOString()
-      };
-      await ddbDocClient.send(new PutCommand({
-        TableName: "Appointments",
-        Item: newAppt
-      }));
-      return newAppt;
-    } catch (error) {
-      console.error("DynamoDB error (createAppointment):", error);
-      throw error;
-    }
-  },
-
-  async updateAppointmentStatus(id, status) {
-    try {
-      await ddbDocClient.send(new UpdateCommand({
-        TableName: "Appointments",
-        Key: { id },
-        UpdateExpression: "SET #st = :status",
-        ExpressionAttributeNames: { "#st": "status" },
-        ExpressionAttributeValues: { ":status": status }
-      }));
-      return true;
-    } catch (error) {
-      console.error("DynamoDB error (updateAppointmentStatus):", error);
-      throw error;
-    }
-  },
 
   // --- AVAILABILITY ---
 
@@ -1284,65 +1245,100 @@ const dbService = {
 
   async getRecoveryPlan(patientId) {
     try {
-      const data = await ddbDocClient.send(new ScanCommand({
-        TableName: "RecoveryPlans",
-        FilterExpression: "patientId = :patientId",
-        ExpressionAttributeValues: { ":patientId": patientId }
-      }));
-
-      if (!data.Items || data.Items.length === 0) return null;
-
-      const plan = data.Items[0];
-
-      // Dynamically calculate phase statuses based on today's date
-      if (plan.phases && Array.isArray(plan.phases)) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        plan.phases = plan.phases.map(phase => {
-          if (phase.isManuallyCompleted) {
-            phase.status = 'Completed';
-            phase.active = false;
-            phase.completed = true;
-          } else if (phase.startDate && phase.endDate) {
-            const start = new Date(phase.startDate);
-            const end = new Date(phase.endDate);
-            start.setHours(0, 0, 0, 0);
-            end.setHours(23, 59, 59, 999);
-
-            if (today > end) {
-              phase.status = 'Overdue';
-              phase.active = true;
-              phase.completed = false;
-            } else if (today >= start && today <= end) {
-              phase.status = 'Active';
-              phase.active = true;
-              phase.completed = false;
-            } else {
-              phase.status = 'Upcoming';
-              phase.active = false;
-              phase.completed = false;
-            }
-          }
-          return phase;
-        });
-      }
-
-      return plan;
+      const plans = await this.getAllRecoveryPlans(patientId);
+      if (!plans || plans.length === 0) return null;
+      // Return the most recently created plan
+      return plans[0];
     } catch (error) {
       console.error("DynamoDB error (getRecoveryPlan):", error);
       return null;
     }
   },
 
+  async getAllRecoveryPlans(patientId) {
+    try {
+      const data = await ddbDocClient.send(new ScanCommand({
+        TableName: "RecoveryPlans",
+        FilterExpression: "patientId = :patientId",
+        ExpressionAttributeValues: { ":patientId": patientId }
+      }));
+
+      if (!data.Items || data.Items.length === 0) return [];
+
+      const plans = data.Items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      // Dynamically calculate phase statuses based on today's date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      plans.forEach(plan => {
+        if (plan.phases && Array.isArray(plan.phases)) {
+          plan.phases = plan.phases.map(phase => {
+            if (phase.isManuallyCompleted) {
+              phase.status = 'Completed';
+              phase.active = false;
+              phase.completed = true;
+            } else if (phase.startDate && phase.endDate) {
+              const start = new Date(phase.startDate);
+              const end = new Date(phase.endDate);
+              start.setHours(0, 0, 0, 0);
+              end.setHours(23, 59, 59, 999);
+
+              if (today > end) {
+                phase.status = 'Overdue';
+                phase.active = true;
+                phase.completed = false;
+              } else if (today >= start && today <= end) {
+                phase.status = 'Active';
+                phase.active = true;
+                phase.completed = false;
+              } else {
+                phase.status = 'Upcoming';
+                phase.active = false;
+                phase.completed = false;
+              }
+            }
+            return phase;
+          });
+        }
+      });
+
+      return plans;
+    } catch (error) {
+      console.error("DynamoDB error (getAllRecoveryPlans):", error);
+      return [];
+    }
+  },
+
   async createRecoveryPlan(patientId, planData) {
     try {
+      const isUpdate = !!planData.id;
+      const planId = planData.id || `plan_${Date.now()}`;
+      
       const newPlan = {
-        id: `plan_${Date.now()}`,
+        id: planId,
         patientId,
         ...planData,
-        createdAt: new Date().toISOString()
+        createdAt: planData.createdAt || new Date().toISOString()
       };
+
+      if (isUpdate) {
+        // Find and delete all future pending exercises for this plan
+        const exercisesData = await ddbDocClient.send(new ScanCommand({
+          TableName: "Exercises",
+          FilterExpression: "planId = :planId AND #st = :status",
+          ExpressionAttributeNames: { "#st": "status" },
+          ExpressionAttributeValues: { ":planId": planId, ":status": "pending" }
+        }));
+        
+        for (const ex of (exercisesData.Items || [])) {
+          await ddbDocClient.send(new DeleteCommand({
+            TableName: "Exercises",
+            Key: { id: ex.id }
+          }));
+        }
+      }
+
       await ddbDocClient.send(new PutCommand({
         TableName: "RecoveryPlans",
         Item: newPlan
@@ -1350,6 +1346,36 @@ const dbService = {
       return newPlan;
     } catch (error) {
       console.error("DynamoDB error (createRecoveryPlan):", error);
+      throw error;
+    }
+  },
+
+  async deleteRecoveryPlan(planId) {
+    try {
+      // 1. Delete all exercises tied to this plan (only pending, or all)
+      const exercisesData = await ddbDocClient.send(new ScanCommand({
+        TableName: "Exercises",
+        FilterExpression: "planId = :planId AND #st = :status",
+        ExpressionAttributeNames: { "#st": "status" },
+        ExpressionAttributeValues: { ":planId": planId, ":status": "pending" }
+      }));
+      
+      for (const ex of (exercisesData.Items || [])) {
+        await ddbDocClient.send(new DeleteCommand({
+          TableName: "Exercises",
+          Key: { id: ex.id }
+        }));
+      }
+
+      // 2. Delete the plan itself
+      await ddbDocClient.send(new DeleteCommand({
+        TableName: "RecoveryPlans",
+        Key: { id: planId }
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error("DynamoDB error (deleteRecoveryPlan):", error);
       throw error;
     }
   },
@@ -1362,6 +1388,7 @@ const dbService = {
         id: `session_${Date.now()}`,
         patientId,
         ...sessionData,
+        reportStatus: 'pending',
         createdAt: new Date().toISOString()
       };
       await ddbDocClient.send(new PutCommand({
@@ -1542,6 +1569,11 @@ const dbService = {
       }
 
       plan.phases[phaseIndex].isManuallyCompleted = true;
+      plan.phases[phaseIndex].status = 'Completed';
+
+      const totalPhases = plan.phases.length;
+      const completedPhases = plan.phases.filter(p => p.isManuallyCompleted || p.status === 'Completed').length;
+      plan.overallProgress = totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
 
       await ddbDocClient.send(new PutCommand({
         TableName: "RecoveryPlans",
@@ -1551,6 +1583,71 @@ const dbService = {
       return plan;
     } catch (error) {
       console.error("DynamoDB error (markPhaseCompleted):", error);
+      throw error;
+    }
+  },
+
+  // --- COMPLETIONS ---
+
+  async markExerciseComplete(patientId, { planId, exerciseId, done = true }) {
+    try {
+      const d = new Date();
+      const date = d.toISOString().slice(0, 10);
+      const id = `completion_${patientId}_${date}_${planId}_${exerciseId}`;
+      const now = d.toISOString();
+
+      const record = {
+        id,
+        patientId,
+        planId,
+        exerciseId,
+        date,
+        done,
+        updatedAt: now,
+        createdAt: now // Note: PutCommand overwrites, so createdAt resets. Acceptable for simplicity.
+      };
+
+      await ddbDocClient.send(new PutCommand({
+        TableName: "Completions",
+        Item: record
+      }));
+
+      return record;
+    } catch (error) {
+      console.error("DynamoDB error (markExerciseComplete):", error);
+      throw error;
+    }
+  },
+
+  async getCompletionsForPatient(patientId, { planId, date } = {}) {
+    try {
+      // Since the table's primary key is just 'id' (HASH), we must use ScanCommand with a filter.
+      let filterExp = "patientId = :patientId";
+      let expVals = { ":patientId": patientId };
+
+      if (planId) {
+        filterExp += " AND planId = :planId";
+        expVals[":planId"] = planId;
+      }
+      if (date) {
+        filterExp += " AND #d = :date";
+        expVals[":date"] = date;
+      }
+
+      const params = {
+        TableName: "Completions",
+        FilterExpression: filterExp,
+        ExpressionAttributeValues: expVals
+      };
+
+      if (date) {
+         params.ExpressionAttributeNames = { "#d": "date" };
+      }
+
+      const data = await ddbDocClient.send(new ScanCommand(params));
+      return data.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (getCompletionsForPatient):", error);
       throw error;
     }
   }

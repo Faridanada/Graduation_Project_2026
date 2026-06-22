@@ -4,6 +4,7 @@ import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'package:rehabilitation_app/models/session_report.dart';
 
 class ApiService {
   static dynamic _normalizeJsonValue(dynamic value) {
@@ -26,11 +27,7 @@ class ApiService {
   }
 
   static String get baseUrl {
-    if (io.Platform.isAndroid) {
-      return "http://10.0.2.2:5000/api";
-    } else {
-      return "http://localhost:5000/api";
-    }
+    return "https://flexio-rehab.duckdns.org/api";
   }
 
   static const String _tokenKey = 'jwt_token';
@@ -83,6 +80,64 @@ class ApiService {
     } catch (_) {}
     return false;
   }
+
+  // --- SESSION REPORTS ---
+
+  static Future<List<SessionListItem>> getPatientSessions(String patientId, {DateTime? start, DateTime? end}) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    String query = '';
+    if (start != null) query += '?start=${start.toIso8601String()}';
+    if (end != null) query += (query.isEmpty ? '?' : '&') + 'end=${end.toIso8601String()}';
+
+    final urlStr = "$baseUrl/sessions/patient/$patientId$query";
+
+    final response = await http.get(
+      Uri.parse(urlStr),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      final data = decoded['sessions'] ?? [];
+      return (data as List)
+          .map((x) => SessionListItem.fromJson(x))
+          .where((s) => s.status == 'completed')
+          .toList();
+    }
+    return [];
+  }
+
+  static Future<SessionReportEnvelope> getSessionReport(String sessionId) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('No token');
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/sessions/$sessionId/report"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      return SessionReportEnvelope.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to load report');
+  }
+
+  static Future<void> regenerateReport(String sessionId) async {
+    final token = await _getToken();
+    if (token == null) return;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/sessions/$sessionId/regenerate-report"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to regenerate report');
+    }
+  }
+
   // --- DOCTOR ENDPOINTS ---
 
   static Future<Map<String, dynamic>> getDoctorStats() async {
@@ -95,7 +150,11 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'];
+      final data = jsonDecode(response.body)['data'];
+      if (data != null && data['unreadNotifications'] != null) {
+        unreadNotificationsNotifier.value = data['unreadNotifications'] as int;
+      }
+      return data ?? {};
     }
     return {};
   }
@@ -241,7 +300,28 @@ class ApiService {
       body: jsonEncode(planData),
     );
 
-    return response.statusCode == 201 || response.statusCode == 200;
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception('API Error: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  static Future<bool> deleteRecoveryPlan(String planId) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.delete(
+        Uri.parse("$baseUrl/doctor/recovery-plan/$planId"),
+        headers: _headers(token),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Delete recovery plan error: $e");
+      return false;
+    }
   }
 
   static Future<bool> addDoctorPatient(Map<String, dynamic> patientData) async {
@@ -353,6 +433,41 @@ class ApiService {
     return null;
   }
 
+  static Future<bool> markExerciseComplete({required String planId, required String exerciseId, bool done = true}) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/patient/completions"),
+      headers: _headers(token),
+      body: jsonEncode({
+        "planId": planId,
+        "exerciseId": exerciseId,
+        "done": done,
+      }),
+    );
+
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  static Future<List<dynamic>> getCompletions({String? planId}) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final query = planId != null ? "?planId=$planId" : "";
+    final response = await http.get(
+      Uri.parse("$baseUrl/patient/completions$query"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      final data = decoded['data'] ?? [];
+      return _normalizeJsonValue(data) as List<dynamic>;
+    }
+    return [];
+  }
+
   static Future<bool> markPhaseCompleted(String planId, int phaseIndex) async {
     final token = await _getToken();
     if (token == null) return false;
@@ -461,7 +576,11 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'] ?? {};
+      final data = jsonDecode(response.body)['data'] ?? {};
+      if (data['unreadNotifications'] != null) {
+        unreadNotificationsNotifier.value = data['unreadNotifications'] as int;
+      }
+      return data;
     }
     return {};
   }
@@ -640,7 +759,15 @@ class ApiService {
       headers: _headers(token),
     );
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'] ?? [];
+      final list = jsonDecode(response.body)['data'] ?? [];
+      int unreadCount = 0;
+      for (var item in list) {
+        if (item['isRead'] == false || item['isRead'] == 'false') {
+          unreadCount++;
+        }
+      }
+      unreadNotificationsNotifier.value = unreadCount;
+      return list;
     }
     return [];
   }
@@ -658,6 +785,7 @@ class ApiService {
       Uri.parse('$baseUrl/$endpoint/notifications/$notifId/read'),
       headers: _headers(token),
     );
+    unreadNotificationsNotifier.value = (unreadNotificationsNotifier.value - 1).clamp(0, 999999);
   }
 
   /// Mark all notifications as read.
@@ -673,6 +801,7 @@ class ApiService {
       Uri.parse('$baseUrl/$endpoint/notifications/read-all'),
       headers: _headers(token),
     );
+    unreadNotificationsNotifier.value = 0;
   }
 
   // --- APPOINTMENTS & AVAILABILITY ENDPOINTS ---
@@ -821,6 +950,9 @@ class ApiService {
   /// Global notifier for profile updates
   static final ValueNotifier<int> profileUpdateNotifier = ValueNotifier<int>(0);
 
+  /// Global notifier for unread notifications count
+  static final ValueNotifier<int> unreadNotificationsNotifier = ValueNotifier<int>(0);
+
   /// Update user profile
   static Future<bool> updateProfile(Map<String, dynamic> data) async {
     final token = await _getToken();
@@ -963,5 +1095,21 @@ class ApiService {
       return response.statusCode == 201 || response.statusCode == 200;
     } catch (_) {}
     return false;
+  }
+
+  static Future<bool> notifyDoctorSessionCompleted() async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/patient/notify-session-completed"),
+        headers: _headers(token),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("API Error (notifyDoctorSessionCompleted): $e");
+      return false;
+    }
   }
 }

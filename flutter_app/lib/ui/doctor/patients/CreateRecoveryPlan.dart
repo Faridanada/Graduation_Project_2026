@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:intl/intl.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/app_theme.dart';
@@ -21,6 +22,32 @@ class CreateRecoveryPlan extends StatefulWidget {
 
 class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
   bool _isLoading = false;
+  bool _hasUnsavedChanges = false;
+
+  Future<bool> _confirmDiscard() async {
+    if (!_hasUnsavedChanges) return true;
+    final bool? discard = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Discard changes?'),
+          content: const Text("Your changes haven't been saved. Are you sure you want to discard them?"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Keep editing'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Discard'),
+            ),
+          ],
+        );
+      },
+    );
+    return discard ?? false;
+  }
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -54,7 +81,23 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
       } catch (_) {}
       
       if (plan['phases'] != null) {
-        _phases.addAll(List<Map<String, dynamic>>.from(plan['phases'].map((e) => Map<String, dynamic>.from(e))));
+        _phases.addAll(List<Map<String, dynamic>>.from(plan['phases'].map((e) {
+          final p = Map<String, dynamic>.from(e);
+          if (p['exercises'] == null) {
+            // Migration for old plans
+            p['exercises'] = [{
+              'exerciseType': p['exerciseType'] ?? 'Active',
+              'minAngle': p['minAngle'] ?? 0,
+              'maxAngle': p['maxAngle'] ?? 90,
+              'numberOfExercises': p['numberOfExercises'] ?? 3,
+              'numberOfReps': p['numberOfReps'] ?? 10,
+              'stabilizationDays': p['stabilizationDays'],
+            }];
+          } else {
+             p['exercises'] = List<Map<String, dynamic>>.from(p['exercises'].map((ex) => Map<String, dynamic>.from(ex)));
+          }
+          return p;
+        })));
       }
       if (plan['todayTip'] != null) {
         _tipController.text = plan['todayTip'];
@@ -71,6 +114,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
 
   void _generateRandomTip() {
     _autoTips.shuffle();
+    _hasUnsavedChanges = true;
     setState(() {
       _tipController.text = _autoTips.first;
     });
@@ -95,6 +139,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
       },
     );
     if (picked != null) {
+      _hasUnsavedChanges = true;
       setState(() {
         _startDate = picked.start;
         _endDate = picked.end;
@@ -103,10 +148,34 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
   }
 
   Future<void> _selectPhaseDateRange(int index) async {
+    DateTimeRange? initialRange;
+    if (_phases[index]['startDate'] != null && _phases[index]['endDate'] != null) {
+      final s = DateTime.tryParse(_phases[index]['startDate']);
+      final e = DateTime.tryParse(_phases[index]['endDate']);
+      if (s != null && e != null) initialRange = DateTimeRange(start: s, end: e);
+    } else if (index > 0 && _phases[index - 1]['endDate'] != null) {
+      final prevEnd = DateTime.tryParse(_phases[index - 1]['endDate']);
+      if (prevEnd != null) {
+        final nextStart = prevEnd.add(const Duration(days: 1));
+        initialRange = DateTimeRange(start: nextStart, end: nextStart.add(const Duration(days: 7)));
+      }
+    }
+
+    if (initialRange != null && _startDate != null && _endDate != null) {
+      DateTime start = initialRange.start;
+      DateTime end = initialRange.end;
+      if (start.isBefore(_startDate!)) start = _startDate!;
+      if (start.isAfter(_endDate!)) start = _endDate!;
+      if (end.isAfter(_endDate!)) end = _endDate!;
+      if (end.isBefore(start)) end = start;
+      initialRange = DateTimeRange(start: start, end: end);
+    }
+
     final picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: initialRange,
+      firstDate: _startDate ?? DateTime.now().subtract(const Duration(days: 30)),
+      lastDate: _endDate ?? DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -121,6 +190,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
       },
     );
     if (picked != null) {
+      _hasUnsavedChanges = true;
       setState(() {
         final startStr = DateFormat('MMM dd').format(picked.start);
         final endStr = DateFormat('MMM dd').format(picked.end);
@@ -132,14 +202,25 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
   }
 
   void _addPhase() {
+    _hasUnsavedChanges = true;
     setState(() {
       _phases.add({
-        'title': 'Phase ${_phases.length + 1}',
         'subtitle': '',
         'status': 'Upcoming',
         'date': 'TBD',
         'active': false,
         'completed': false,
+        'exercises': [
+          {
+            'id': 'ex_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(999999)}',
+            'exerciseType': 'Active',
+            'minAngle': 0,
+            'maxAngle': 90,
+            'numberOfExercises': 3,
+            'numberOfReps': 10,
+            'stabilizationDays': null,
+          }
+        ],
       });
     });
   }
@@ -162,13 +243,60 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
 
     for (int i = 0; i < _phases.length; i++) {
       final p = _phases[i];
-      final title = (p['title'] ?? '').trim();
       final subtitle = (p['subtitle'] ?? '').trim();
       final date = p['date'] ?? 'TBD';
 
-      if (title.isEmpty || subtitle.isEmpty || date == 'TBD' || date.isEmpty || date == 'Select Dates') {
+      if (date == 'TBD' || date.isEmpty || date == 'Select Dates') {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please fill out all fields (Title, Subtitle, Dates) for Phase ${i + 1}.')),
+          SnackBar(content: Text('Please select dates for Phase ${i + 1}.')),
+        );
+        return;
+      }
+
+      int phaseDays = 0;
+      if (p['startDate'] != null && p['endDate'] != null) {
+        final start = DateTime.tryParse(p['startDate']);
+        final end = DateTime.tryParse(p['endDate']);
+        if (start != null && end != null) {
+          phaseDays = end.difference(start).inDays + 1;
+
+          if (start.isBefore(_startDate!) || end.isAfter(_endDate!)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Phase ${i + 1} dates (${DateFormat('MMM dd').format(start)} - ${DateFormat('MMM dd').format(end)}) must be within the overall plan range (${DateFormat('MMM dd').format(_startDate!)} - ${DateFormat('MMM dd').format(_endDate!)}).'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+        }
+      }
+
+      int totalStabDays = 0;
+      final exercises = p['exercises'] as List<dynamic>? ?? [];
+      for (int eIdx = 0; eIdx < exercises.length; eIdx++) {
+        var ex = exercises[eIdx];
+        if (ex['exerciseType'] == 'Stabilization') {
+          totalStabDays += (ex['stabilizationDays'] as int? ?? 0);
+          final hold = ex['holdAngle'] as int?;
+          if (hold == null || hold < 0 || hold > 135) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Hold angle for Phase ${i + 1} Exercise ${eIdx + 1} must be between 0° and 135°.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+        }
+      }
+
+      if (phaseDays > 0 && totalStabDays > phaseDays) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Phase ${i + 1} has $totalStabDays stabilization days, but the phase is only $phaseDays days long!'),
+            backgroundColor: Colors.red,
+          ),
         );
         return;
       }
@@ -177,45 +305,50 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
     setState(() => _isLoading = true);
 
     final planData = {
+      if (widget.existingPlan != null && widget.existingPlan!['id'] != null)
+        'id': widget.existingPlan!['id'],
+      if (widget.existingPlan != null && widget.existingPlan!['createdAt'] != null)
+        'createdAt': widget.existingPlan!['createdAt'],
       'patientId': widget.patientId,
       'startDate': DateFormat('yyyy-MM-dd').format(_startDate!),
       'endDate': DateFormat('yyyy-MM-dd').format(_endDate!),
-      'overallProgress': 0, // Starts at 0
+      'overallProgress': widget.existingPlan?['overallProgress'] ?? 0,
       'phases': _phases.asMap().entries.map((e) {
         return {
           'index': e.key + 1,
-          'title': e.value['title'],
-          'subtitle': e.value['subtitle'],
-          'status': e.value['status'],
-          'date': e.value['date'],
           'active': e.value['active'],
           'completed': e.value['completed'],
           'startDate': e.value['startDate'],
           'endDate': e.value['endDate'],
+          'subtitle': (e.value['subtitle'] == null || e.value['subtitle'].toString().isEmpty) ? null : e.value['subtitle'],
+          'date': (e.value['date'] == null || e.value['date'].toString().isEmpty) ? null : e.value['date'],
+          'status': e.value['status'] ?? 'Upcoming',
+          'exercises': e.value['exercises'],
         };
       }).toList(),
-      'exercisePlan': {
-        'title': 'Leg Extensions',
-        'mode': 'Active Mode',
-        'repsTotal': _repsTotal,
-        'estimatedTimeMin': _estimatedTimeMin,
-      },
-      'todayTip': _tipController.text,
+      'todayTip': _tipController.text.isEmpty ? null : _tipController.text,
     };
 
-    final success = await ApiService.createRecoveryPlan(planData);
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (success) {
+    try {
+      final success = await ApiService.createRecoveryPlan(planData);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (success) {
+          _hasUnsavedChanges = false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recovery plan created successfully!')),
+          );
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recovery plan created successfully!')),
-        );
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Failed to create recovery plan.'),
-              backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Failed: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 8)),
         );
       }
     }
@@ -223,21 +356,30 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
-      appBar: AppBar(
-        title: Text('Plan for ${widget.patientName}'),
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    return PopScope(
+      canPop: !_hasUnsavedChanges,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return;
+        final bool shouldPop = await _confirmDiscard();
+        if (shouldPop && context.mounted) {
+          Navigator.pop(context, result);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4F6FA),
+        appBar: AppBar(
+          title: Text('Plan for ${widget.patientName}'),
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   _buildCard(
                     title: "Duration",
                     child: Row(
@@ -255,44 +397,6 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildCard(
-                    title: "Exoskeleton Exercise (Leg Extensions)",
-                    child: Column(
-                      children: [
-                        const Text(
-                            "The exoskeleton currently supports Leg Extensions.",
-                            style: TextStyle(color: Colors.grey)),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: _repsTotal.toString(),
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                    labelText: 'Target Reps',
-                                    border: OutlineInputBorder()),
-                                onChanged: (val) =>
-                                    _repsTotal = int.tryParse(val) ?? 15,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: _estimatedTimeMin.toString(),
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                    labelText: 'Duration (Min)',
-                                    border: OutlineInputBorder()),
-                                onChanged: (val) =>
-                                    _estimatedTimeMin = int.tryParse(val) ?? 20,
-                              ),
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: 16),
                   _buildCard(
                     title: "Phases",
@@ -300,48 +404,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         for (int i = 0; i < _phases.length; i++)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        labelText: 'Title',
-                                        border: const OutlineInputBorder()),
-                                    onChanged: (v) => _phases[i]['title'] = v,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  flex: 2,
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        labelText: 'Subtitle',
-                                        border: const OutlineInputBorder()),
-                                    onChanged: (v) =>
-                                        _phases[i]['subtitle'] = v,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  flex: 2,
-                                  child: _buildDatePickerBox(
-                                    label: 'Date Range',
-                                    date: _phases[i]['date'] == 'TBD' || _phases[i]['date'].isEmpty ? 'Select Dates' : _phases[i]['date'],
-                                    onTap: () => _selectPhaseDateRange(i),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle,
-                                      color: Colors.red),
-                                  onPressed: () =>
-                                      setState(() => _phases.removeAt(i)),
-                                )
-                              ],
-                            ),
-                          ),
+                          _buildPhaseEditor(i),
                         _buildOutlinedActionButton(
                           onPressed: _addPhase,
                           icon: const Icon(Icons.add),
@@ -359,6 +422,9 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                         Expanded(
                           child: TextField(
                             controller: _tipController,
+                            onChanged: (_) {
+                              if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+                            },
                             decoration: const InputDecoration(
                               labelText: 'Tip of the day',
                               border: OutlineInputBorder(),
@@ -382,22 +448,406 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _savePlan,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              side: const BorderSide(color: AppColors.primary, width: 1.2),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Save Plan',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : () async {
+                    if (await _confirmDiscard()) {
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey.shade700,
+                    side: BorderSide(color: Colors.grey.shade400, width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Cancel',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _savePlan,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    side: const BorderSide(color: AppColors.primary, width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Save Plan',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
         ),
       ),
+    ));
+  }
+
+  Widget _buildPhaseEditor(int i) {
+    List<dynamic> exercises = _phases[i]['exercises'] ?? [];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Phase ${i + 1}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              IconButton(
+                icon: const Icon(Icons.remove_circle, color: Colors.red),
+                onPressed: () {
+                  _hasUnsavedChanges = true;
+                  setState(() => _phases.removeAt(i));
+                },
+              )
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            initialValue: _phases[i]['subtitle'],
+            decoration: const InputDecoration(labelText: 'Subtitle (Optional)', border: OutlineInputBorder()),
+            onChanged: (v) => _phases[i]['subtitle'] = v,
+          ),
+          const SizedBox(height: 12),
+          _buildDatePickerBox(
+            label: 'Date Range',
+            date: (_phases[i]['date'] == null || _phases[i]['date'] == 'TBD' || _phases[i]['date'].isEmpty) ? 'Select Dates' : _phases[i]['date'],
+            onTap: () => _selectPhaseDateRange(i),
+          ),
+          const SizedBox(height: 20),
+          
+          for (int eIdx = 0; eIdx < exercises.length; eIdx++)
+            _buildExerciseEditor(i, eIdx),
+
+          const SizedBox(height: 8),
+
+          Builder(
+            builder: (context) {
+              int phaseDays = 0;
+              if (_phases[i]['startDate'] != null && _phases[i]['endDate'] != null) {
+                final start = DateTime.tryParse(_phases[i]['startDate']);
+                final end = DateTime.tryParse(_phases[i]['endDate']);
+                if (start != null && end != null) phaseDays = end.difference(start).inDays + 1;
+              }
+
+              int totalStabDays = 0;
+              for (var ex in exercises) {
+                if (ex['exerciseType'] == 'Stabilization') {
+                  totalStabDays += (ex['stabilizationDays'] as int? ?? 0);
+                }
+              }
+
+              bool canAddExercise = phaseDays == 0 || totalStabDays < phaseDays;
+
+              return Column(
+                children: [
+                  if (!canAddExercise)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8.0, left: 16, right: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2.0),
+                            child: Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 16),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              "Cannot add more exercises because Stabilization completely fills the phase duration.",
+                              style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.normal),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: canAddExercise
+                          ? () {
+                              _hasUnsavedChanges = true;
+                              setState(() {
+                                if (_phases[i]['exercises'] == null) {
+                                  _phases[i]['exercises'] = [];
+                                }
+                                _phases[i]['exercises'].add({
+                                  'id': 'ex_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(999999)}',
+                                  'exerciseType': 'Active',
+                                  'minAngle': 0,
+                                  'maxAngle': 90,
+                                  'holdAngle': null,
+                                  'numberOfExercises': 3,
+                                  'numberOfReps': 10,
+                                  'stabilizationDays': null,
+                                });
+                              });
+                            }
+                          : null,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Exercise'),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseEditor(int phaseIdx, int eIdx) {
+    final exercises = _phases[phaseIdx]['exercises'];
+    final type = exercises[eIdx]['exerciseType'] ?? 'Active';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Exercise Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              if (exercises.length > 1)
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.red, size: 20),
+                  onPressed: () {
+                    _hasUnsavedChanges = true;
+                    setState(() => exercises.removeAt(eIdx));
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () => _showExerciseTypePicker(phaseIdx, eIdx),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade400),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      type,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (type == 'Stabilization')
+            Column(
+              children: [
+                TextFormField(
+                  initialValue: exercises[eIdx]['stabilizationDays']?.toString() ?? '',
+                  decoration: const InputDecoration(labelText: 'Stabilization Days', border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) {
+                    if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+                    exercises[eIdx]['stabilizationDays'] = int.tryParse(v) ?? 7;
+                  },
+                ),
+                const SizedBox(height: 12),
+                Builder(
+                  builder: (context) {
+                    final holdValue = exercises[eIdx]['holdAngle'];
+                    String? errorMsg;
+                    if (holdValue == null) {
+                      errorMsg = 'Required';
+                    } else if (holdValue < 0 || holdValue > 135) {
+                      errorMsg = 'Must be 0–135°';
+                    }
+                    return TextFormField(
+                      initialValue: holdValue?.toString() ?? '',
+                      decoration: InputDecoration(
+                        labelText: 'Hold Angle (°)',
+                        border: const OutlineInputBorder(),
+                        errorText: errorMsg,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (v) {
+                        if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+                        exercises[eIdx]['holdAngle'] = int.tryParse(v);
+                        (context as Element).markNeedsBuild();
+                      },
+                    );
+                  }
+                ),
+              ],
+            )
+          else
+            Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: exercises[eIdx]['numberOfExercises'].toString(),
+                        decoration: const InputDecoration(labelText: 'No. of Exercises', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) {
+                          if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+                          exercises[eIdx]['numberOfExercises'] = int.tryParse(v) ?? 3;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: exercises[eIdx]['numberOfReps'].toString(),
+                        decoration: const InputDecoration(labelText: 'No. of Reps', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) {
+                          if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+                          exercises[eIdx]['numberOfReps'] = int.tryParse(v) ?? 10;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                if (type != 'Passive-Monitored') ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: exercises[eIdx]['minAngle'].toString(),
+                          decoration: const InputDecoration(labelText: 'Min Angle (°)', border: OutlineInputBorder()),
+                          keyboardType: TextInputType.number,
+                          onChanged: (v) {
+                            if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+                            exercises[eIdx]['minAngle'] = int.tryParse(v) ?? 0;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: exercises[eIdx]['maxAngle'].toString(),
+                          decoration: const InputDecoration(labelText: 'Max Angle (°)', border: OutlineInputBorder()),
+                          keyboardType: TextInputType.number,
+                          onChanged: (v) {
+                            if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+                            exercises[eIdx]['maxAngle'] = int.tryParse(v) ?? 90;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showExerciseTypePicker(int phaseIndex, int exerciseIndex) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Select Exercise Type", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                _buildTypeTile(
+                  phaseIndex, 
+                  exerciseIndex,
+                  'Stabilization', 
+                  'Completely immobile phase designed to allow the area to heal properly without any strain or movement.', 
+                  Icons.lock_outline, 
+                  Colors.orange
+                ),
+                const Divider(height: 1, thickness: 0.5),
+                _buildTypeTile(
+                  phaseIndex, 
+                  exerciseIndex,
+                  'Passive-Monitored', 
+                  'The motor performs the movement, but it is actively monitored via live stream so the angle ranges can be adjusted in real-time.', 
+                  Icons.videocam_outlined, 
+                  Colors.red
+                ),
+                const Divider(height: 1, thickness: 0.5),
+                _buildTypeTile(
+                  phaseIndex, 
+                  exerciseIndex,
+                  'Passive', 
+                  'The exoskeleton motor performs the entire movement according to the preset angles, requiring no effort from the patient.', 
+                  Icons.autorenew, 
+                  Colors.purple
+                ),
+                const Divider(height: 1, thickness: 0.5),
+                _buildTypeTile(
+                  phaseIndex, 
+                  exerciseIndex,
+                  'Active', 
+                  'The patient performs the movement actively using their own strength, with the device tracking their range of motion and repetitions.', 
+                  Icons.accessibility_new_outlined, 
+                  Colors.green
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTypeTile(int phaseIndex, int exerciseIndex, String type, String desc, IconData icon, Color color) {
+    return ListTile(
+      leading: Icon(icon, color: color, size: 28),
+      title: Text(type, style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text(desc, style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.3)),
+      isThreeLine: true,
+      onTap: () {
+        _hasUnsavedChanges = true;
+        setState(() => _phases[phaseIndex]['exercises'][exerciseIndex]['exerciseType'] = type);
+        Navigator.pop(context);
+      },
     );
   }
 

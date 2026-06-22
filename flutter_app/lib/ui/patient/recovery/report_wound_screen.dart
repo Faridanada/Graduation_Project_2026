@@ -420,7 +420,7 @@ class _MyWoundsHistoryScreenState extends State<MyWoundsHistoryScreen> {
                   itemCount: _wounds.length,
                   itemBuilder: (context, index) {
                     final w = _wounds[index];
-                    final meta = w['metadata'] ?? {};
+                    final meta = w['notes'] ?? {};
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(

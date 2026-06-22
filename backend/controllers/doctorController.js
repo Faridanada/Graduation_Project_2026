@@ -20,7 +20,31 @@ const doctorController = {
         try {
             const doctorId = req.user.id || 'doctor_1';
             const patients = await dbService.getPatientsForDoctor(doctorId);
-            const enrichedPatients = await Promise.all(patients.map(attachImageUrls));
+            const enrichedPatients = await Promise.all(patients.map(async (p) => {
+                const patient = await attachImageUrls(p);
+                try {
+                    const plans = await dbService.getAllRecoveryPlans(patient.id || patient._id);
+                    if (plans && plans.length > 0) {
+                        const activePlan = plans[0]; // Assuming first is most recent/active
+                        const phases = activePlan.phases || [];
+                        if (phases.length > 0) {
+                            const completed = phases.filter(ph => ph.status === 'Completed').length;
+                            const hasOverdue = phases.some(ph => ph.status === 'Overdue');
+                            patient.progress = Math.round((completed / phases.length) * 100);
+                            patient.hasOverduePhase = hasOverdue;
+                        } else {
+                            patient.progress = 0;
+                            patient.hasOverduePhase = false;
+                        }
+                    } else {
+                        patient.progress = 0;
+                    }
+                } catch(e) {
+                    console.error('Error fetching plan for progress:', e);
+                    patient.progress = 0;
+                }
+                return patient;
+            }));
             res.json({ statusCode: 200, data: enrichedPatients });
         } catch (error) {
             console.error('Error fetching patients:', error);
@@ -33,7 +57,31 @@ const doctorController = {
         try {
             const { name } = req.query;
             const patients = await dbService.getAllPatients({ name });
-            const enrichedPatients = await Promise.all(patients.map(attachImageUrls));
+            const enrichedPatients = await Promise.all(patients.map(async (p) => {
+                const patient = await attachImageUrls(p);
+                try {
+                    const plans = await dbService.getAllRecoveryPlans(patient.id || patient._id);
+                    if (plans && plans.length > 0) {
+                        const activePlan = plans[0];
+                        const phases = activePlan.phases || [];
+                        if (phases.length > 0) {
+                            const completed = phases.filter(ph => ph.status === 'Completed').length;
+                            const hasOverdue = phases.some(ph => ph.status === 'Overdue');
+                            patient.progress = Math.round((completed / phases.length) * 100);
+                            patient.hasOverduePhase = hasOverdue;
+                        } else {
+                            patient.progress = 0;
+                            patient.hasOverduePhase = false;
+                        }
+                    } else {
+                        patient.progress = 0;
+                    }
+                } catch(e) {
+                    console.error('Error fetching plan for progress:', e);
+                    patient.progress = 0;
+                }
+                return patient;
+            }));
             res.json({ statusCode: 200, data: enrichedPatients });
         } catch (error) {
             console.error('Error fetching all patients:', error);
@@ -308,11 +356,42 @@ const doctorController = {
 
             const newPlan = await dbService.createRecoveryPlan(planData.patientId, planData);
             
+            // Auto-generate daily exercises from the plan's startDate to endDate
+            if (planData.startDate && planData.endDate && planData.exercisePlan) {
+                const start = new Date(planData.startDate);
+                const end = new Date(planData.endDate);
+                
+                // Loop through each day and assign the exercise
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    // Only assign if the date is >= today (for updates)
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    if (d >= today) {
+                        const dateAssigned = d.toISOString().split('T')[0];
+                        const exerciseData = {
+                            title: planData.exercisePlan.title || 'Therapy Exercise',
+                            estimatedTimeMin: planData.exercisePlan.estimatedTimeMin || 15,
+                            repsTotal: planData.exercisePlan.repsTotal || 10,
+                            repsCompleted: 0,
+                            mode: planData.exercisePlan.mode || 'Active Mode',
+                            dateAssigned: dateAssigned,
+                            planId: newPlan.id
+                        };
+                        await dbService.assignExercise(planData.patientId, doctorId, exerciseData);
+                    }
+                }
+            }
+
             // Notify patient
+            const notifTitle = planData.id ? "Recovery Plan Updated" : "New Recovery Plan";
+            const notifBody = planData.id
+                ? "Your doctor has updated your recovery plan."
+                : "Your doctor has created a new recovery plan for you.";
+
             await dbService.createNotification(
                 planData.patientId,
-                "New Recovery Plan",
-                "Your doctor has created a new recovery plan for you."
+                notifTitle,
+                notifBody
             );
 
             res.status(201).json({ statusCode: 201, data: newPlan, message: 'Recovery plan created successfully' });
@@ -320,7 +399,24 @@ const doctorController = {
             console.error('Error creating recovery plan:', error);
             res.status(500).json({ statusCode: 500, message: 'Server error creating recovery plan' });
         }
-    }
+    },
+
+    // DELETE /api/doctor/recovery-plan/:id
+    async deleteRecoveryPlan(req, res) {
+        try {
+            const planId = req.params.id;
+            
+            if (!planId) {
+                return res.status(400).json({ statusCode: 400, message: 'planId is required' });
+            }
+
+            await dbService.deleteRecoveryPlan(planId);
+            res.json({ statusCode: 200, message: 'Recovery plan and pending exercises deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting recovery plan:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error deleting recovery plan' });
+        }
+    },
 };
 
 module.exports = doctorController;

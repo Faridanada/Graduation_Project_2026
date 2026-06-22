@@ -4,7 +4,7 @@ import 'package:rehabilitation_app/ui/chats/ConversationScreen.dart';
 import 'package:rehabilitation_app/ui/doctor/profile/DoctorProfile.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 import 'package:rehabilitation_app/ui/chats/NewChatScreen.dart';
-import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
 
 class Chats extends StatefulWidget {
@@ -153,11 +153,12 @@ class _ChatsState extends State<Chats> {
                                         name: chat['name'],
                                         initials: chat['initials'],
                                         message: chat['message'],
-                                        receiverId: chat[
-                                            'userId'], // Ensure receiverId is passed
+                                        receiverId: chat['userId'],
                                       ),
                                     ),
-                                  );
+                                  ).then((_) {
+                                    _fetchConversations();
+                                  });
                                 },
                               );
                             },
@@ -199,17 +200,7 @@ class _ChatsState extends State<Chats> {
             );
           },
         ),
-        IconButton(
-          icon: const Icon(Icons.notifications_none,
-              color: Colors.black, size: 24),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const NotificationsPage()),
-            );
-          },
-        ),
+        const NotificationBell(),
         IconButton(
           icon: const Icon(Icons.settings, color: Colors.black, size: 24),
           onPressed: () {

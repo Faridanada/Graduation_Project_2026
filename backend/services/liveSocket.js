@@ -70,6 +70,21 @@ class LiveSocket {
             console.log(`[LiveSocket] User ${user.id} subscribed to ${msg.sessionId}`);
           } else if (msg.type === 'unsubscribe' && msg.sessionId) {
             clientData.subscriptions.delete(msg.sessionId);
+          } else if (msg.type === 'webrtc_signaling' && msg.sessionId) {
+            // Broadcast WebRTC metadata (Offer, Answer, ICE) to others in the same session
+            const messageString = JSON.stringify({
+              sessionId: msg.sessionId,
+              payload: {
+                type: 'webrtc_signaling',
+                senderId: user.id,
+                data: msg.data
+              }
+            });
+            for (const [clientWs, cd] of this.clients.entries()) {
+              if (clientWs !== ws && clientWs.readyState === WebSocket.OPEN && cd.subscriptions.has(msg.sessionId)) {
+                clientWs.send(messageString);
+              }
+            }
           }
         } catch (e) {
           console.warn(`[LiveSocket] Invalid message format:`, e.message);

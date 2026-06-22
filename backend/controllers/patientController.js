@@ -409,11 +409,80 @@ const patientController = {
         return res.status(400).json({ statusCode: 400, message: 'Invalid phase index' });
       }
 
-      await dbService.markPhaseCompleted(planId, index);
+      const plan = await dbService.markPhaseCompleted(planId, index);
+      
+      if (plan && plan.overallProgress === 100) {
+        const patientId = req.user.id;
+        const patient = await dbService.getUserById(patientId);
+        if (patient && patient.assignedDoctorId) {
+          await dbService.createNotification(
+            patient.assignedDoctorId,
+            "Recovery Plan Completed",
+            `${patient.name || 'Your patient'} has completely finished their recovery plan!`
+          );
+        }
+      }
+
       res.json({ statusCode: 200, message: 'Phase marked as completed' });
     } catch (error) {
       console.error('Error marking phase completed:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error marking phase completed' });
+    }
+  },
+
+  // POST /api/patient/notify-session-completed
+  async notifySessionCompleted(req, res) {
+    try {
+      const patientId = req.user.id;
+      const patient = await dbService.getUserById(patientId);
+      
+      if (!patient || !patient.assignedDoctorId) {
+        return res.status(400).json({ statusCode: 400, message: 'No doctor assigned' });
+      }
+
+      const patientName = patient.name || 'Your patient';
+      await dbService.createNotification(
+        patient.assignedDoctorId,
+        "Session Completed",
+        `${patientName} has just completed an exercise session.`
+      );
+
+      res.status(200).json({ statusCode: 200, message: 'Doctor notified of session completion' });
+    } catch (error) {
+      console.error('Error notifying doctor of session completion:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error notifying doctor' });
+    }
+  },
+
+  // POST /api/patient/completions
+  async markExerciseComplete(req, res) {
+    try {
+      const patientId = req.user.id;
+      const { planId, exerciseId, done } = req.body;
+
+      if (!planId || !exerciseId) {
+        return res.status(400).json({ statusCode: 400, message: 'planId and exerciseId are required' });
+      }
+
+      const record = await dbService.markExerciseComplete(patientId, { planId, exerciseId, done });
+      res.status(201).json({ statusCode: 201, data: record, message: 'Completion recorded' });
+    } catch (error) {
+      console.error('Error marking exercise complete:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error recording completion' });
+    }
+  },
+
+  // GET /api/patient/completions
+  async getCompletions(req, res) {
+    try {
+      const patientId = req.user.id;
+      const { planId, date } = req.query;
+
+      const completions = await dbService.getCompletionsForPatient(patientId, { planId, date });
+      res.json({ statusCode: 200, data: completions });
+    } catch (error) {
+      console.error('Error fetching completions:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error fetching completions' });
     }
   }
 };

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/ui/shared/ai_report_screen.dart';
+import 'package:rehabilitation_app/services/api_service.dart';
 
 class SessionSummaryScreen extends StatelessWidget {
   final Map<String, dynamic> exercise;
@@ -71,47 +72,6 @@ class SessionSummaryScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              /// STATS GRID
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                            child: _stat(Icons.access_time, "Total Duration",
-                                "${exercise['estimatedTimeMin']?.toString().padLeft(2, '0') ?? '10'}:00", "min")),
-                        Expanded(
-                            child: _stat(Icons.fitness_center, "Reps Completed",
-                                "${exercise['repsTotal'] ?? 12} / ${exercise['repsTotal'] ?? 12}", "100%")),
-                        Expanded(
-                            child: _stat(Icons.refresh, "Sets Completed",
-                                "1 / 1", "100%")),
-                      ],
-                    ),
-                    const Divider(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                            child: _stat(
-                                Icons.track_changes, "Accuracy", "88%", "")),
-                        Expanded(
-                            child: _stat(Icons.favorite, "Average Heart Rate",
-                                "128", "bpm",
-                                valueColor: Colors.red)),
-                        Expanded(
-                            child: _stat(
-                                Icons.autorenew, "Recovery Score", "86%", "",
-                                valueColor: Colors.green)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
 
               const SizedBox(height: 16),
 
@@ -165,15 +125,27 @@ class SessionSummaryScreen extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              /// VIEW REPORT
+              /// NOTIFY DOCTOR
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AiReportScreen(),
-                    ),
-                  );
+                onTap: () async {
+                  final success = await ApiService.notifyDoctorSessionCompleted();
+                  if (!context.mounted) return;
+                  
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Doctor has been notified of your session completion!"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Failed to notify doctor. Please try again."),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
                 child: Container(
                   width: double.infinity,
@@ -185,10 +157,10 @@ class SessionSummaryScreen extends StatelessWidget {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.bar_chart, color: primaryBlue),
+                      Icon(Icons.send, color: primaryBlue),
                       SizedBox(width: 8),
                       Text(
-                        "View Detailed Report",
+                        "Notify Doctor",
                         style: TextStyle(
                             color: primaryBlue, fontWeight: FontWeight.bold),
                       ),

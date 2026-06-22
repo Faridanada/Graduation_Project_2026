@@ -3,7 +3,7 @@ const sessionBuffer = require('../services/sessionBuffer');
 const waveformWriter = require('../utils/waveformWriter');
 const { getSignedReadUrl } = require('../utils/s3Service');
 const { v4: uuidv4 } = require('uuid');
-
+const { triggerReportGeneration } = require('../services/reportTrigger');
 const getWaveformsBucket = () => process.env.AWS_S3_WAVEFORMS_BUCKET || 'flexio-smart-waveforms';
 
 // ================= DEVICES =================
@@ -89,7 +89,7 @@ exports.endSession = async (req, res) => {
 
     const dbRecord = await dbService.getSessionById(sessionId);
     if (!dbRecord) return res.status(404).json({ message: "Session not found" });
-    
+
     // Authz check
     if (dbRecord.patientId !== patientId && req.user.role !== 'doctor') {
       return res.status(403).json({ message: "Not authorized" });
@@ -134,6 +134,10 @@ exports.endSession = async (req, res) => {
 
     const updatedSession = await dbService.updateSession(sessionId, updates);
 
+    // Fire report generation trigger (fire-and-forget)
+    triggerReportGeneration(sessionId, patientId, s3KeyPrefix)
+      .catch(err => console.warn('[report] trigger failed:', err.message));
+
     res.json({ message: "Session ended", session: updatedSession });
   } catch (error) {
     console.error("End Session Error:", error);
@@ -172,7 +176,7 @@ exports.abortSession = async (req, res) => {
 exports.getPatientSessions = async (req, res) => {
   try {
     const { patientId } = req.params;
-    
+
     // Authz
     if (req.user.id !== patientId && req.user.role !== 'doctor') {
       return res.status(403).json({ message: "Not authorized" });
@@ -257,7 +261,7 @@ exports.simulateTelemetry = async (req, res) => {
     }
 
     const deviceId = dbRecord.deviceId;
-    
+
     for (let i = 0; i < count; i++) {
       let payload;
       const ts = Date.now() + (i * 1000); // spread them out roughly
@@ -295,6 +299,54 @@ exports.simulateTelemetry = async (req, res) => {
     res.json({ message: `Successfully injected ${count} ${kind} readings into session ${sessionId}` });
   } catch (error) {
     console.error("Simulate Telemetry Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+// ================= AI REPORT WEBHOOK =================
+
+exports.receiveAiReport = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const providedToken = req.headers['x-service-token'];
+
+    // We pull the secret token from the .env file
+    const expectedToken = process.env.AI_SERVICE_TOKEN;
+
+    // 1. Security Check: Ensure it came from your Python AI Service
+    if (providedToken !== expectedToken) {
+      console.warn(`⚠️ [Webhook] Unauthorized AI callback attempt for session: ${sessionId}`);
+      return res.status(401).json({ message: "Unauthorized AI service." });
+    }
+
+    // 2. Handle AI Errors (e.g., Python crashed, S3 download failed)
+    if (req.body.error) {
+      console.error(`❌ [Webhook] AI Service failed for session ${sessionId}:`, req.body.error);
+
+      // Update DynamoDB to show the doctor a "Failed" status
+      await dbService.updateSession(sessionId, {
+        reportStatus: 'failed',
+        reportError: req.body.error
+      });
+      return res.status(200).json({ message: "Error logged successfully." });
+    }
+
+    // 3. Handle Success
+    const aiReport = req.body.report;
+    console.log(`✅ [Webhook] Received completed AI Report for session: ${sessionId}`);
+
+    // 4. Save to DynamoDB
+    // Notice in your endSession you have "events: buffer.events // encrypted by dbService automatically".
+    // We pass the report into dbService here so your v1 AES helper can encrypt the medical text too!
+    await dbService.updateSession(sessionId, {
+      reportStatus: 'completed',
+      report: aiReport
+    });
+
+    // 5. Respond 200 OK so the Python service knows we caught the plate
+    return res.status(200).json({ message: "Report successfully saved to database." });
+
+  } catch (error) {
+    console.error("Receive AI Report Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

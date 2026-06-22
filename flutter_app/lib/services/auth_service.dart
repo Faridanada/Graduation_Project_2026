@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 
 class AuthService {
-  static const String baseUrl = "http://10.0.2.2:5000/api";
+  static const String baseUrl = "https://flexio-rehab.duckdns.org/api";
 
   // REGISTER
   static Future<Map<String, dynamic>> register({

@@ -73,7 +73,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       _availableSlots = [];
       selectedTime = null;
 
-      if (rules != null && rules['isAvailable'] == true) {
+      final isAvailable = rules != null && (rules['isAvailable'] == true || rules['enabled'] == true || rules['enabled'] == 'true');
+
+      if (isAvailable) {
         final startStr = rules['startTime']?.toString() ?? '09:00 AM';
         final endStr = rules['endTime']?.toString() ?? '05:00 PM';
 
@@ -424,9 +426,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                               final isPast = date.isBefore(DateTime.now()
                                   .subtract(const Duration(days: 1)));
                               final dayName = DateFormat('EEEE').format(date);
-                              final hasAvailability = _availabilityMap[dayName]
-                                      ?['isAvailable'] ==
-                                  true;
+                              final hasAvailability = _availabilityMap[dayName] != null &&
+                                  (_availabilityMap[dayName]['isAvailable'] == true ||
+                                   _availabilityMap[dayName]['enabled'] == true ||
+                                   _availabilityMap[dayName]['enabled'] == 'true');
 
                               return GestureDetector(
                                 onTap: isPast

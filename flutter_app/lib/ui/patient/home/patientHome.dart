@@ -8,13 +8,14 @@ import 'package:rehabilitation_app/ui/patient/recovery/reminders.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/improvements_screen.dart';
 import 'package:rehabilitation_app/ui/patient/appointments/book_appointement.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/report_wound_screen.dart';
-import 'package:rehabilitation_app/ui/exercises/start_exercise_screen.dart';
+import 'package:rehabilitation_app/ui/exercises/active_exercice_screen.dart';
 import 'package:rehabilitation_app/ui/patient/doctors/FindDoctorScreen.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/patient/profile/PatientProfile.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/recovery_plan_screen.dart';
 import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
 import 'package:rehabilitation_app/ui/chats/ChatbotPage.dart';
+import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final int initialTab;
@@ -26,24 +27,12 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   late int _currentIndex;
-  int _unreadNotifs = 0;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialTab;
-    _fetchUnread();
-  }
-
-  Future<void> _fetchUnread() async {
-    try {
-      final stats = await ApiService.getPatientDashboardStats();
-      if (mounted) {
-        setState(() {
-          _unreadNotifs = stats['unreadNotifications'] ?? 0;
-        });
-      }
-    } catch (_) {}
+    // Unread count is now managed globally and initialized by other dashboard API calls.
   }
 
   void _goToHomeTab() {
@@ -97,7 +86,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                 );
               },
               backgroundColor: AppColors.primary,
-              child: const Icon(Icons.smart_toy_outlined, color: Colors.white),
+              child: const Icon(Icons.question_mark_rounded, color: Colors.white),
             )
           : null,
     );
@@ -121,26 +110,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             );
           },
         ),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotificationsPage()),
-            ).then((_) => _fetchUnread());
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Badge(
-              isLabelVisible: _unreadNotifs > 0,
-              label: Text('$_unreadNotifs'),
-              child: const Icon(
-                Icons.notifications_none,
-                color: Colors.black,
-                size: 28,
-              ),
-            ),
-          ),
-        ),
+        const NotificationBell(),
         IconButton(
           icon: const Icon(Icons.settings_outlined),
           color: Colors.black,
@@ -170,6 +140,7 @@ class _HomeContentState extends State<_HomeContent> {
   List<dynamic> todayExercises = [];
   List<dynamic> reminders = [];
   Map<String, dynamic>? nextAppointment;
+  Map<String, dynamic>? assignedDoctor;
   int completedExercises = 0;
   int upcomingAppointments = 0;
   bool _hasError = false;
@@ -194,6 +165,7 @@ class _HomeContentState extends State<_HomeContent> {
       final exercises = await ApiService.getPatientTodayExercises();
       final fetchedReminders = await ApiService.getPatientReminders();
       final appointment = await ApiService.getPatientNextAppointment();
+      final doctor = await ApiService.getMyDoctor();
 
       if (mounted) {
         setState(() {
@@ -204,6 +176,7 @@ class _HomeContentState extends State<_HomeContent> {
           todayExercises = exercises;
           reminders = fetchedReminders;
           nextAppointment = appointment;
+          assignedDoctor = doctor;
           completedExercises =
               exercises.where((e) => e['isCompleted'] == true).length;
           upcomingAppointments = appointment != null ? 1 : 0;
@@ -494,11 +467,11 @@ class _HomeContentState extends State<_HomeContent> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => StartExerciseScreen(
+                                  builder: (_) => ActiveExerciseScreen(
                                         exercise: exercise != null
                                             ? Map<String, dynamic>.from(
                                                 exercise as Map)
-                                            : null,
+                                            : <String, dynamic>{},
                                       )),
                             );
                           },
@@ -555,7 +528,7 @@ class _HomeContentState extends State<_HomeContent> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => const BookAppointmentScreen()),
+                        builder: (_) => BookAppointmentScreen(doctor: assignedDoctor)),
                   );
                 },
               ),

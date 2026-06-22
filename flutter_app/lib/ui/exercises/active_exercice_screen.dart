@@ -43,10 +43,11 @@ class _ActiveExerciseScreenState extends State<ActiveExerciseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.exercise['title'] ?? 'Exercise';
-    final mode = widget.exercise['mode'] ?? 'Active Mode';
-    final duration = widget.exercise['estimatedTimeMin'] ?? 10;
-    final reps = widget.exercise['repsTotal'] ?? 15;
+    final type = widget.exercise['exerciseType'] ?? 'Exercise';
+    final title = widget.exercise['title'] ?? '$type Session';
+    final int numEx = widget.exercise['numberOfExercises'] as int? ?? 0;
+    final int numReps = widget.exercise['numberOfReps'] as int? ?? 0;
+    final int? reps = (numEx * numReps) > 0 ? (numEx * numReps) : null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -73,10 +74,10 @@ class _ActiveExerciseScreenState extends State<ActiveExerciseScreen> {
                       child: const Icon(Icons.arrow_back),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
-                      'Start Active Exercise',
+                    Text(
+                      'Start $type Exercise',
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),                const SizedBox(height: 32),
@@ -131,21 +132,16 @@ class _ActiveExerciseScreenState extends State<ActiveExerciseScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          _OverviewItem(
-                            icon: Icons.access_time,
-                            title: 'Duration',
-                            value: '$duration min',
-                          ),
-                          const _Divider(),
-                          _OverviewItem(
-                            icon: Icons.sync,
-                            title: 'Reps',
-                            value: '$reps total',
-                          ),
-                        ],
-                      ),
+                      if (reps != null)
+                        Row(
+                          children: [
+                            _OverviewItem(
+                              icon: Icons.sync,
+                              title: 'Reps',
+                              value: '$reps total',
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -196,13 +192,13 @@ class _ActiveExerciseScreenState extends State<ActiveExerciseScreen> {
                             builder: (_) => LiveSessionScreen(exercise: widget.exercise)),
                       );
                     },
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.play_arrow),
-                        SizedBox(width: 8),
-                        Text('Start Active Session',
-                            style: TextStyle(fontSize: 16)),
+                        const Icon(Icons.play_arrow),
+                        const SizedBox(width: 8),
+                        Text('Start $type Session',
+                            style: const TextStyle(fontSize: 16)),
                       ],
                     ),
                   ),
