@@ -22,28 +22,28 @@ async function runLivePipelineTest() {
       password: 'Ananas12$'
     }, { httpsAgent: new require('https').Agent({ rejectUnauthorized: false }) });
     const token = loginRes.data.token;
-    
+
     const startRes = await axios.post(`${API_BASE_URL}/sessions/start`, {
       deviceId: DEVICE_ID,
       exerciseId: 'ex_passive_knee'
-    }, { 
+    }, {
       headers: { Authorization: `Bearer ${token}` },
       httpsAgent: new require('https').Agent({ rejectUnauthorized: false })
     });
-    
+
     const sessionId = startRes.data.sessionId;
     console.log(`✅ Session Started: ${sessionId}\n`);
 
     // 2. CONNECT TO MQTT
     console.log(`2️⃣  Connecting to EC2 Mosquitto Broker...`);
     const client = mqtt.connect(MQTT_BROKER, { username: MQTT_USER, password: MQTT_PASS });
-    
+
     await new Promise((resolve, reject) => {
       client.on('connect', resolve);
       client.on('error', reject);
     });
     console.log(`✅ MQTT Connected!\n`);
-    
+
     // Subscribe to our own stream to prove Mosquitto accepted it
     let receivedCount = 0;
     client.subscribe(`flexio/${DEVICE_ID}/stream`);
@@ -54,12 +54,12 @@ async function runLivePipelineTest() {
     // 3. STREAM DATA
     console.log(`3️⃣  Streaming 100 lines of mock 16-column data...`);
     const validLine = '100.1\t200.2\t1\t1\t0.1\t0.2\t0.3\t0.4\t0.5\t0.6\t0.7\t0.8\t0.9\t1.0\t1.1\t1.2';
-    
+
     // We send 10 lines at a time, 10 times, to simulate a stream over 2 seconds
     for (let i = 0; i < 10; i++) {
       let payload = '';
       for (let j = 0; j < 10; j++) payload += validLine + '\n';
-      
+
       client.publish(`flexio/${DEVICE_ID}/stream`, payload);
       await new Promise(r => setTimeout(r, 200)); // wait 200ms
     }
@@ -74,13 +74,13 @@ async function runLivePipelineTest() {
       headers: { Authorization: `Bearer ${token}` },
       httpsAgent: new require('https').Agent({ rejectUnauthorized: false })
     });
-    
+
     console.log(`\n🎉 PIPELINE TEST COMPLETE!`);
     console.log(`AWS Backend Response:`);
     console.log(`- Status: ${endRes.data.session.status}`);
     console.log(`- Samples Saved to S3: ${endRes.data.session.sampleCount}`);
     console.log(`- Packets bounced back by Mosquitto: ${receivedCount} / 10`);
-    
+
     if (endRes.data.session.sampleCount > 0) {
       console.log(`\n⭐⭐⭐⭐⭐ SUCCESS! The EC2 Backend perfectly received, parsed, and saved the data to S3!`);
     } else {

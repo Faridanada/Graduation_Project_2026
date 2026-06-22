@@ -1,34 +1,28 @@
 const dbService = require('./dbService');
-const { generateFakeReport } = require('../controllers/reportController');
 
 /**
- * Trigger for generating an AI report
- * Sends a job to the new asynchronous AI service which downloads from S3.
+ * Stub: AI report generation is currently disabled.
+ * The real AI service is being prepared (retrained SVM + Python
+ * FastAPI wrapper). Once available, restore the real implementation.
+ *
+ * For now this just marks each completed session as having no AI
+ * analysis so the UI can show a clear "No analysis available" state.
  */
-async function triggerReportGeneration(sessionId, patientId, exerciseId, waveformS3Key) {
+async function triggerReportGeneration(sessionId) {
   try {
-    // 1. Immediately set the session's reportStatus = "processing"
     await dbService.updateSession(sessionId, {
-      reportStatus: 'processing'
+      reportStatus: 'no_ai_service',
+      reportGeneratedAt: new Date().toISOString(),
     });
-
-    console.log(`[reportTrigger] Generating local fake report to bypass AI server...`);
-    await generateFakeReport(sessionId, patientId, exerciseId, waveformS3Key);
-    return;
-    
-  } catch (error) {
-    console.error("[reportTrigger Error]:", error.message || error);
-    if (error.response) {
-       console.error("[reportTrigger Error Response]:", error.response.data);
-    }
-    // We cannot patch back easily from here because report generation happens locally... wait, if the trigger fails, we should update the DB.
-    try {
-      const { applyReportToSession } = require('../controllers/reportController');
-      await applyReportToSession(sessionId, { error: error.message || "Failed to trigger AI service" });
-    } catch (fallbackError) {
-      console.error("[reportTrigger Fallback Error]:", fallbackError);
-    }
+    console.log(
+      `[reportTrigger] Session ${sessionId} marked as no_ai_service ` +
+      `(AI service not yet deployed)`
+    );
+  } catch (err) {
+    console.error(
+      `[reportTrigger] Failed to mark session ${sessionId}: ${err.message}`
+    );
   }
 }
 
-exports.triggerReportGeneration = triggerReportGeneration;
+module.exports = { triggerReportGeneration };
