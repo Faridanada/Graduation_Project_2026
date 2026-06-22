@@ -16,6 +16,9 @@ import 'package:rehabilitation_app/ui/patient/recovery/recovery_plan_screen.dart
 import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
 import 'package:rehabilitation_app/ui/chats/ChatbotPage.dart';
 import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
+import 'package:rehabilitation_app/ui/patient/exercises/WaitingForDoctorScreen.dart';
+import 'package:rehabilitation_app/ui/exercises/passive_exercise_screen.dart';
+import 'package:rehabilitation_app/ui/exercises/stabilization_exercise_screen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final int initialTab;
@@ -136,6 +139,7 @@ class _HomeContent extends StatefulWidget {
 class _HomeContentState extends State<_HomeContent> {
   String userName = "Patient";
   String? userProfileImage;
+  String? patientId;
   bool isLoading = true;
   List<dynamic> todayExercises = [];
   List<dynamic> reminders = [];
@@ -162,7 +166,21 @@ class _HomeContentState extends State<_HomeContent> {
     try {
       final userProfile = await ApiService.getUserProfile();
       final name = userProfile != null ? userProfile['name'] : null;
-      final exercises = await ApiService.getPatientTodayExercises();
+      List<dynamic> exercises = await ApiService.getPatientTodayExercises();
+      
+      // Fallback: If no explicit today exercises, pull from Active Recovery Plan phase
+      if (exercises.isEmpty) {
+        final plan = await ApiService.getRecoveryPlan();
+        if (plan != null && plan['phases'] != null) {
+          final phases = plan['phases'] as List<dynamic>;
+          for (var phase in phases) {
+            if (phase['status'] == 'Active' || phase['status'] == 'Overdue') {
+              exercises.addAll(phase['exercises'] ?? []);
+            }
+          }
+        }
+      }
+
       final fetchedReminders = await ApiService.getPatientReminders();
       final appointment = await ApiService.getPatientNextAppointment();
       final doctor = await ApiService.getMyDoctor();
@@ -173,6 +191,7 @@ class _HomeContentState extends State<_HomeContent> {
             userName = name.split(' ')[0];
           }
           userProfileImage = userProfile?['profileImageUrl']?.toString() ?? userProfile?['profileImage']?.toString();
+          patientId = userProfile?['id']?.toString() ?? userProfile?['_id']?.toString();
           todayExercises = exercises;
           reminders = fetchedReminders;
           nextAppointment = appointment;
@@ -424,63 +443,164 @@ class _HomeContentState extends State<_HomeContent> {
             ),
           ),
           const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          // Updated to match Recovery Plan UI
+          if (todayExercises.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Text(
+                'No exercises assigned for today.',
+                style: TextStyle(color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            )
+          else
+            ...todayExercises.map((exercise) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _exerciseTile(context, exercise as Map<String, dynamic>),
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _exerciseTile(BuildContext context, Map<String, dynamic> exercise) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: const Color(0xFFEAF3FF),
+            child: const Icon(
+              Icons.fitness_center,
+              color: Color(0xFF4A90E2),
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                    children: [
+                      TextSpan(
+                        text: exercise['title'] ?? 'Exercise',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const TextSpan(text: "  •  ", style: TextStyle(color: Colors.grey)),
+                      TextSpan(
+                        text: exercise['mode'] ?? exercise['exerciseType'] ?? '',
+                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "${exercise['repsTotal'] ?? 10} reps total  •  ${exercise['numberOfExercises'] ?? 3} sets of ${exercise['numberOfReps'] ?? 10}",
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
-            child: todayExercises.isEmpty
-                ? const Text(
-                    'No exercises assigned for today.',
-                    style: TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  )
-                : Column(
-                    children: todayExercises.map<Widget>((exercise) {
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[50],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.fitness_center,
-                              color: Colors.blue),
-                        ),
-                        title: Text(exercise['title'] ?? 'Exercise'),
-                        subtitle: Text(
-                            'Est. time: ${exercise['estimatedTimeMin'] ?? 0} min'),
-                        trailing: IconButton(
-                          icon:
-                              const Icon(Icons.play_arrow, color: Colors.blue),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => ActiveExerciseScreen(
-                                        exercise: exercise != null
-                                            ? Map<String, dynamic>.from(
-                                                exercise as Map)
-                                            : <String, dynamic>{},
-                                      )),
-                            );
-                          },
-                        ),
-                      );
-                    }).toList(),
-                  ),
           ),
+          _gradientButton(context, exercise),
         ],
+      ),
+    );
+  }
+
+  Widget _gradientButton(BuildContext context, Map<String, dynamic> exercise) {
+    return GestureDetector(
+      onTap: () {
+        if (exercise['exerciseType'] == 'Passive-Monitored' && assignedDoctor != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WaitingForDoctorScreen(
+                exercise: Map<String, dynamic>.from(exercise),
+                patientId: patientId ?? '',
+                patientName: userName,
+                doctorId: assignedDoctor?['id']?.toString() ?? assignedDoctor?['_id']?.toString() ?? '',
+              ),
+            ),
+          );
+        } else if (exercise['exerciseType'] == 'Passive') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PassiveExerciseScreen(),
+            ),
+          );
+        } else if (exercise['exerciseType'] == 'Stabilization') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => StabilizationExerciseScreen(
+                exercise: Map<String, dynamic>.from(exercise),
+              ),
+            ),
+          ).then((_) => _loadDashboardData());
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ActiveExerciseScreen(
+                exercise: Map<String, dynamic>.from(exercise),
+              ),
+            ),
+          ).then((_) => _loadDashboardData());
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 22,
+          vertical: 12,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4A90E2),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: const Text(
+          "Start Now",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
       ),
     );
   }
@@ -499,64 +619,65 @@ class _HomeContentState extends State<_HomeContent> {
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.3,
-            children: [
-              _buildActivityTile(
-                label: 'My Recovery Plan',
-                icon: Icons.fitness_center,
-                color: Colors.blue[200],
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const RecoveryPlanScreen()),
-                  );
-                },
-              ),
-              _buildActivityTile(
-                label: 'Book Appointments',
-                icon: Icons.calendar_today,
-                color: Colors.purple[200],
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => BookAppointmentScreen(doctor: assignedDoctor)),
-                  );
-                },
-              ),
-              _buildActivityTile(
-                label: 'My Improvement',
-                icon: Icons.trending_up,
-                color: Colors.orange[200],
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const ImprovementScreen()),
-                  );
-                },
-              ),
-              _buildActivityTile(
-                label: 'Report Wound',
-                icon: Icons.camera_alt,
-                color: Colors.cyan[200],
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const ReportWoundScreen()),
-                  );
-                },
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final gridItemWidth = (constraints.maxWidth - 12) / 2;
+              final gridItemHeight = gridItemWidth / 1.3;
+              return Column(
+                children: [
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.3,
+                    children: [
+                      _buildActivityTile(
+                        label: 'My Recovery Plan',
+                        icon: Icons.fitness_center,
+                        color: Colors.blue[200],
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const RecoveryPlanScreen()),
+                          );
+                        },
+                      ),
+                      _buildActivityTile(
+                        label: 'Book Appointments',
+                        icon: Icons.calendar_today,
+                        color: Colors.purple[200],
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => BookAppointmentScreen(doctor: assignedDoctor)),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: gridItemHeight,
+                    child: _buildHorizontalActivityTile(
+                      label: 'Report Wound',
+                      icon: Icons.camera_alt,
+                      color: Colors.cyan[200],
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ReportWoundScreen()),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -619,6 +740,56 @@ class _HomeContentState extends State<_HomeContent> {
               ),
             ),
             const SizedBox(height: 2),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHorizontalActivityTile({
+    required String label,
+    required IconData icon,
+    required Color? color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: (color ?? Colors.blue).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: color ?? Colors.blue, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.black54),
           ],
         ),
       ),

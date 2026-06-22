@@ -16,6 +16,9 @@ class WebRTCService {
   Function(MediaStream stream)? onRemoteStream;
   Function(MediaStream stream)? onLocalStream;
   Function()? onConnectionState;
+  
+  final StreamController<Map<String, dynamic>> _signalingController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get signalingStream => _signalingController.stream;
 
   String? _sessionId;
   
@@ -42,6 +45,8 @@ class WebRTCService {
         print('WebSocket closed');
       });
 
+      // We only want to init WebRTC media automatically if this is not just a signaling-only connection,
+      // but for now we'll keep the existing behavior to avoid breaking current functionality.
       await _initWebRTC(isPatient);
 
     } catch (e) {
@@ -114,12 +119,36 @@ class WebRTCService {
     }
   }
 
+  void sendCustomSignaling({required String targetSessionId, required Map<String, dynamic> data}) {
+    if (_socket != null && _socket!.readyState == WebSocket.open) {
+      _socket!.add(jsonEncode({
+        'type': 'webrtc_signaling',
+        'sessionId': targetSessionId,
+        'data': data
+      }));
+    }
+  }
+
+  void subscribeToSession(String sessionId) {
+    if (_socket != null && _socket!.readyState == WebSocket.open) {
+      _socket!.add(jsonEncode({
+        'type': 'subscribe',
+        'sessionId': sessionId
+      }));
+    }
+  }
+
   void _handleSocketMessage(dynamic message, bool isPatient) async {
     try {
       final Map<String, dynamic> msg = jsonDecode(message);
       if (msg['payload'] != null && msg['payload']['type'] == 'webrtc_signaling') {
         final data = msg['payload']['data'];
         final webrtcType = data['webrtc_type'];
+
+        // Broadcast any custom signaling to the stream
+        if (webrtcType != 'offer' && webrtcType != 'answer' && webrtcType != 'ice_candidate') {
+          _signalingController.add(data);
+        }
 
         if (webrtcType == 'offer' && !isPatient) {
           // Doctor receives offer from patient

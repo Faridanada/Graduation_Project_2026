@@ -17,6 +17,9 @@ import 'package:rehabilitation_app/ui/doctor/patients/AddNewPatient.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/PatientProfilePage.dart';
 import 'package:rehabilitation_app/ui/exercises/PatientExerciseMonitorList.dart';
 import 'package:rehabilitation_app/ui/shared/profile_avatar.dart';
+import 'dart:async';
+import 'package:rehabilitation_app/services/webrtc_service.dart';
+import 'package:rehabilitation_app/ui/exercises/ExoskeletonDegreeSetupPage.dart';
 
 /// Doctor home page - Main dashboard for healthcare professionals
 class DoctorHome extends StatefulWidget {
@@ -42,6 +45,67 @@ class _DoctorHomeState extends State<DoctorHome> {
   bool isLoading = true;
   bool _hasError = false;
 
+  final WebRTCService _webRTC = WebRTCService();
+  StreamSubscription? _signalingSub;
+
+  void _setupSignaling(String doctorId) async {
+    await _webRTC.initConnection('doctor_$doctorId', isPatient: false);
+    _signalingSub?.cancel();
+    _signalingSub = _webRTC.signalingStream.listen((data) {
+      if (data['webrtc_type'] == 'patient_waiting') {
+        _showIncomingSessionDialog(data);
+      }
+    });
+  }
+
+  void _showIncomingSessionDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Incoming Session Request'),
+          content: Text('${data['patientName']} is waiting for a ${data['exerciseTitle']}.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Decline
+              },
+              child: const Text('Decline', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Accept
+                
+                // Send accept signal
+                _webRTC.sendCustomSignaling(
+                  targetSessionId: data['sessionChannel'],
+                  data: {
+                    'webrtc_type': 'doctor_accepted',
+                  },
+                );
+
+                // Navigate to setup
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ExoskeletonDegreeSetupPage(
+                      patientName: data['patientName'],
+                      exerciseTitle: data['exerciseTitle'],
+                      sessionChannel: data['sessionChannel'],
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Accept', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +122,11 @@ class _DoctorHomeState extends State<DoctorHome> {
 
       if (mounted) {
         setState(() {
+          final doctorId = profile?['id']?.toString() ?? profile?['_id']?.toString();
+          if (doctorId != null) {
+            _setupSignaling(doctorId);
+          }
+
           final name = profile?['name']?.toString();
           if (name != null && name.isNotEmpty) {
             doctorName = name.split(' ')[0];
@@ -84,6 +153,8 @@ class _DoctorHomeState extends State<DoctorHome> {
   void dispose() {
     ApiService.profileUpdateNotifier.removeListener(_loadDashboardData);
     _patientsScrollController.dispose();
+    _signalingSub?.cancel();
+    _webRTC.dispose();
     super.dispose();
   }
 
@@ -383,7 +454,7 @@ class _DoctorHomeState extends State<DoctorHome> {
                         if (todayAppointments.isNotEmpty)
                           ...todayAppointments.map((apt) {
                             final timeTitle =
-                                '${apt['time'] ?? '??:??'} · ${apt['patientName'] ?? 'Patient'}';
+                                '${apt['time'] ?? '??:??'}\n${apt['patientName'] ?? apt['doctorName'] ?? apt['name'] ?? 'Patient'}';
                             return _buildReminderItem(timeTitle,
                                 apt['id'] ?? 'apt_${apt['time']}', false);
                           })
@@ -1041,7 +1112,7 @@ class RemindersDetailsPage extends StatelessWidget {
                 if (todayAppointments.isNotEmpty)
                   ...todayAppointments.map((apt) => _ReminderRow(
                         time: apt['time'] ?? '??:??',
-                        title: apt['patientName'] ?? 'Patient',
+                        title: apt['patientName'] ?? apt['doctorName'] ?? apt['name'] ?? 'Patient',
                         subtitle: apt['notes'] ?? 'General Consultation',
                         status: 'Scheduled',
                       ))
@@ -1355,9 +1426,9 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
     final query = _searchController.text.trim().toLowerCase();
 
     return _patients.where((patient) {
-      final name = (patient['name'] as String).toLowerCase();
-      final age = (patient['age'] as int).toString();
-      final status = patient['status'] as String;
+      final name = patient['name']?.toString().toLowerCase() ?? '';
+      final age = patient['age']?.toString() ?? '';
+      final status = patient['status']?.toString() ?? '';
       final matchesSearch =
           query.isEmpty || name.contains(query) || age.contains(query);
       final matchesFilter =
@@ -1525,7 +1596,9 @@ class _AllPatientCard extends StatelessWidget {
                   backgroundColor:
                       const Color.fromRGBO(128, 155, 206, 1).withOpacity(0.6),
                   child: Text(
-                    (patient['name'] as String).substring(0, 1),
+                    patient['name']?.toString().isNotEmpty == true 
+                        ? patient['name'].toString().substring(0, 1).toUpperCase() 
+                        : 'U',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1550,7 +1623,7 @@ class _AllPatientCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              patient['name'] as String,
+              patient['name']?.toString() ?? 'Unknown',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(

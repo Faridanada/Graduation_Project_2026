@@ -31,13 +31,16 @@ class _PassiveExerciseScreenState
               /// HEADER
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Icon(Icons.arrow_back),
-                  Text("Start Passive Exercise",
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Text("Start Passive Exercise",
                       style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold)),
-                  Text("FLEXIO",
+                  const Text("FLEXIO",
                       style: TextStyle(
                           color: primaryBlue,
                           fontWeight: FontWeight.bold)),
@@ -78,7 +81,7 @@ class _PassiveExerciseScreenState
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.asset(
-                        "assets/passiveexercise.png", // FIXED
+                        "assets/images/passiveexercise.png", // FIXED
                         height: 90,
                         width: 90,
                         fit: BoxFit.contain,

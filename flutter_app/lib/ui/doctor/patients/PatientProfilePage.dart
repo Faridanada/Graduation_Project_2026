@@ -490,7 +490,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
               style: TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
             ),
             const SizedBox(height: 16),
-            _buildCreatePlanButton(),
+            _buildCreatePlanButton(false),
           ],
         ),
       );
@@ -503,7 +503,7 @@ class _PatientProfilePageState extends State<PatientProfilePage>
         if (index == 0) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: _buildCreatePlanButton(),
+            child: _buildCreatePlanButton(true),
           );
         }
         final plan = plans[index - 1];
@@ -633,11 +633,11 @@ class _PatientProfilePageState extends State<PatientProfilePage>
     }
   }
 
-  Widget _buildCreatePlanButton() {
+  Widget _buildCreatePlanButton(bool isDisabled) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: () {
+        onPressed: isDisabled ? null : () {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -649,10 +649,14 @@ class _PatientProfilePageState extends State<PatientProfilePage>
             ),
           ).then((_) => _loadData());
         },
-        icon: const Icon(Icons.add, size: 20, color: Colors.white),
-        label: const Text('Create New Recovery Plan', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Colors.white)),
+        icon: Icon(Icons.add, size: 20, color: isDisabled ? Colors.grey[400] : Colors.white),
+        label: Text(
+          isDisabled ? 'Recovery Plan Already Exists' : 'Create New Recovery Plan', 
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: isDisabled ? Colors.grey[400] : Colors.white)
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: isDisabled ? Colors.grey[200] : AppColors.primary,
+          disabledBackgroundColor: Colors.grey[200],
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

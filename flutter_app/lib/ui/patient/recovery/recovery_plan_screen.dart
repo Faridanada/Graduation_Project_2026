@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:rehabilitation_app/ui/exercises/active_exercice_screen.dart';
+import 'package:rehabilitation_app/ui/exercises/stabilization_exercise_screen.dart';
+import 'package:rehabilitation_app/ui/patient/exercises/WaitingForDoctorScreen.dart';
+import 'package:rehabilitation_app/ui/exercises/passive_exercise_screen.dart';
 import 'package:rehabilitation_app/ui/patient/home/patient_bottom_nav.dart';
 import 'package:rehabilitation_app/ui/patient/doctors/FindDoctorScreen.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/shared/NotificationsPage.dart';
 import 'package:rehabilitation_app/ui/settings/SettingsPage.dart';
 import 'package:rehabilitation_app/ui/shared/notification_bell.dart';
+
 class RecoveryPlanScreen extends StatefulWidget {
   final bool isDoctorView;
   final Map<String, dynamic>? initialPlanData;
@@ -594,17 +598,30 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
           );
         } else {
           trailingWidget = GestureDetector(
-            onTap: () => _toggleExerciseCompletion(exId, true),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StabilizationExerciseScreen(
+                    exercise: Map<String, dynamic>.from(rawExercise),
+                  ),
+                ),
+              ).then((_) => _fetchData()); // Reload data after returning
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF4A90E2),
+                color: const Color(0xFF2196F3),
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF2196F3).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-              child: const Text(
-                "Angle Set",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-              ),
+              child: const Text("Set Angle", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
             ),
           );
         }
@@ -632,11 +649,24 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  exercise['title'],
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                    children: [
+                      TextSpan(
+                        text: exercise['title'] ?? 'Exercise',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const TextSpan(text: "  •  ", style: TextStyle(color: Colors.grey)),
+                      TextSpan(
+                        text: exercise['mode'] ?? exercise['exerciseType'] ?? '',
+                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                Text(exercise['mode']),
                 const SizedBox(height: 4),
                 Text(
                   isStab 
@@ -698,12 +728,33 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
   Widget _gradientButton(BuildContext context, Map<String, dynamic> exercise) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ActiveExerciseScreen(exercise: exercise),
-          ),
-        );
+        if (exercise['exerciseType'] == 'Passive-Monitored' && _patientProfile?['assignedDoctorId'] != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WaitingForDoctorScreen(
+                exercise: exercise,
+                patientId: _patientProfile?['id'] ?? '',
+                patientName: _patientProfile?['name'] ?? 'Patient',
+                doctorId: _patientProfile?['assignedDoctorId'] ?? '',
+              ),
+            ),
+          );
+        } else if (exercise['exerciseType'] == 'Passive') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PassiveExerciseScreen(),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ActiveExerciseScreen(exercise: exercise),
+            ),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(
