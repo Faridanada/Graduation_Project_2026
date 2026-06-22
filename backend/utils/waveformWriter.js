@@ -45,29 +45,19 @@ async function flushSessionToS3(sessionId, buffer) {
   emgRows.push(['timestamp_ms', 'emg1', 'emg2', 'on1', 'on2']); // Header
 
   for (const msg of buffer.emg) {
-    if (!msg.sensors || !Array.isArray(msg.sensors)) continue;
-    
-    const baseTs = msg.ts;
-    const emg1Sensor = msg.sensors.find(s => s.ch === 'emg1' || s.ch === 'emg_upper');
-    const emg2Sensor = msg.sensors.find(s => s.ch === 'emg2' || s.ch === 'emg_lower');
-    const on1Sensor = msg.sensors.find(s => s.ch === 'on1');
-    const on2Sensor = msg.sensors.find(s => s.ch === 'on2');
-    
-    const emg1Samples = emg1Sensor && Array.isArray(emg1Sensor.samples) ? emg1Sensor.samples : [];
-    const emg2Samples = emg2Sensor && Array.isArray(emg2Sensor.samples) ? emg2Sensor.samples : [];
-    const on1Samples = on1Sensor && Array.isArray(on1Sensor.samples) ? on1Sensor.samples : [];
-    const on2Samples = on2Sensor && Array.isArray(on2Sensor.samples) ? on2Sensor.samples : [];
-    
-    const maxLen = Math.max(emg1Samples.length, emg2Samples.length, on1Samples.length, on2Samples.length);
-    for (let i = 0; i < maxLen; i++) {
-      emgRows.push([
-        baseTs + (i * 20),
-        emg1Samples[i] !== undefined ? emg1Samples[i] : '',
-        emg2Samples[i] !== undefined ? emg2Samples[i] : '',
-        on1Samples[i] !== undefined ? on1Samples[i] : '',
-        on2Samples[i] !== undefined ? on2Samples[i] : '',
-      ]);
+    // If it's the old nested format, skip it to keep CSV clean
+    if (msg.sensors && Array.isArray(msg.sensors)) {
+      console.warn(`[waveformWriter] Skipping legacy nested EMG reading at ts=${msg.ts}`);
+      continue;
     }
+
+    emgRows.push([
+      msg.ts,
+      msg.emg1 !== undefined ? msg.emg1 : NaN,
+      msg.emg2 !== undefined ? msg.emg2 : NaN,
+      msg.on1 !== undefined && msg.on1 !== null ? msg.on1 : NaN,
+      msg.on2 !== undefined && msg.on2 !== null ? msg.on2 : NaN,
+    ]);
   }
 
   // 2. Process IMU to CSV
@@ -80,21 +70,38 @@ async function flushSessionToS3(sessionId, buffer) {
   ]); // Header
 
   for (const msg of buffer.imu) {
-    if (!msg.samples || !Array.isArray(msg.samples)) continue;
+    // If it's the old nested format, skip it
+    if (msg.samples && Array.isArray(msg.samples)) {
+      console.warn(`[waveformWriter] Skipping legacy nested IMU reading at ts=${msg.ts}`);
+      continue;
+    }
 
-    const baseTs = msg.ts;
-    msg.samples.forEach((sample, i) => {
-      const tg = sample.thighGravity || [0,0,0];
-      const tgy = sample.thighGyro || [0,0,0];
-      const sg = sample.shinGravity || [0,0,0];
-      const sgy = sample.shinGyro || [0,0,0];
-      imuRows.push([
-        baseTs + (i * 20), 
-        tg[0], tg[1], tg[2], tgy[0], tgy[1], tgy[2],
-        sg[0], sg[1], sg[2], sgy[0], sgy[1], sgy[2]
-      ]);
-    });
+    imuRows.push([
+      msg.ts, 
+      msg.ax1 !== undefined ? msg.ax1 : NaN,
+      msg.ay1 !== undefined ? msg.ay1 : NaN,
+      msg.az1 !== undefined ? msg.az1 : NaN,
+      msg.gx1 !== undefined ? msg.gx1 : NaN,
+      msg.gy1 !== undefined ? msg.gy1 : NaN,
+      msg.gz1 !== undefined ? msg.gz1 : NaN,
+      msg.ax2 !== undefined ? msg.ax2 : NaN,
+      msg.ay2 !== undefined ? msg.ay2 : NaN,
+      msg.az2 !== undefined ? msg.az2 : NaN,
+      msg.gx2 !== undefined ? msg.gx2 : NaN,
+      msg.gy2 !== undefined ? msg.gy2 : NaN,
+      msg.gz2 !== undefined ? msg.gz2 : NaN
+    ]);
   }
+
+  // Sort rows by timestamp ascending
+  // The header is at index 0, so we slice and sort the rest
+  const emgHeader = emgRows.shift();
+  emgRows.sort((a, b) => a[0] - b[0]);
+  emgRows.unshift(emgHeader);
+
+  const imuHeader = imuRows.shift();
+  imuRows.sort((a, b) => a[0] - b[0]);
+  imuRows.unshift(imuHeader);
 
   // Generate CSV strings
   const emgCsv = stringify(emgRows);

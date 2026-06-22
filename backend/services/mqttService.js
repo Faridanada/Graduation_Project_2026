@@ -3,6 +3,12 @@ const dbService = require('./dbService');
 const sessionBuffer = require('./sessionBuffer');
 const liveSocket = require('./liveSocket');
 
+// === Bundle topic (preferred for new ESP firmware) ===
+// Topic: flexio/<deviceId>/bundle
+// Payload: { ts, deviceId, emg1, emg2, on1, on2,
+//            ax1..gz1, ax2..gz2 } — single sample, 16 channels
+// Backend splits into separate emg + imu buffer entries internally.
+
 class MqttService {
   constructor() {
     this.client = null;
@@ -44,6 +50,7 @@ class MqttService {
       this.client.subscribe('flexio/+/emg');
       this.client.subscribe('flexio/+/imu');
       this.client.subscribe('flexio/+/stream'); // New 16-column stream format
+      this.client.subscribe('flexio/+/bundle');
       this.client.subscribe('flexio/+/keyword');
       this.client.subscribe('flexio/+/heartbeat');
     });
@@ -107,6 +114,51 @@ class MqttService {
 
     if (!payload.ts || !payload.deviceId || payload.deviceId !== deviceId) {
       console.warn(`[MQTT] Malformed payload or deviceId mismatch on ${topic}`);
+      return;
+    }
+
+    if (kind === 'bundle') {
+      // Validate
+      if (typeof payload.emg1 !== 'number' || typeof payload.emg2 !== 'number') {
+        console.warn(`[MQTT] bundle missing EMG fields on ${topic}`);
+        return;
+      }
+      if (typeof payload.ax1 !== 'number' || typeof payload.gz2 !== 'number') {
+        console.warn(`[MQTT] bundle missing IMU fields on ${topic}`);
+        return;
+      }
+
+      const patientId = await this.getPatientIdForDevice(deviceId);
+      if (!patientId) return;
+
+      // Split into 2 readings with same timestamp
+      const emgReading = {
+        ts: payload.ts,
+        deviceId: payload.deviceId,
+        emg1: payload.emg1,
+        emg2: payload.emg2,
+        on1: payload.on1 ?? null,
+        on2: payload.on2 ?? null,
+      };
+      const imuReading = {
+        ts: payload.ts,
+        deviceId: payload.deviceId,
+        ax1: payload.ax1, ay1: payload.ay1, az1: payload.az1,
+        gx1: payload.gx1, gy1: payload.gy1, gz1: payload.gz1,
+        ax2: payload.ax2, ay2: payload.ay2, az2: payload.az2,
+        gx2: payload.gx2, gy2: payload.gy2, gz2: payload.gz2,
+      };
+
+      sessionBuffer.addReading(deviceId, 'emg', emgReading);
+      sessionBuffer.addReading(deviceId, 'imu', imuReading);
+
+      const activeSession = sessionBuffer.getActiveSessionForDevice(deviceId);
+      if (activeSession) {
+        liveSocket.broadcast(activeSession.sessionId, {
+          kind: 'bundle',
+          data: payload,
+        });
+      }
       return;
     }
 
