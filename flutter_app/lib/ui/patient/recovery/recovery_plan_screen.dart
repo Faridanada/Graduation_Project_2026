@@ -81,6 +81,7 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
   Map<String, dynamic>? _planData;
   Map<String, dynamic>? _patientProfile;
   bool _isReminding = false;
+  List<dynamic> _completions = [];
 
   @override
   void initState() {
@@ -99,14 +100,34 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
     final profile = await ApiService.getUserProfile();
     final plan = await ApiService.getRecoveryPlan();
     final stats = await ApiService.getPatientDashboardStats();
+    
+    List<dynamic> completions = [];
+    if (plan != null && plan['id'] != null && !widget.isDoctorView) {
+      completions = await ApiService.getCompletions(planId: plan['id']);
+    }
 
     if (mounted) {
       setState(() {
         _patientProfile = profile;
         _planData = plan;
+        _completions = completions;
         _isLoading = false;
       });
     }
+  }
+
+  bool _isDoneToday(String exerciseId) {
+    if (exerciseId.isEmpty) return false;
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
+    for (var comp in _completions) {
+      if (comp['exerciseId'] == exerciseId && comp['done'] == true) {
+        final compDate = comp['date'] ?? comp['createdAt'] ?? '';
+        if (compDate.startsWith(todayStr)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   Future<void> _remindDoctor() async {
@@ -502,16 +523,95 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
     );
   }
 
-  static Widget _exerciseTile(BuildContext context, Map<String, dynamic> rawExercise) {
+  Widget _exerciseTile(BuildContext context, Map<String, dynamic> rawExercise) {
     // Map available phase exercise fields to what the UI/ActiveExerciseScreen expects
     final exercise = Map<String, dynamic>.from(rawExercise);
     final type = exercise['exerciseType'] ?? 'Exercise';
     final isStab = type == 'Stabilization';
     
+    final holdAngle = exercise['holdAngle'] as int?;
     exercise['title'] ??= isStab ? "Stabilization" : "$type Session";
-    exercise['mode'] ??= isStab ? "Rest" : "${exercise['minAngle'] ?? 0}° - ${exercise['maxAngle'] ?? 90}° Range";
+    if (isStab) {
+      exercise['mode'] ??= holdAngle != null ? "Hold at $holdAngle°" : "Rest";
+    } else if (type == 'Passive-Monitored') {
+      exercise['mode'] ??= "Angle set live";
+    } else {
+      exercise['mode'] ??= "${exercise['minAngle'] ?? 0}° - ${exercise['maxAngle'] ?? 90}° Range";
+    }
     exercise['estimatedTimeMin'] ??= 15;
     exercise['repsTotal'] ??= isStab ? 0 : (exercise['numberOfExercises'] ?? 3) * (exercise['numberOfReps'] ?? 10);
+
+    final String exId = exercise['id'] ?? '';
+    final bool hasId = exId.isNotEmpty;
+    final bool doneToday = hasId ? _isDoneToday(exId) : false;
+
+    Widget trailingWidget;
+    if (isStab) {
+      if (widget.isDoctorView) {
+        trailingWidget = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            "Rest Day",
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        );
+      } else {
+        if (!hasId) {
+          trailingWidget = Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text("Angle Set (Missing ID)", style: TextStyle(color: Colors.grey, fontSize: 12)),
+          );
+        } else if (doneToday) {
+          trailingWidget = GestureDetector(
+            onTap: () => _toggleExerciseCompletion(exId, false),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F8EF),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check, color: Colors.green, size: 16),
+                  SizedBox(width: 4),
+                  Text("Done today", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                ],
+              ),
+            ),
+          );
+        } else {
+          trailingWidget = GestureDetector(
+            onTap: () => _toggleExerciseCompletion(exId, true),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A90E2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                "Angle Set",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ),
+          );
+        }
+      }
+    } else {
+      trailingWidget = _gradientButton(context, exercise);
+    }
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -550,31 +650,52 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
               ],
             ),
           ),
-          if (isStab)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                "Rest Day",
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            )
-          else
-            _gradientButton(context, exercise),
+          trailingWidget,
         ],
       ),
     );
   }
 
+  Future<void> _toggleExerciseCompletion(String exerciseId, bool done) async {
+    final planId = _planData!['id'];
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
 
-  static Widget _gradientButton(BuildContext context, Map<String, dynamic> exercise) {
+    // Optimistic update
+    setState(() {
+      if (done) {
+        _completions.add({
+          'exerciseId': exerciseId,
+          'date': todayStr,
+          'done': true,
+        });
+      } else {
+        _completions.removeWhere((c) => c['exerciseId'] == exerciseId && (c['date'] ?? c['createdAt'] ?? '').startsWith(todayStr));
+      }
+    });
+
+    final success = await ApiService.markExerciseComplete(planId: planId, exerciseId: exerciseId, done: done);
+    if (!success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update status.'), backgroundColor: Colors.red),
+        );
+        // Revert
+        setState(() {
+          if (!done) {
+            _completions.add({
+              'exerciseId': exerciseId,
+              'date': todayStr,
+              'done': true,
+            });
+          } else {
+            _completions.removeWhere((c) => c['exerciseId'] == exerciseId && (c['date'] ?? c['createdAt'] ?? '').startsWith(todayStr));
+          }
+        });
+      }
+    }
+  }
+
+  Widget _gradientButton(BuildContext context, Map<String, dynamic> exercise) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -761,6 +882,8 @@ class _PhaseCard extends StatelessWidget {
                             ),
                             if (ex['exerciseType'] == 'Stabilization')
                               Text("${ex['stabilizationDays'] ?? 7} Days", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))
+                            else if (ex['exerciseType'] == 'Passive-Monitored')
+                              Text("${ex['numberOfExercises'] ?? 3}x${ex['numberOfReps'] ?? 10} • Angle set live", style: const TextStyle(fontSize: 12, color: Colors.grey))
                             else
                               Text("${ex['numberOfExercises'] ?? 3}x${ex['numberOfReps'] ?? 10} • ${ex['minAngle'] ?? 0}°-${ex['maxAngle'] ?? 90}°", style: const TextStyle(fontSize: 12, color: Colors.grey)),
                           ],

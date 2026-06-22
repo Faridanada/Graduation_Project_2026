@@ -433,6 +433,41 @@ class ApiService {
     return null;
   }
 
+  static Future<bool> markExerciseComplete({required String planId, required String exerciseId, bool done = true}) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/patient/completions"),
+      headers: _headers(token),
+      body: jsonEncode({
+        "planId": planId,
+        "exerciseId": exerciseId,
+        "done": done,
+      }),
+    );
+
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  static Future<List<dynamic>> getCompletions({String? planId}) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final query = planId != null ? "?planId=$planId" : "";
+    final response = await http.get(
+      Uri.parse("$baseUrl/patient/completions$query"),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      final data = decoded['data'] ?? [];
+      return _normalizeJsonValue(data) as List<dynamic>;
+    }
+    return [];
+  }
+
   static Future<bool> markPhaseCompleted(String planId, int phaseIndex) async {
     final token = await _getToken();
     if (token == null) return false;
