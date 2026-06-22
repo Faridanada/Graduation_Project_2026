@@ -36,6 +36,77 @@ exports.getMyDevices = async (req, res) => {
   }
 };
 
+exports.receiveHardwareStream = async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    const strMsg = typeof req.body === 'string' ? req.body : req.body.toString();
+
+    if (!strMsg || !strMsg.trim()) {
+      return res.status(400).json({ error: 'Empty payload' });
+    }
+
+    const lines = strMsg.split('\n');
+    
+    const emgSamples1 = [];
+    const emgSamples2 = [];
+    const imuSamples = [];
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const cols = line.trim().split(/\s+/).map(Number);
+      if (cols.length < 16) continue;
+
+      emgSamples1.push(cols[0]);
+      emgSamples2.push(cols[1]);
+
+      imuSamples.push({
+        thighGravity: [cols[4], cols[5], cols[6]],
+        thighGyro: [cols[7], cols[8], cols[9]],
+        shinGravity: [cols[10], cols[11], cols[12]],
+        shinGyro: [cols[13], cols[14], cols[15]]
+      });
+    }
+
+    if (emgSamples1.length === 0) {
+      return res.status(400).json({ error: 'No valid data rows found in stream' });
+    }
+
+    // Append server timestamp
+    const ts = Date.now();
+
+    const emgPayload = {
+      ts,
+      deviceId,
+      sensors: [
+        { ch: 'emg1', samples: emgSamples1 },
+        { ch: 'emg2', samples: emgSamples2 }
+      ]
+    };
+
+    const imuPayload = {
+      ts,
+      deviceId,
+      samples: imuSamples
+    };
+
+    sessionBuffer.addReading(deviceId, 'emg', emgPayload);
+    sessionBuffer.addReading(deviceId, 'imu', imuPayload);
+
+    // If there's an active session, broadcast to live dashboard
+    const activeSession = sessionBuffer.getActiveSessionForDevice(deviceId);
+    if (activeSession) {
+      const liveSocket = require('../services/liveSocket');
+      liveSocket.broadcast(activeSession.sessionId, { kind: 'emg', data: emgPayload });
+      liveSocket.broadcast(activeSession.sessionId, { kind: 'imu', data: imuPayload });
+    }
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('[receiveHardwareStream Error]:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 // ================= SESSIONS =================
 
 exports.startSession = async (req, res) => {

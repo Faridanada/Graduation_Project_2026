@@ -42,20 +42,25 @@ async function flushSessionToS3(sessionId, buffer) {
   // Expected shape per msg: { ts: 123, deviceId, sensors: [{ ch: 'emg1', samples: [...] }] }
   // We flatten this to: timestamp_ms, channel, value
   const emgRows = [];
-  emgRows.push(['timestamp_ms', 'channel', 'value']); // Header
+  emgRows.push(['timestamp_ms', 'emg1', 'emg2']); // Header
 
   for (const msg of buffer.emg) {
     if (!msg.sensors || !Array.isArray(msg.sensors)) continue;
     
-    // We assume 50Hz, meaning each sample in the array is 20ms apart from the start `ts`.
-    // For simplicity, we just assign the same `ts` or increment by 20.
     const baseTs = msg.ts;
-    for (const sensor of msg.sensors) {
-      if (Array.isArray(sensor.samples)) {
-        sensor.samples.forEach((val, i) => {
-          emgRows.push([baseTs + (i * 20), sensor.ch, val]);
-        });
-      }
+    const emg1Sensor = msg.sensors.find(s => s.ch === 'emg1' || s.ch === 'emg_upper');
+    const emg2Sensor = msg.sensors.find(s => s.ch === 'emg2' || s.ch === 'emg_lower');
+    
+    const emg1Samples = emg1Sensor && Array.isArray(emg1Sensor.samples) ? emg1Sensor.samples : [];
+    const emg2Samples = emg2Sensor && Array.isArray(emg2Sensor.samples) ? emg2Sensor.samples : [];
+    
+    const maxLen = Math.max(emg1Samples.length, emg2Samples.length);
+    for (let i = 0; i < maxLen; i++) {
+      emgRows.push([
+        baseTs + (i * 20),
+        emg1Samples[i] !== undefined ? emg1Samples[i] : 0,
+        emg2Samples[i] !== undefined ? emg2Samples[i] : 0
+      ]);
     }
   }
 
@@ -63,9 +68,9 @@ async function flushSessionToS3(sessionId, buffer) {
   // Expected shape: { ts, deviceId, samples: [{ kneeAngle: 23, thighGravity: [x,y,z], shinGravity: [x,y,z] }] }
   const imuRows = [];
   imuRows.push([
-    'timestamp_ms', 'kneeAngle', 
-    'thighGravity_x', 'thighGravity_y', 'thighGravity_z',
-    'shinGravity_x', 'shinGravity_y', 'shinGravity_z'
+    'timestamp_ms', 
+    'ax1', 'ay1', 'az1', 'gx1', 'gy1', 'gz1',
+    'ax2', 'ay2', 'az2', 'gx2', 'gy2', 'gz2'
   ]); // Header
 
   for (const msg of buffer.imu) {
@@ -74,12 +79,13 @@ async function flushSessionToS3(sessionId, buffer) {
     const baseTs = msg.ts;
     msg.samples.forEach((sample, i) => {
       const tg = sample.thighGravity || [0,0,0];
+      const tgy = sample.thighGyro || [0,0,0];
       const sg = sample.shinGravity || [0,0,0];
+      const sgy = sample.shinGyro || [0,0,0];
       imuRows.push([
         baseTs + (i * 20), 
-        sample.kneeAngle || 0,
-        tg[0], tg[1], tg[2],
-        sg[0], sg[1], sg[2]
+        tg[0], tg[1], tg[2], tgy[0], tgy[1], tgy[2],
+        sg[0], sg[1], sg[2], sgy[0], sgy[1], sgy[2]
       ]);
     });
   }

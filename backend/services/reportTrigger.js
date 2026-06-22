@@ -1,10 +1,9 @@
 const dbService = require('./dbService');
-const { generateFakeReport } = require('./fakeReportGenerator');
 const axios = require('axios');
-const { applyReportToSession } = require('../controllers/reportController');
 
 /**
- * Fire-and-forget trigger for generating an AI report
+ * Trigger for generating an AI report
+ * Sends a job to the new asynchronous AI service which downloads from S3.
  */
 async function triggerReportGeneration(sessionId, patientId, waveformS3Key) {
   try {
@@ -13,45 +12,40 @@ async function triggerReportGeneration(sessionId, patientId, waveformS3Key) {
       reportStatus: 'processing'
     });
 
-    const useFake = process.env.USE_FAKE_REPORTS === 'true' || typeof process.env.USE_FAKE_REPORTS === 'undefined';
+    const aiUrl = process.env.AI_SERVICE_URL || 'http://192.168.1.57:8000';
+    const backendIp = process.env.BACKEND_IP || '192.168.1.46';
+    const backendPort = process.env.PORT || '5000';
+    const callbackUrl = `http://${backendIp}:${backendPort}/api/sessions/${sessionId}/report`;
+    
+    // Hardcode service token for now based on test script, or use env var
+    const serviceToken = process.env.SERVICE_TOKEN || "7d291b5c4f69742a9b1c7e9a0c2b5d4e1f8e9a5c6d3b2a1f0e9d8c7b6a5f4e3d";
 
-    if (useFake) {
-      console.log(`[reportTrigger] Using local fake report generator for session ${sessionId}`);
-      // Fire and forget
-      generateFakeReport(sessionId, patientId, waveformS3Key).catch(err => {
-        console.error("[reportTrigger] fakeReportGenerator unhandled error:", err);
-      });
-    } else {
-      console.log(`[reportTrigger] Calling external AI service for session ${sessionId}`);
-      const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-      const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:5000';
-      
-      const payload = {
-        sessionId,
-        waveformS3Key,
-        patientId,
-        callbackUrl: `${publicBaseUrl}/api/sessions/${sessionId}/report`,
-        serviceToken: process.env.AI_SERVICE_TOKEN
-      };
+    const payload = {
+      sessionId,
+      patientId,
+      waveformS3Key,
+      callbackUrl,
+      serviceToken
+    };
 
-      // Call AI service (fire-and-forget from our perspective)
-      // The AI service returns 200 OK immediately and processes async, 
-      // or we just don't await the full processing. 
-      // Assuming it's an async endpoint, we await the 200 OK.
-      try {
-        await axios.post(`${aiUrl}/process`, payload, {
-          timeout: 5000 // 5 seconds connect timeout
-        });
-        console.log(`[reportTrigger] Successfully triggered AI service for session ${sessionId}`);
-      } catch (httpError) {
-        throw new Error(`AI service unreachable: ${httpError.message}`);
-      }
-    }
+    console.log(`[reportTrigger] Dispatching async processing job to AI service at ${aiUrl}/process...`);
+    
+    // The new `/process` endpoint just acknowledges and runs in background
+    const response = await axios.post(`${aiUrl}/process`, payload, {
+      timeout: 10000 
+    });
+    
+    console.log(`[reportTrigger] AI Service successfully accepted job:`, response.data);
+    
   } catch (error) {
-    console.error("[reportTrigger Error]:", error);
-    // Use internal handler to set failure state
+    console.error("[reportTrigger Error]:", error.message || error);
+    if (error.response) {
+       console.error("[reportTrigger Error Response]:", error.response.data);
+    }
+    // We cannot patch back easily from here because report generation happens locally... wait, if the trigger fails, we should update the DB.
     try {
-      await applyReportToSession(sessionId, { error: error.message || "Failed to trigger report generation" });
+      const { applyReportToSession } = require('../controllers/reportController');
+      await applyReportToSession(sessionId, { error: error.message || "Failed to trigger AI service" });
     } catch (fallbackError) {
       console.error("[reportTrigger Fallback Error]:", fallbackError);
     }
