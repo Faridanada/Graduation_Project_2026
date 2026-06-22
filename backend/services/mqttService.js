@@ -24,6 +24,11 @@ class MqttService {
       options.username = process.env.MQTT_USERNAME;
       options.password = process.env.MQTT_PASSWORD;
     }
+    
+    // If using mqtts:// (TLS), don't reject self-signed certs or IP mismatches during development
+    if (brokerUrl.startsWith('mqtts://')) {
+      options.rejectUnauthorized = false;
+    }
 
     console.log(`[MQTT] Connecting to broker at ${brokerUrl}...`);
     this.client = mqtt.connect(brokerUrl, options);
@@ -140,6 +145,8 @@ class MqttService {
     
     const emgSamples1 = [];
     const emgSamples2 = [];
+    const on1Samples = [];
+    const on2Samples = [];
     const imuSamples = [];
 
     for (const line of lines) {
@@ -149,6 +156,8 @@ class MqttService {
 
       emgSamples1.push(cols[0]);
       emgSamples2.push(cols[1]);
+      on1Samples.push(cols[2]);
+      on2Samples.push(cols[3]);
 
       imuSamples.push({
         thighGravity: [cols[4], cols[5], cols[6]],
@@ -168,7 +177,9 @@ class MqttService {
       deviceId,
       sensors: [
         { ch: 'emg1', samples: emgSamples1 },
-        { ch: 'emg2', samples: emgSamples2 }
+        { ch: 'emg2', samples: emgSamples2 },
+        { ch: 'on1', samples: on1Samples },
+        { ch: 'on2', samples: on2Samples }
       ]
     };
 

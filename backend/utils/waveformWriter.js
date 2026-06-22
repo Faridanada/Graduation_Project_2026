@@ -42,7 +42,7 @@ async function flushSessionToS3(sessionId, buffer) {
   // Expected shape per msg: { ts: 123, deviceId, sensors: [{ ch: 'emg1', samples: [...] }] }
   // We flatten this to: timestamp_ms, channel, value
   const emgRows = [];
-  emgRows.push(['timestamp_ms', 'emg1', 'emg2']); // Header
+  emgRows.push(['timestamp_ms', 'emg1', 'emg2', 'on1', 'on2']); // Header
 
   for (const msg of buffer.emg) {
     if (!msg.sensors || !Array.isArray(msg.sensors)) continue;
@@ -50,16 +50,22 @@ async function flushSessionToS3(sessionId, buffer) {
     const baseTs = msg.ts;
     const emg1Sensor = msg.sensors.find(s => s.ch === 'emg1' || s.ch === 'emg_upper');
     const emg2Sensor = msg.sensors.find(s => s.ch === 'emg2' || s.ch === 'emg_lower');
+    const on1Sensor = msg.sensors.find(s => s.ch === 'on1');
+    const on2Sensor = msg.sensors.find(s => s.ch === 'on2');
     
     const emg1Samples = emg1Sensor && Array.isArray(emg1Sensor.samples) ? emg1Sensor.samples : [];
     const emg2Samples = emg2Sensor && Array.isArray(emg2Sensor.samples) ? emg2Sensor.samples : [];
+    const on1Samples = on1Sensor && Array.isArray(on1Sensor.samples) ? on1Sensor.samples : [];
+    const on2Samples = on2Sensor && Array.isArray(on2Sensor.samples) ? on2Sensor.samples : [];
     
-    const maxLen = Math.max(emg1Samples.length, emg2Samples.length);
+    const maxLen = Math.max(emg1Samples.length, emg2Samples.length, on1Samples.length, on2Samples.length);
     for (let i = 0; i < maxLen; i++) {
       emgRows.push([
         baseTs + (i * 20),
-        emg1Samples[i] !== undefined ? emg1Samples[i] : 0,
-        emg2Samples[i] !== undefined ? emg2Samples[i] : 0
+        emg1Samples[i] !== undefined ? emg1Samples[i] : '',
+        emg2Samples[i] !== undefined ? emg2Samples[i] : '',
+        on1Samples[i] !== undefined ? on1Samples[i] : '',
+        on2Samples[i] !== undefined ? on2Samples[i] : '',
       ]);
     }
   }

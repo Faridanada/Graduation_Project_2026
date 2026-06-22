@@ -4,7 +4,7 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 
 async function runMqttTest() {
-  const deviceId = "ESP_TEST_MQTT";
+  const deviceId = "test-device-1";
   const patientId = "1773960006547";
   const baseUrl = "http://localhost:5000/api";
 
@@ -53,7 +53,10 @@ async function runMqttTest() {
   }
 
   console.log('3. Connecting to Mosquitto...');
-  const client = mqtt.connect(process.env.MQTT_URL || 'mqtt://localhost:1883');
+  const client = mqtt.connect(process.env.MQTT_URL || 'mqtt://16.16.217.171:1883', {
+    username: process.env.MQTT_USERNAME || 'esp32_test',
+    password: process.env.MQTT_PASSWORD || 'yomna123'
+  });
 
   client.on('connect', async () => {
     console.log(`Connected to Mosquitto. Publishing 140 lines of 16-column sensor data...`);
