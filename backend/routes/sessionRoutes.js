@@ -4,8 +4,9 @@ const sessionController = require('../controllers/sessionController');
 const authMiddleware = require('../middleware/authMiddleware');
 const reportController = require('../controllers/reportController');
 
-// === PUBLIC routes (service-token auth only) ===
+// === PUBLIC routes (service-token auth only or hardware unprotected) ===
 router.patch('/:sessionId/report', sessionController.receiveAiReport);
+router.post('/devices/:deviceId/stream', express.text({ type: '*/*' }), sessionController.receiveHardwareStream);
 
 // === Everything below here requires JWT ===
 router.use(authMiddleware);

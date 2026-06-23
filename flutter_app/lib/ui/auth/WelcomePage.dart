@@ -16,11 +16,11 @@ class _WelcomePageState extends State<WelcomePage> with SingleTickerProviderStat
     super.initState();
     _rotationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4), // 4 seconds for one full spin (slower)
+      duration: const Duration(seconds: 3), // 3 seconds for one full spin
     )..repeat();
 
-    // Navigate to onboarding after 8 seconds
-    Future.delayed(const Duration(seconds: 8), () {
+    // Navigate to onboarding after exactly 2 full spins (6 seconds)
+    Future.delayed(const Duration(seconds: 6), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(

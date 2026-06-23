@@ -17,6 +17,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   static const Color primaryBlue = Color(0xFF4A90E2);
 
   bool isPaused = false;
+  bool isStopped = false;
+  bool isEmergencyStopped = false;
   Timer? _timer;
   int _secondsElapsed = 0;
   final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
@@ -46,7 +48,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!isPaused && mounted) {
+      if (!isPaused && !isStopped && !isEmergencyStopped && mounted) {
         setState(() {
           _secondsElapsed++;
         });
@@ -73,112 +75,16 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
     return totalSeconds > 0 ? _secondsElapsed / totalSeconds : 0.0;
   }
 
-  void _showPauseDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Center(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  /// ICON
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: primaryBlue.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child:
-                        const Icon(Icons.pause, size: 32, color: primaryBlue),
-                  ),
 
-                  const SizedBox(height: 16),
-
-                  const Text("Session Paused",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-
-                  const SizedBox(height: 8),
-
-                  const Text(
-                    "The device has stopped safely.\nTake your time. You can resume when you are ready.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// RESUME
-                  GestureDetector(
-                    onTap: () {
-                      if (Navigator.canPop(context)) Navigator.pop(context);
-                      setState(() => isPaused = false);
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: primaryBlue,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.play_arrow, color: Colors.white),
-                          SizedBox(width: 6),
-                          Text("Resume Session",
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  /// END
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.stop, color: Colors.red),
-                        SizedBox(width: 6),
-                        Text("End Session",
-                            style: TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    final int totalReps = widget.exercise['numberOfReps'] ?? widget.exercise['repsTotal'] ?? 30;
+    final int totalSets = widget.exercise['numberOfExercises'] ?? widget.exercise['setsTotal'] ?? 3;
+    final int currentReps = (_progress * totalReps).toInt();
+    final int currentSets = (_progress * totalSets).toInt();
+    final int coloredDots = totalReps > 0 ? (currentReps / totalReps * 6).toInt() : 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       body: SafeArea(
@@ -246,14 +152,18 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
 
                 const SizedBox(height: 48),
 
-                Text("Proceed with ${widget.exercise['title'] ?? 'the exercise'}",
-                    style: const TextStyle(
-                        color: primaryBlue, fontWeight: FontWeight.bold)),
+                Text(
+                  isEmergencyStopped ? "EMERGENCY STOPPED" : (isStopped ? "Session Stopped" : (isPaused ? "Session Paused" : "Proceed with ${widget.exercise['title'] ?? 'the exercise'}")),
+                    style: TextStyle(
+                        color: isEmergencyStopped ? Colors.red : (isStopped ? Colors.red : (isPaused ? Colors.orange : primaryBlue)),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
 
                 const SizedBox(height: 6),
 
-                const Text("Follow the guidance and move slowly.",
-                    style: TextStyle(color: Colors.grey)),
+                Text(
+                  isEmergencyStopped ? "Doctor has been alerted." : (isStopped ? "Press Restart to begin again." : (isPaused ? "Take your time." : "Follow the guidance and move slowly.")),
+                    style: const TextStyle(color: Colors.grey)),
 
                 const SizedBox(height: 24),
                 
@@ -273,7 +183,11 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 48),
+                const SizedBox(height: 24),
+
+                _buildEmergencyButton(),
+
+                const SizedBox(height: 24),
 
                 /// ===== STATS GRID (UNCHANGED) =====
                 Row(
@@ -283,7 +197,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       icon: Icons.refresh,
                       iconColor: primaryBlue,
                       title: "Reps",
-                      value: "0 / ${widget.exercise['repsTotal'] ?? 12}",
+                      value: "$currentReps / $totalReps",
                       bottom: Row(
                         children: List.generate(
                           6,
@@ -293,7 +207,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                             height: 8,
                             decoration: BoxDecoration(
                               color:
-                                  i < 3 ? primaryBlue : Colors.grey.shade300,
+                                  i < coloredDots ? primaryBlue : Colors.grey.shade300,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -306,9 +220,9 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       icon: Icons.fitness_center,
                       iconColor: primaryBlue,
                       title: "Sets",
-                      value: "1 / 3",
+                      value: "$currentSets / $totalSets",
                       bottom: LinearProgressIndicator(
-                        value: 0.33,
+                        value: _progress,
                         color: primaryBlue,
                         backgroundColor: Colors.grey.shade300,
                       ),
@@ -362,25 +276,20 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: () {
-                          if (!isPaused) {
-                            setState(() => isPaused = true);
-                            _showPauseDialog();
-                          } else {
-                            setState(() => isPaused = false);
-                          }
+                        onTap: isEmergencyStopped ? null : () {
+                          setState(() => isPaused = !isPaused);
                         },
                         child: _button(
                           isPaused ? "Resume" : "Pause",
                           isPaused ? Icons.play_arrow : Icons.pause,
-                          primaryBlue,
+                          isPaused ? Colors.green : primaryBlue,
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: GestureDetector(
-                        onTap: () async {
+                        onTap: isEmergencyStopped ? null : () async {
                           showDialog(
                             context: context,
                             barrierDismissible: false,
@@ -409,9 +318,6 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                         child: _button("End Session", Icons.stop, Colors.red),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: _button("Report", Icons.warning, Colors.grey)),
                   ],
                 ),
 
@@ -470,21 +376,132 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   }
 
   Widget _button(String text, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
+    final disabled = isEmergencyStopped;
+    return Opacity(
+      opacity: disabled ? 0.4 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(text,
+                style: TextStyle(color: color, fontWeight: FontWeight.w500)),
+          ],
+        ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(text,
-              style: TextStyle(color: color, fontWeight: FontWeight.w500)),
-        ],
+    );
+  }
+
+  /// EMERGENCY BUTTON
+  Widget _buildEmergencyButton() {
+    return GestureDetector(
+      onTap: isEmergencyStopped ? null : _emergencyStop,
+      child: Opacity(
+        opacity: isEmergencyStopped ? 0.4 : 1.0,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text(
+                "EMERGENCY STOP",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _emergencyStop() {
+    setState(() {
+      isEmergencyStopped = true;
+      isPaused = false;
+    });
+    _showEmergencyDialog();
+  }
+
+  void _showEmergencyDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child:
+                    const Icon(Icons.warning, color: Colors.red, size: 36),
+              ),
+              const SizedBox(height: 14),
+              const Text("Emergency Stop Activated",
+                  style:
+                      TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              const SizedBox(height: 10),
+              const Text(
+                "The session has been stopped immediately.\n\nYour doctor has been alerted.\nPlease wait for instructions.",
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context); // Dismiss dialog
+                  Navigator.pop(context); // Exit session screen
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text("Understood",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

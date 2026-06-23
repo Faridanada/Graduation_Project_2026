@@ -235,15 +235,26 @@ class ApiService {
     final token = await _getToken();
     if (token == null) return [];
 
+    // Fetch all appointments and filter locally to avoid UTC vs Local timezone issues
     final response = await http.get(
-      Uri.parse("$baseUrl/doctor/appointments/today"),
+      Uri.parse("$baseUrl/appointments"),
       headers: _headers(token),
     );
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       final data = decoded['data'] ?? [];
-      return _normalizeJsonValue(data) as List<dynamic>;
+      final allApts = _normalizeJsonValue(data) as List<dynamic>;
+      
+      final now = DateTime.now();
+      return allApts.where((apt) {
+        final dateStr = apt['date']?.toString() ?? '';
+        final aptDate = DateTime.tryParse(dateStr);
+        if (aptDate == null) return false;
+        return aptDate.year == now.year &&
+               aptDate.month == now.month &&
+               aptDate.day == now.day;
+      }).toList();
     }
     return [];
   }

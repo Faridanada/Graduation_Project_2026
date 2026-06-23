@@ -77,9 +77,9 @@ class _AppointmentsState extends State<Appointments> {
           .toList();
     } else {
       // Calendar view - all future appointments
-      return allAppointments
-          .where((apt) => apt['date'].isAfter(weekEnd))
-          .toList();
+      final sorted = List<Map<String, dynamic>>.from(allAppointments);
+      sorted.sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
+      return sorted;
     }
   }
 

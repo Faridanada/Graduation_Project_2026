@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 class PassiveLiveSessionScreen extends StatefulWidget {
@@ -16,8 +17,44 @@ class _PassiveLiveSessionScreenState
   bool isStopped = false;
   bool isEmergencyStopped = false;
 
-  double progress = 0.64;
-  String time = "06:24";
+  Timer? _timer;
+  int _secondsElapsed = 0;
+  final int _totalSeconds = 600; // 10 minutes
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!isPaused && !isStopped && !isEmergencyStopped) {
+        setState(() {
+          if (_secondsElapsed < _totalSeconds) {
+            _secondsElapsed++;
+          } else {
+            timer.cancel(); // Stop at 10 minutes
+            isStopped = true;
+          }
+        });
+      }
+    });
+  }
+
+  String get _formattedTime {
+    int m = _secondsElapsed ~/ 60;
+    int s = _secondsElapsed % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  double get progress => _secondsElapsed / _totalSeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -34,12 +71,15 @@ class _PassiveLiveSessionScreenState
                 /// HEADER
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Icon(Icons.arrow_back),
-                    Text("Passive Live Session",
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const Text("Passive Live Session",
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
-                    Icon(Icons.settings),
+                    const Icon(Icons.settings),
                   ],
                 ),
 
@@ -74,7 +114,7 @@ class _PassiveLiveSessionScreenState
                     ),
                     Column(
                       children: [
-                        Text(time,
+                        Text(_formattedTime,
                             style: const TextStyle(
                                 fontSize: 28, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
@@ -92,16 +132,18 @@ class _PassiveLiveSessionScreenState
 
                 const SizedBox(height: 18),
 
-                const Text("Device moving your leg",
+                Text(
+                  isEmergencyStopped ? "EMERGENCY STOPPED" : (isStopped ? "Session Stopped" : (isPaused ? "Session Paused" : "Device moving your leg")),
                     style: TextStyle(
-                        color: primaryBlue,
+                        color: isEmergencyStopped ? Colors.red : (isStopped ? Colors.red : (isPaused ? Colors.orange : primaryBlue)),
                         fontWeight: FontWeight.bold,
                         fontSize: 16)),
 
                 const SizedBox(height: 6),
 
-                const Text("Please relax and breathe normally.",
-                    style: TextStyle(color: Colors.grey)),
+                Text(
+                  isEmergencyStopped ? "Doctor has been alerted." : (isStopped ? "Press Restart to begin again." : (isPaused ? "Take your time." : "Please relax and breathe normally.")),
+                    style: const TextStyle(color: Colors.grey)),
 
                 const SizedBox(height: 16),
 
@@ -127,12 +169,16 @@ class _PassiveLiveSessionScreenState
 
                 const SizedBox(height: 14),
 
+                _buildEmergencyButton(),
+
+                const SizedBox(height: 14),
+
                 /// GRID
                 Row(
                   children: [
                     Expanded(
                         child: _statCard(Icons.straighten,
-                            "Range Completed", "60° / 90°", "67%")),
+                            "Range Completed", "${(progress * 90).toInt()}° / 90°", "${(progress * 100).toInt()}%")),
                     const SizedBox(width: 10),
                     Expanded(
                         child: _progressCard(
@@ -146,7 +192,7 @@ class _PassiveLiveSessionScreenState
                   children: [
                     Expanded(
                         child: _statCard(
-                            Icons.loop, "Movement Cycles", "10 / 15", "Cycles")),
+                            Icons.loop, "Movement Cycles", "${(progress * 15).toInt()} / 15", "Cycles")),
                     const SizedBox(width: 10),
                     Expanded(
                         child: _statCard(Icons.favorite,
@@ -185,15 +231,14 @@ class _PassiveLiveSessionScreenState
                   children: [
                     Expanded(
                         child: _button(
-                            "Pause", Icons.pause, primaryBlue, _pause)),
+                            isPaused ? "Resume" : "Pause", 
+                            isPaused ? Icons.play_arrow : Icons.pause, 
+                            isPaused ? Colors.green : primaryBlue, 
+                            _togglePause)),
                     const SizedBox(width: 8),
                     Expanded(
                         child: _button(
                             "Stop", Icons.stop, Colors.red, _stopSession)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                        child: _button("Emergency",
-                            Icons.warning, Colors.red, _emergencyStop)),
                   ],
                 ),
 
@@ -298,14 +343,17 @@ class _PassiveLiveSessionScreenState
     );
   }
 
-  /// PAUSE
+  /// PAUSE (Deprecated)
   void _pause() {
     setState(() => isPaused = true);
-    _showPauseDialog();
   }
 
   /// STOP
   void _stopSession() {
+    setState(() {
+      isStopped = true;
+      isPaused = false;
+    });
     _showStopDialog();
   }
 
@@ -318,15 +366,11 @@ class _PassiveLiveSessionScreenState
     _showEmergencyDialog();
   }
 
-  /// PAUSE DIALOG
-  void _showPauseDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => _dialog("Session Paused", "Resume Session", () {
-        if (Navigator.canPop(context)) Navigator.pop(context);
-        setState(() => isPaused = false);
-      }),
-    );
+  /// TOGGLE PAUSE
+  void _togglePause() {
+    setState(() {
+      isPaused = !isPaused;
+    });
   }
 
   /// STOP DIALOG
@@ -336,8 +380,10 @@ class _PassiveLiveSessionScreenState
       builder: (_) => _dialog("Session Stopped", "Restart Session", () {
         if (Navigator.canPop(context)) Navigator.pop(context);
         setState(() {
-          progress = 0;
-          time = "00:00";
+          _secondsElapsed = 0;
+          isStopped = false;
+          isPaused = false;
+          isEmergencyStopped = false;
         });
       }),
     );
@@ -375,18 +421,65 @@ class _PassiveLiveSessionScreenState
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(12),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context); // Dismiss dialog
+                  Navigator.pop(context); // Exit session screen
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text("Understood",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
+                  ),
                 ),
-                child: const Center(
-                  child: Text("Understood",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// EMERGENCY BUTTON
+  Widget _buildEmergencyButton() {
+    return GestureDetector(
+      onTap: isEmergencyStopped ? null : _emergencyStop,
+      child: Opacity(
+        opacity: isEmergencyStopped ? 0.4 : 1.0,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text(
+                "EMERGENCY STOP",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  letterSpacing: 1.2,
                 ),
               ),
             ],

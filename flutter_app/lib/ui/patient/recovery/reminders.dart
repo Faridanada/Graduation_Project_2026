@@ -25,9 +25,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _fetchReminders() async {
     try {
       final fetchedReminders = await ApiService.getPatientReminders();
+      final fetchedAppointments = await ApiService.getAppointments();
+      
+      final List<dynamic> mergedList = List.from(fetchedReminders);
+      
+      for (var appt in fetchedAppointments) {
+        mergedList.add({
+          'type': 'Appointment',
+          'text': "Appointment on ${appt['date']} at ${appt['time']}",
+          'time': appt['time'],
+          'createdAt': appt['createdAt'],
+          'completed': appt['status'] == 'completed',
+        });
+      }
+
       if (mounted) {
         setState(() {
-          remindersList = fetchedReminders;
+          remindersList = mergedList;
           isLoading = false;
         });
       }
@@ -140,9 +154,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildReminderCard(dynamic reminder) {
-    String title = reminder['title'] ?? 'Reminder';
-    String message = reminder['message'] ?? 'You have a new reminder.';
+    String typeStr = reminder['type']?.toString() ?? '';
+    String title = typeStr.isNotEmpty 
+        ? typeStr[0].toUpperCase() + typeStr.substring(1).toLowerCase() 
+        : 'Reminder';
+    String message = reminder['text'] ?? 'You have a new reminder.';
     String time = reminder['time'] ?? 'Today';
+    if (reminder['createdAt'] != null) {
+      try {
+        final date = DateTime.parse(reminder['createdAt']);
+        time = "${date.month}/${date.day} ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+      } catch (_) {}
+    }
     bool completed = reminder['completed'] == true;
 
     return Padding(

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/ui/exercises/MonitorEx.dart';
 import 'package:rehabilitation_app/ui/app_theme.dart';
+import 'package:rehabilitation_app/services/webrtc_service.dart';
 
 class ExoskeletonDegreeSetupPage extends StatefulWidget {
   final String patientName;
   final String exerciseTitle;
+  final String? sessionChannel;
 
   const ExoskeletonDegreeSetupPage({
     Key? key,
     required this.patientName,
     this.exerciseTitle = 'Passive Exercise Monitoring',
+    this.sessionChannel,
   }) : super(key: key);
 
   @override
@@ -168,6 +171,17 @@ class _ExoskeletonDegreeSetupPageState
                         ),
                       );
                       return;
+                    }
+
+                    if (widget.sessionChannel != null) {
+                      WebRTCService().sendCustomSignaling(
+                        targetSessionId: widget.sessionChannel!,
+                        data: {
+                          'webrtc_type': 'angles_set',
+                          'min': _minDegree,
+                          'max': _maxDegree,
+                        },
+                      );
                     }
 
                     Navigator.push(
