@@ -45,6 +45,7 @@ router.put('/recovery-plan/:planId/phases/:phaseIndex/complete', patientControll
 // Sessions
 router.post('/sessions', patientController.saveSession);
 router.get('/sessions', patientController.getSessionHistory);
+router.post('/notify-session-start', patientController.notifySessionStart);
 router.post('/notify-session-completed', patientController.notifySessionCompleted);
 
 // Completions

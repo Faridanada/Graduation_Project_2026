@@ -38,8 +38,12 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
                     'phone': p['phone'] ?? p['profileData']?['phone'] ?? 'N/A',
                     'injuryType': p['injuryType'] ?? p['profileData']?['injuryType'] ?? 'Unknown',
                     'progress': p['progress'] ?? 0,
-                    'status': (p['progress'] ?? 0) == 0 ? 'New' : ((p['hasOverduePhase'] == true) ? 'Needs Attention' : 'On Track'),
-                    'statusColor': (p['progress'] ?? 0) == 0 ? Colors.blue : ((p['hasOverduePhase'] == true) ? Colors.orange : Colors.teal),
+                    'status': (p['hasPlan'] == true) 
+                        ? 'On Track'
+                        : 'New',
+                    'statusColor': (p['hasPlan'] == true)
+                        ? Colors.teal
+                        : Colors.blue,
                     'createdAt': p['createdAt'] ?? '',
                   })
               .toList();
@@ -196,8 +200,6 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
                 _buildFilterChip('All'),
                 const SizedBox(width: 8),
                 _buildFilterChip('On Track'),
-                const SizedBox(width: 8),
-                _buildFilterChip('Needs Attention'),
                 const Spacer(),
                 _buildSortButton(),
               ],
@@ -228,7 +230,10 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
                         ),
                         itemCount: patients.length,
                         itemBuilder: (context, index) {
-                          return _ActivePatientCard(patient: patients[index]);
+                          return _ActivePatientCard(
+                            patient: patients[index],
+                            onReturn: _loadPatients,
+                          );
                         },
                       ),
           ),
@@ -239,9 +244,10 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
 }
 
 class _ActivePatientCard extends StatelessWidget {
-  const _ActivePatientCard({required this.patient});
+  const _ActivePatientCard({required this.patient, required this.onReturn});
 
   final Map<String, dynamic> patient;
+  final VoidCallback onReturn;
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +261,7 @@ class _ActivePatientCard extends StatelessWidget {
               patientName: patient['name'],
             ),
           ),
-        );
+        ).then((_) => onReturn());
       },
       child: Container(
         padding: const EdgeInsets.all(8),

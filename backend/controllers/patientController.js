@@ -411,15 +411,23 @@ const patientController = {
 
       const plan = await dbService.markPhaseCompleted(planId, index);
       
-      if (plan && plan.overallProgress === 100) {
+      if (plan) {
         const patientId = req.user.id;
         const patient = await dbService.getUserById(patientId);
         if (patient && patient.assignedDoctorId) {
-          await dbService.createNotification(
-            patient.assignedDoctorId,
-            "Recovery Plan Completed",
-            `${patient.name || 'Your patient'} has completely finished their recovery plan!`
-          );
+          if (plan.overallProgress === 100) {
+            await dbService.createNotification(
+              patient.assignedDoctorId,
+              "Recovery Plan Completed",
+              `${patient.name || 'Your patient'} has completely finished their recovery plan!`
+            );
+          } else {
+            await dbService.createNotification(
+              patient.assignedDoctorId,
+              "Recovery Phase Completed",
+              `${patient.name || 'Your patient'} has requested the doctor to start the next phase.`
+            );
+          }
         }
       }
 
@@ -427,6 +435,33 @@ const patientController = {
     } catch (error) {
       console.error('Error marking phase completed:', error);
       res.status(500).json({ statusCode: 500, message: 'Server error marking phase completed' });
+    }
+  },
+
+  // POST /api/patient/notify-session-start
+  async notifySessionStart(req, res) {
+    try {
+      const patientId = req.user.id;
+      const { exerciseTitle } = req.body;
+      const patient = await dbService.getUserById(patientId);
+      
+      if (!patient || !patient.assignedDoctorId) {
+        return res.status(400).json({ statusCode: 400, message: 'No doctor assigned' });
+      }
+
+      const patientName = patient.name || 'Your patient';
+      const title = exerciseTitle || 'Passive-Monitored Session';
+      
+      await dbService.createNotification(
+        patient.assignedDoctorId,
+        "Live Session Request",
+        `${patientName} is waiting for you to start their live session: ${title}.`
+      );
+
+      res.status(200).json({ statusCode: 200, message: 'Doctor notified of session start' });
+    } catch (error) {
+      console.error('Error notifying doctor of session start:', error);
+      res.status(500).json({ statusCode: 500, message: 'Server error notifying doctor' });
     }
   },
 

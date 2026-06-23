@@ -41,14 +41,13 @@ class _PatientProfileState extends State<PatientProfile> {
   Future<void> _loadProfileData() async {
     try {
       final profile = await ApiService.getUserProfile() ?? {};
-      final exercises = await ApiService.getPatientTodayExercises();
+      final sessions = await ApiService.getSessionHistory();
       final appointment = await ApiService.getPatientNextAppointment();
 
       if (mounted) {
         setState(() {
           userProfile = profile;
-          completedExercises =
-              exercises.where((e) => e['isCompleted'] == true).length;
+          completedExercises = sessions.length;
           upcomingAppointments = appointment != null ? 1 : 0;
           isLoading = false;
           _hasError = false;

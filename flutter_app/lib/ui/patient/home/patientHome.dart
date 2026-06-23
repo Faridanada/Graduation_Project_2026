@@ -172,10 +172,32 @@ class _HomeContentState extends State<_HomeContent> {
       if (exercises.isEmpty) {
         final plan = await ApiService.getRecoveryPlan();
         if (plan != null && plan['phases'] != null) {
+          final planId = plan['id']?.toString() ?? plan['_id']?.toString();
+          
+          List<dynamic> completions = [];
+          if (planId != null) {
+            completions = await ApiService.getCompletions(planId: planId);
+          }
+          
+          final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+          
           final phases = plan['phases'] as List<dynamic>;
           for (var phase in phases) {
             if (phase['status'] == 'Active' || phase['status'] == 'Overdue') {
-              exercises.addAll(phase['exercises'] ?? []);
+              final phaseExs = phase['exercises'] ?? [];
+              for (var ex in phaseExs) {
+                if (ex is Map) {
+                  ex['planId'] = planId;
+                  final exId = ex['id']?.toString() ?? ex['_id']?.toString();
+                  final isDone = completions.any((c) {
+                    final cExId = c['exerciseId']?.toString();
+                    final cDate = c['date']?.toString() ?? c['createdAt']?.toString() ?? '';
+                    return cExId == exId && cDate.startsWith(todayStr) && c['done'] == true;
+                  });
+                  ex['isCompleted'] = isDone;
+                }
+              }
+              exercises.addAll(phaseExs);
             }
           }
         }
@@ -192,7 +214,8 @@ class _HomeContentState extends State<_HomeContent> {
           }
           userProfileImage = userProfile?['profileImageUrl']?.toString() ?? userProfile?['profileImage']?.toString();
           patientId = userProfile?['id']?.toString() ?? userProfile?['_id']?.toString();
-          todayExercises = exercises;
+          // Filter out completed exercises so they disappear from the list
+          todayExercises = exercises.where((e) => e['isCompleted'] != true).toList();
           reminders = fetchedReminders;
           nextAppointment = appointment;
           assignedDoctor = doctor;
@@ -477,7 +500,45 @@ class _HomeContentState extends State<_HomeContent> {
     );
   }
 
+  String _getExerciseSubtitle(Map<String, dynamic> exercise) {
+    final type = exercise['exerciseType'] ?? exercise['mode'] ?? '';
+    
+    if (type == 'Passive' || type == 'Passive-Monitored') {
+      final time = exercise['estimatedTimeMin'] ?? 10;
+      return "$time mins duration";
+    } else if (type == 'Stabilization') {
+      final angle = exercise['holdAngle'] ?? 90;
+      final days = exercise['stabilizationDays'] ?? 1;
+      return "Hold Angle: $angle°  •  $days Days";
+    } else {
+      // Active / Default
+      final sets = exercise['numberOfExercises'] ?? 3;
+      final repsPerSet = exercise['numberOfReps'] ?? 10;
+      final repsTotal = exercise['repsTotal'] ?? (sets * repsPerSet);
+      return "$repsTotal reps total  •  $sets sets of $repsPerSet";
+    }
+  }
+
+  IconData _getExerciseIcon(String type) {
+    if (type == 'Passive-Monitored') return Icons.videocam_outlined;
+    if (type == 'Passive') return Icons.autorenew;
+    if (type == 'Active') return Icons.accessibility_new_outlined;
+    if (type == 'Stabilization') return Icons.lock_outline;
+    return Icons.fitness_center;
+  }
+
+  Color _getExerciseColor(String type) {
+    if (type == 'Passive-Monitored') return Colors.red;
+    if (type == 'Passive') return Colors.purple;
+    if (type == 'Active') return Colors.green;
+    if (type == 'Stabilization') return Colors.orange;
+    return const Color(0xFF4A90E2);
+  }
+
   Widget _exerciseTile(BuildContext context, Map<String, dynamic> exercise) {
+    final type = exercise['exerciseType'] ?? exercise['mode'] ?? '';
+    final isStab = type == 'Stabilization';
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -495,10 +556,10 @@ class _HomeContentState extends State<_HomeContent> {
         children: [
           CircleAvatar(
             radius: 26,
-            backgroundColor: const Color(0xFFEAF3FF),
-            child: const Icon(
-              Icons.fitness_center,
-              color: Color(0xFF4A90E2),
+            backgroundColor: _getExerciseColor(type).withOpacity(0.1),
+            child: Icon(
+              _getExerciseIcon(type),
+              color: _getExerciseColor(type),
               size: 26,
             ),
           ),
@@ -507,27 +568,23 @@ class _HomeContentState extends State<_HomeContent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(color: Colors.black, fontSize: 14),
-                    children: [
-                      TextSpan(
-                        text: exercise['title'] ?? 'Exercise',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const TextSpan(text: "  •  ", style: TextStyle(color: Colors.grey)),
-                      TextSpan(
-                        text: exercise['mode'] ?? exercise['exerciseType'] ?? '',
-                        style: const TextStyle(color: Colors.grey, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      exercise['title'] ?? 'Exercise',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black),
+                    ),
+                    const Text("  •  ", style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    Text(
+                      exercise['mode'] ?? exercise['exerciseType'] ?? '',
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "${exercise['repsTotal'] ?? 10} reps total  •  ${exercise['numberOfExercises'] ?? 3} sets of ${exercise['numberOfReps'] ?? 10}",
+                  _getExerciseSubtitle(exercise),
                   style: const TextStyle(
                     color: Colors.grey,
                     fontSize: 12,
@@ -561,9 +618,11 @@ class _HomeContentState extends State<_HomeContent> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const PassiveExerciseScreen(),
+              builder: (context) => PassiveExerciseScreen(
+                exercise: Map<String, dynamic>.from(exercise),
+              ),
             ),
-          );
+          ).then((_) => _loadDashboardData());
         } else if (exercise['exerciseType'] == 'Stabilization') {
           Navigator.push(
             context,
@@ -646,7 +705,7 @@ class _HomeContentState extends State<_HomeContent> {
                             context,
                             MaterialPageRoute(
                                 builder: (_) => const RecoveryPlanScreen()),
-                          );
+                          ).then((_) => _loadDashboardData());
                         },
                       ),
                       _buildActivityTile(

@@ -42,6 +42,17 @@ class _DoctorProfileState extends State<DoctorProfile> {
     try {
       final profile = await ApiService.getUserProfile() ?? {};
       final stats = await ApiService.getDoctorStats();
+      final notifications = await ApiService.getNotifications();
+
+      // Calculate total alerts locally to match DoctorHome behavior
+      final totalAlerts = notifications.where((n) {
+        final title = n['title']?.toString() ?? '';
+        final message = n['message']?.toString() ?? '';
+        final text = (title + message).toLowerCase();
+        return text.contains('alert') || text.contains('critical') || text.contains('recovery') || text.contains('wound');
+      }).length;
+      
+      stats['alerts'] = totalAlerts;
 
       if (mounted) {
         setState(() {

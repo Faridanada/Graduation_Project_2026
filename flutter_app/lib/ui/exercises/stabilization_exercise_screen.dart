@@ -71,7 +71,7 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
     double progress = (currentAngle / targetAngle).clamp(0.0, 1.0);
 
     return Scaffold(
-      backgroundColor: isTargetReached ? const Color(0xFFE8F8EF) : const Color(0xFFF5F6FA),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -107,8 +107,8 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
                       value: progress,
                       strokeWidth: 20,
                       backgroundColor: Colors.grey.shade300,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isTargetReached ? Colors.green : Colors.blue,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF4A90E2),
                       ),
                     ),
                   ),
@@ -120,7 +120,7 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
                         style: TextStyle(
                           fontSize: 60,
                           fontWeight: FontWeight.bold,
-                          color: isTargetReached ? Colors.green : Colors.black87,
+                          color: isTargetReached ? const Color(0xFF4A90E2) : Colors.black87,
                         ),
                       ),
                       Text(
@@ -143,13 +143,13 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
             if (isTargetReached)
               Column(
                 children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 80),
+                  const Icon(Icons.check_circle, color: Color(0xFF4A90E2), size: 80),
                   const SizedBox(height: 16),
                   const Text(
                     "TARGET REACHED!\nSTOP EXERCISE",
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.green,
+                    style: const TextStyle(
+                      color: Colors.grey,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -163,11 +163,11 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
-                          color: Colors.green,
+                          color: const Color(0xFF4A90E2),
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.green.withOpacity(0.3),
+                              color: const Color(0xFF4A90E2).withOpacity(0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),

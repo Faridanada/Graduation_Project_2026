@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/ui/exercises/session_summary_screen.dart';
 
 class PassiveLiveSessionScreen extends StatefulWidget {
-  const PassiveLiveSessionScreen({super.key});
+  final Map<String, dynamic>? exercise;
+  const PassiveLiveSessionScreen({super.key, this.exercise});
 
   @override
   State<PassiveLiveSessionScreen> createState() =>
@@ -18,13 +21,16 @@ class _PassiveLiveSessionScreenState
   bool isEmergencyStopped = false;
 
   Timer? _timer;
-  int _secondsElapsed = 0;
-  final int _totalSeconds = 600; // 10 minutes
+  int _repsCompleted = 0;
+  int _repsTotal = 15;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    if (widget.exercise != null) {
+      _repsTotal = widget.exercise!['repsTotal'] ?? 15;
+    }
+    _startSimulation();
   }
 
   @override
@@ -33,28 +39,23 @@ class _PassiveLiveSessionScreenState
     super.dispose();
   }
 
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  void _startSimulation() {
+    // Simulate reps incrementing every 3 seconds for demo purposes
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (!isPaused && !isStopped && !isEmergencyStopped) {
         setState(() {
-          if (_secondsElapsed < _totalSeconds) {
-            _secondsElapsed++;
+          if (_repsCompleted < _repsTotal) {
+            _repsCompleted++;
           } else {
-            timer.cancel(); // Stop at 10 minutes
-            isStopped = true;
+            timer.cancel();
+            _endSession(); // Automatically end when reps are done
           }
         });
       }
     });
   }
 
-  String get _formattedTime {
-    int m = _secondsElapsed ~/ 60;
-    int s = _secondsElapsed % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
-  double get progress => _secondsElapsed / _totalSeconds;
+  double get progress => _repsTotal > 0 ? _repsCompleted / _repsTotal : 0;
 
   @override
   Widget build(BuildContext context) {
@@ -114,12 +115,12 @@ class _PassiveLiveSessionScreenState
                     ),
                     Column(
                       children: [
-                        Text(_formattedTime,
+                        Text("$_repsCompleted",
                             style: const TextStyle(
                                 fontSize: 28, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        const Text("of 10:00",
-                            style: TextStyle(color: Colors.grey)),
+                        Text("of $_repsTotal Reps",
+                            style: const TextStyle(color: Colors.grey)),
                         const SizedBox(height: 6),
                         Icon(
                           isPaused ? Icons.play_arrow : Icons.pause,
@@ -147,28 +148,6 @@ class _PassiveLiveSessionScreenState
 
                 const SizedBox(height: 16),
 
-                /// IMAGE
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Column(
-                    children: [
-                      Image.asset("assets/images/exercise2.png", height: 120),
-                      const SizedBox(height: 8),
-                      /*const Text("60°",
-                          style: TextStyle(
-                              color: primaryBlue,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18)),*/
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
                 _buildEmergencyButton(),
 
                 const SizedBox(height: 14),
@@ -177,51 +156,13 @@ class _PassiveLiveSessionScreenState
                 Row(
                   children: [
                     Expanded(
-                        child: _statCard(Icons.straighten,
-                            "Range Completed", "${(progress * 90).toInt()}° / 90°", "${(progress * 100).toInt()}%")),
-                    const SizedBox(width: 10),
-                    Expanded(
                         child: _progressCard(
                             Icons.show_chart, "Session Progress", progress)),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-
-                Row(
-                  children: [
-                    Expanded(
-                        child: _statCard(
-                            Icons.loop, "Movement Cycles", "${(progress * 15).toInt()} / 15", "Cycles")),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: _statCard(Icons.favorite,
-                            "Muscle Relaxation", "Good", "Keep relaxing",
-                            valueColor: Colors.green)),
+                        child: _statCard(
+                            Icons.loop, "Reps", "$_repsCompleted / $_repsTotal", "Completed")),
                   ],
-                ),
-
-                const SizedBox(height: 14),
-
-                /// TIP
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: primaryBlue.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.lightbulb, color: primaryBlue, size: 18),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "Tip: Stay relaxed and let the device guide you.",
-                          style: TextStyle(color: Colors.grey, fontSize: 13),
-                        ),
-                      )
-                    ],
-                  ),
                 ),
 
                 const SizedBox(height: 14),
@@ -233,12 +174,12 @@ class _PassiveLiveSessionScreenState
                         child: _button(
                             isPaused ? "Resume" : "Pause", 
                             isPaused ? Icons.play_arrow : Icons.pause, 
-                            isPaused ? Colors.green : primaryBlue, 
+                            isPaused ? primaryBlue : primaryBlue, 
                             _togglePause)),
                     const SizedBox(width: 8),
                     Expanded(
                         child: _button(
-                            "Stop", Icons.stop, Colors.red, _stopSession)),
+                            "Stop", Icons.stop, Colors.red, _showStopDialog)),
                   ],
                 ),
 
@@ -348,13 +289,47 @@ class _PassiveLiveSessionScreenState
     setState(() => isPaused = true);
   }
 
-  /// STOP
-  void _stopSession() {
+  /// END SESSION (API Calls)
+  Future<void> _endSession() async {
     setState(() {
       isStopped = true;
       isPaused = false;
     });
-    _showStopDialog();
+    
+    if (widget.exercise != null) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final planId = widget.exercise!['planId'];
+      final exId = widget.exercise!['id'] ?? widget.exercise!['_id'] ?? '';
+      
+      if (planId != null) {
+        await ApiService.markExerciseComplete(planId: planId, exerciseId: exId, done: true);
+      } else {
+        await ApiService.completeExercise(exId, 1);
+      }
+      
+      await ApiService.saveSession({
+        "exerciseId": exId,
+        "durationMinutes": 10,
+        "repsCompleted": _repsCompleted,
+        "accuracy": 100,
+        "date": DateTime.now().toIso8601String()
+      });
+
+      if (mounted) {
+        Navigator.pop(context); // close loading
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SessionSummaryScreen(exercise: widget.exercise!),
+          ),
+        );
+      }
+    }
   }
 
   /// EMERGENCY
@@ -375,17 +350,67 @@ class _PassiveLiveSessionScreenState
 
   /// STOP DIALOG
   void _showStopDialog() {
+    setState(() {
+      isPaused = true;
+    });
     showDialog(
       context: context,
-      builder: (_) => _dialog("Session Stopped", "Restart Session", () {
-        if (Navigator.canPop(context)) Navigator.pop(context);
-        setState(() {
-          _secondsElapsed = 0;
-          isStopped = false;
-          isPaused = false;
-          isEmergencyStopped = false;
-        });
-      }),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.pause, size: 40, color: primaryBlue),
+              const SizedBox(height: 10),
+              const Text("Session Paused",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    isStopped = false;
+                    isPaused = false;
+                  });
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: primaryBlue,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text("Resume Session",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  _endSession(); // End session and navigate to summary
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text("End Session",
+                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -424,7 +449,7 @@ class _PassiveLiveSessionScreenState
               GestureDetector(
                 onTap: () {
                   Navigator.pop(context); // Dismiss dialog
-                  Navigator.pop(context); // Exit session screen
+                  Navigator.of(context).popUntil((route) => route.isFirst); // Go back to Home
                 },
                 child: Container(
                   width: double.infinity,

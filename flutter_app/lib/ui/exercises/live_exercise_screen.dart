@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/exercises/session_summary_screen.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:rehabilitation_app/services/webrtc_service.dart';
 
 class LiveSessionScreen extends StatefulWidget {
   final Map<String, dynamic> exercise;
@@ -20,37 +18,32 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   bool isStopped = false;
   bool isEmergencyStopped = false;
   Timer? _timer;
-  int _secondsElapsed = 0;
-  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
+  
+  int _currentRep = 0;
+  int _repsPerSet = 10;
+  int _currentSet = 1;
+  int _totalSets = 3;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
-    _initWebRTC();
+    _repsPerSet = widget.exercise['numberOfReps'] ?? widget.exercise['repsTotal'] ?? 10;
+    _totalSets = widget.exercise['numberOfExercises'] ?? widget.exercise['setsTotal'] ?? 3;
+    _startSimulation();
   }
 
-  Future<void> _initWebRTC() async {
-    await _localRenderer.initialize();
-    final webrtc = WebRTCService();
-    webrtc.onLocalStream = (stream) {
-      if (mounted) {
-        setState(() {
-          _localRenderer.srcObject = stream;
-        });
-      }
-    };
-    
-    // We use the exercise ID as the sessionId for WebRTC signaling
-    final sessionId = widget.exercise['id']?.toString() ?? 'exercise_session_1';
-    await webrtc.initConnection(sessionId, isPatient: true);
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  void _startSimulation() {
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (!isPaused && !isStopped && !isEmergencyStopped && mounted) {
         setState(() {
-          _secondsElapsed++;
+          if (_currentRep < _repsPerSet) {
+            _currentRep++;
+          } else if (_currentSet < _totalSets) {
+            _currentSet++;
+            _currentRep = 1; // Start the first rep of the next set
+          } else {
+            timer.cancel(); // Finished all sets
+          }
         });
       }
     });
@@ -59,31 +52,23 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    _localRenderer.dispose();
-    WebRTCService().dispose();
     super.dispose();
   }
 
-  String get _formattedTime {
-    final m = (_secondsElapsed ~/ 60).toString().padLeft(2, '0');
-    final s = (_secondsElapsed % 60).toString().padLeft(2, '0');
-    return "$m:$s";
-  }
-
   double get _progress {
-    final totalSeconds = (widget.exercise['estimatedTimeMin'] ?? 10) * 60;
-    return totalSeconds > 0 ? _secondsElapsed / totalSeconds : 0.0;
+    final int totalRepsOverall = _repsPerSet * _totalSets;
+    final int currentTotalReps = ((_currentSet - 1) * _repsPerSet) + _currentRep;
+    return totalRepsOverall > 0 ? currentTotalReps / totalRepsOverall : 0.0;
   }
-
-
 
   @override
   Widget build(BuildContext context) {
-    final int totalReps = widget.exercise['numberOfReps'] ?? widget.exercise['repsTotal'] ?? 30;
-    final int totalSets = widget.exercise['numberOfExercises'] ?? widget.exercise['setsTotal'] ?? 3;
-    final int currentReps = (_progress * totalReps).toInt();
-    final int currentSets = (_progress * totalSets).toInt();
-    final int coloredDots = totalReps > 0 ? (currentReps / totalReps * 6).toInt() : 0;
+    final dynamic minAngleRaw = widget.exercise['minAngle'];
+    final dynamic maxAngleRaw = widget.exercise['maxAngle'];
+    final int? minAngle = minAngleRaw != null ? int.tryParse(minAngleRaw.toString()) : null;
+    final int? maxAngle = maxAngleRaw != null ? int.tryParse(maxAngleRaw.toString()) : null;
+
+    final int coloredDots = _repsPerSet > 0 ? ((_currentRep / _repsPerSet) * 6).toInt() : 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -104,20 +89,20 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                         if (Navigator.canPop(context)) {
                           Navigator.pop(context);
                         } else {
-                          Navigator.of(context)
-                              .popUntil((route) => route.isFirst);
+                          Navigator.of(context).popUntil((route) => route.isFirst);
                         }
                       },
                       child: const Icon(Icons.arrow_back),
                     ),
                     Text(widget.exercise['title'] ?? "Active Live Session",
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const Icon(Icons.settings),
                   ],
                 ),
 
-                const SizedBox(height: 32),                /// RING
+                const SizedBox(height: 32),
+
+                /// RING
                 Stack(
                   alignment: Alignment.center,
                   children: [
@@ -133,17 +118,18 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                       ),
                     ),
                     Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_formattedTime,
-                            style: const TextStyle(
-                                fontSize: 36, fontWeight: FontWeight.bold)),
+                        Text("$_currentRep",
+                            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        Text("of ${widget.exercise['estimatedTimeMin']?.toString().padLeft(2, '0') ?? '10'}:00",
-                            style: const TextStyle(color: Colors.grey)),
-                        const SizedBox(height: 6),
+                        Text("of $_repsPerSet Reps",
+                            style: const TextStyle(color: Colors.grey, fontSize: 16)),
+                        const SizedBox(height: 8),
                         Icon(
                           isPaused ? Icons.play_arrow : Icons.pause,
-                          size: 18,
+                          size: 24,
+                          color: Colors.grey,
                         ),
                       ],
                     )
@@ -166,38 +152,20 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     style: const TextStyle(color: Colors.grey)),
 
                 const SizedBox(height: 24),
-                
-                // WebRTC Local Camera Preview
-                Container(
-                  height: 180,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: _localRenderer.srcObject != null 
-                        ? RTCVideoView(_localRenderer, mirror: true, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover)
-                        : const Center(child: CircularProgressIndicator(color: Colors.white)),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
 
                 _buildEmergencyButton(),
 
                 const SizedBox(height: 24),
 
-                /// ===== STATS GRID (UNCHANGED) =====
+                /// ===== STATS GRID =====
                 Row(
                   children: [
                     Expanded(
                         child: _statCard(
-                      icon: Icons.refresh,
+                      icon: Icons.fitness_center,
                       iconColor: primaryBlue,
-                      title: "Reps",
-                      value: "$currentReps / $totalReps",
+                      title: "Sets",
+                      value: "$_currentSet / $_totalSets",
                       bottom: Row(
                         children: List.generate(
                           6,
@@ -206,8 +174,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color:
-                                  i < coloredDots ? primaryBlue : Colors.grey.shade300,
+                              color: i < coloredDots ? primaryBlue : Colors.grey.shade300,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -217,10 +184,10 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                         child: _statCard(
-                      icon: Icons.fitness_center,
+                      icon: Icons.straighten,
                       iconColor: primaryBlue,
-                      title: "Sets",
-                      value: "$currentSets / $totalSets",
+                      title: "Angle Range",
+                      value: (minAngle != null && maxAngle != null) ? "$minAngle° - $maxAngle°" : "Not Set",
                       bottom: LinearProgressIndicator(
                         value: _progress,
                         color: primaryBlue,
@@ -230,48 +197,9 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   ],
                 ),
 
+                const SizedBox(height: 24),
 
-
-                const SizedBox(height: 48),
-
-                /// MESSAGE
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: primaryBlue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star, color: primaryBlue),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: RichText(
-                          text: const TextSpan(
-                            style: TextStyle(color: Colors.black),
-                            children: [
-                              TextSpan(
-                                  text: "Good job! Keep ",
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
-                              TextSpan(
-                                  text: "going",
-                                  style: TextStyle(
-                                      color: primaryBlue,
-                                      fontWeight: FontWeight.bold)),
-                              TextSpan(
-                                  text: ".\n\nTry to lift a little higher."),
-                            ],
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 60),
-
-                /// ===== BUTTONS (UPDATED) =====
+                /// ===== BUTTONS =====
                 Row(
                   children: [
                     Expanded(
@@ -289,31 +217,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: GestureDetector(
-                        onTap: isEmergencyStopped ? null : () async {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (context) => const Center(child: CircularProgressIndicator()),
-                          );
-
-                          await ApiService.completeExercise(widget.exercise['id'] ?? '', widget.exercise['repsTotal'] ?? 12);
-                          await ApiService.saveSession({
-                            "exerciseId": widget.exercise['id'] ?? '',
-                            "durationMinutes": widget.exercise['estimatedTimeMin'] ?? 10,
-                            "repsCompleted": widget.exercise['repsTotal'] ?? 12,
-                            "accuracy": 88,
-                            "date": DateTime.now().toIso8601String()
-                          });
-
-                          if (context.mounted) {
-                            Navigator.pop(context); // close loading dialog
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SessionSummaryScreen(exercise: widget.exercise),
-                              ),
-                            );
-                          }
+                        onTap: isEmergencyStopped ? null : () {
+                          _showStopDialog();
                         },
                         child: _button("End Session", Icons.stop, Colors.red),
                       ),
@@ -496,6 +401,108 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                         style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _endSessionAPI() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final planId = widget.exercise['planId'];
+    final exId = widget.exercise['id'] ?? widget.exercise['_id'] ?? '';
+    final int totalRepsCompleted = ((_currentSet - 1) * _repsPerSet) + _currentRep;
+    
+    if (planId != null) {
+      await ApiService.markExerciseComplete(planId: planId, exerciseId: exId, done: true);
+    } else {
+      await ApiService.completeExercise(exId, totalRepsCompleted);
+    }
+
+    await ApiService.saveSession({
+      "exerciseId": exId,
+      "durationMinutes": widget.exercise['estimatedTimeMin'] ?? 10,
+      "repsCompleted": totalRepsCompleted,
+      "accuracy": 88,
+      "date": DateTime.now().toIso8601String()
+    });
+
+    if (context.mounted) {
+      Navigator.pop(context); // close loading dialog
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SessionSummaryScreen(exercise: widget.exercise),
+        ),
+      );
+    }
+  }
+
+  void _showStopDialog() {
+    setState(() {
+      isPaused = true;
+    });
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.warning, size: 40, color: Colors.orange),
+              const SizedBox(height: 10),
+              const Text("End Session?",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              const SizedBox(height: 16),
+              const Text("Are you sure you want to end this exercise early?", textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    isPaused = false;
+                  });
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: primaryBlue,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text("Resume Session",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  _endSessionAPI(); // End session and navigate to summary
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text("End Session",
+                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),

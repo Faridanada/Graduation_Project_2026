@@ -119,6 +119,17 @@ class _DoctorHomeState extends State<DoctorHome> {
       final stats = await ApiService.getDoctorStats();
       final patients = await ApiService.getDoctorPatients();
       final appointments = await ApiService.getDoctorTodayAppointments();
+      final notifications = await ApiService.getNotifications();
+
+      // Calculate total alerts locally since backend doesn't natively track frontend "alerts"
+      final totalAlerts = notifications.where((n) {
+        final title = n['title']?.toString() ?? '';
+        final message = n['message']?.toString() ?? '';
+        final text = (title + message).toLowerCase();
+        return text.contains('alert') || text.contains('critical') || text.contains('recovery') || text.contains('wound');
+      }).length;
+      
+      stats['alerts'] = totalAlerts;
 
       if (mounted) {
         setState(() {
@@ -484,10 +495,22 @@ class _DoctorHomeState extends State<DoctorHome> {
                         const SizedBox(height: 8),
                         if ((doctorStats['pendingReviews'] ?? 0) > 0)
                           _buildReminderItem(
-                              'Review ${doctorStats['pendingReviews']} Pending Exercises',
-                              'ex_reviews',
-                              false)
-                        else
+                              'Review ${doctorStats['pendingReviews']} Wound Images',
+                              'wound_reviews',
+                              false),
+                        if ((doctorStats['pendingRequests'] ?? 0) > 0)
+                          _buildReminderItem(
+                              '${doctorStats['pendingRequests']} Patient Requests',
+                              'patient_req',
+                              false),
+                        if ((doctorStats['connectionRequests'] ?? 0) > 0)
+                          _buildReminderItem(
+                              '${doctorStats['connectionRequests']} Connection Requests',
+                              'conn_req',
+                              false),
+                        if ((doctorStats['pendingReviews'] ?? 0) == 0 && 
+                            (doctorStats['pendingRequests'] ?? 0) == 0 && 
+                            (doctorStats['connectionRequests'] ?? 0) == 0)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 6),
                             child: Text('No pending tasks.',
@@ -673,8 +696,12 @@ class _DoctorHomeState extends State<DoctorHome> {
                     'profileImage': patient['profileImageUrl']?.toString() ?? patient['profileImage']?.toString(),
                     'age': patient['profileData']?['age']?.toString() ?? 'N/A',
                     'progress': patient['progress']?.toString() ?? '0',
-                    'status': (patient['progress'] ?? 0) == 0 ? 'New' : ((patient['hasOverduePhase'] == true) ? 'Needs Attention' : 'On Track'),
-                    'statusColor': (patient['progress'] ?? 0) == 0 ? Colors.blue : ((patient['hasOverduePhase'] == true) ? Colors.orange : Colors.teal),
+                    'status': (patient['hasPlan'] == true) 
+                        ? ((patient['hasOverduePhase'] == true) ? 'Needs Attention' : 'On Track')
+                        : 'New',
+                    'statusColor': (patient['hasPlan'] == true)
+                        ? ((patient['hasOverduePhase'] == true) ? Colors.orange : Colors.teal)
+                        : Colors.blue,
                   };
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
@@ -845,8 +872,8 @@ class _DoctorHomeState extends State<DoctorHome> {
             childAspectRatio: 1.3,
             children: [
               _buildActivityTile(
-                label: 'Assist Patients',
-                icon: Icons.favorite,
+                label: 'Monitor Live Exercises',
+                icon: Icons.monitor_heart,
                 color: Colors.blue[200],
                 route: const PatientExerciseMonitorList(),
               ),
@@ -1404,8 +1431,12 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
                     'name': p['name'] ?? 'Unknown',
                     'age': p['age'] ?? p['profileData']?['age'] ?? 0,
                     'progress': p['progress'] ?? 0,
-                    'status': (p['progress'] ?? 0) == 0 ? 'New' : ((p['hasOverduePhase'] == true) ? 'Needs Attention' : 'On Track'),
-                    'statusColor': (p['progress'] ?? 0) == 0 ? Colors.blue : ((p['hasOverduePhase'] == true) ? Colors.orange : Colors.teal),
+                    'status': (p['hasPlan'] == true) 
+                        ? 'On Track'
+                        : 'New',
+                    'statusColor': (p['hasPlan'] == true)
+                        ? Colors.teal
+                        : Colors.blue,
                   })
               .toList();
           isLoading = false;
@@ -1484,8 +1515,6 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
                 _buildFilterChip('All'),
                 const SizedBox(width: 8),
                 _buildFilterChip('On Track'),
-                const SizedBox(width: 8),
-                _buildFilterChip('Needs Attention'),
               ],
             ),
           ),
@@ -1514,7 +1543,10 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
                         ),
                         itemCount: patients.length,
                         itemBuilder: (context, index) {
-                          return _AllPatientCard(patient: patients[index]);
+                          return _AllPatientCard(
+                            patient: patients[index],
+                            onReturn: _loadPatients,
+                          );
                         },
                       ),
           ),
@@ -1553,9 +1585,10 @@ class _AllPatientsPageState extends State<AllPatientsPage> {
 }
 
 class _AllPatientCard extends StatelessWidget {
-  const _AllPatientCard({required this.patient});
+  const _AllPatientCard({required this.patient, required this.onReturn});
 
   final Map<String, dynamic> patient;
+  final VoidCallback onReturn;
 
   @override
   Widget build(BuildContext context) {
@@ -1569,7 +1602,7 @@ class _AllPatientCard extends StatelessWidget {
               patientName: patient['name'] ?? 'Unknown',
             ),
           ),
-        );
+        ).then((_) => onReturn());
       },
       child: Container(
         padding: const EdgeInsets.all(8),

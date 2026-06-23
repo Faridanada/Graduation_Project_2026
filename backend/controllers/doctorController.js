@@ -28,20 +28,19 @@ const doctorController = {
                         const activePlan = plans[0]; // Assuming first is most recent/active
                         const phases = activePlan.phases || [];
                         if (phases.length > 0) {
-                            const completed = phases.filter(ph => ph.status === 'Completed').length;
-                            const hasOverdue = phases.some(ph => ph.status === 'Overdue');
-                            patient.progress = Math.round((completed / phases.length) * 100);
-                            patient.hasOverduePhase = hasOverdue;
+                            patient.progress = await dbService.getPlanProgress(activePlan.id);
                         } else {
-                            patient.progress = 0;
-                            patient.hasOverduePhase = false;
+                            patient.progress = await dbService.getPlanProgress(activePlan.id);
                         }
+                        patient.hasPlan = true;
                     } else {
                         patient.progress = 0;
+                        patient.hasPlan = false;
                     }
                 } catch(e) {
                     console.error('Error fetching plan for progress:', e);
                     patient.progress = 0;
+                    patient.hasPlan = false;
                 }
                 return patient;
             }));
@@ -65,20 +64,19 @@ const doctorController = {
                         const activePlan = plans[0];
                         const phases = activePlan.phases || [];
                         if (phases.length > 0) {
-                            const completed = phases.filter(ph => ph.status === 'Completed').length;
-                            const hasOverdue = phases.some(ph => ph.status === 'Overdue');
-                            patient.progress = Math.round((completed / phases.length) * 100);
-                            patient.hasOverduePhase = hasOverdue;
+                            patient.progress = await dbService.getPlanProgress(activePlan.id);
                         } else {
-                            patient.progress = 0;
-                            patient.hasOverduePhase = false;
+                            patient.progress = await dbService.getPlanProgress(activePlan.id);
                         }
+                        patient.hasPlan = true;
                     } else {
                         patient.progress = 0;
+                        patient.hasPlan = false;
                     }
                 } catch(e) {
                     console.error('Error fetching plan for progress:', e);
                     patient.progress = 0;
+                    patient.hasPlan = false;
                 }
                 return patient;
             }));

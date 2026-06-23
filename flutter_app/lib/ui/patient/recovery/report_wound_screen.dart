@@ -20,14 +20,7 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
   String? _errorMessage;
 
   final List<String> _bodyAreas = [
-    'Knee',
-    'Ankle',
-    'Shoulder',
-    'Wrist',
-    'Back',
-    'Hip',
-    'Elbow',
-    'Other'
+    'Knee'
   ];
 
   @override
@@ -200,23 +193,18 @@ class _ReportWoundScreenState extends State<ReportWoundScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: selectedArea,
-                    icon: const Icon(Icons.keyboard_arrow_down,
-                        color: Color(0xFF4A90E2)),
-                    items: _bodyAreas
-                        .map((area) =>
-                            DropdownMenuItem(value: area, child: Text(area)))
-                        .toList(),
-                    onChanged: (val) => setState(() => selectedArea = val!),
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text("Knee", style: TextStyle(fontSize: 16, color: Colors.black87)),
+                    Icon(Icons.check_circle, color: Color(0xFF4A90E2)),
+                  ],
                 ),
               ),
 

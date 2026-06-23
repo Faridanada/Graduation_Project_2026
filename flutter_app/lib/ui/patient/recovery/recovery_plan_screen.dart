@@ -541,6 +541,8 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
   Widget _exerciseTile(BuildContext context, Map<String, dynamic> rawExercise) {
     // Map available phase exercise fields to what the UI/ActiveExerciseScreen expects
     final exercise = Map<String, dynamic>.from(rawExercise);
+    exercise['planId'] = _planData!['id'] ?? _planData!['_id'];
+    
     final type = exercise['exerciseType'] ?? 'Exercise';
     final isStab = type == 'Stabilization';
     
@@ -675,8 +677,6 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                       ),
                     ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -755,16 +755,16 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const PassiveExerciseScreen(),
+              builder: (context) => PassiveExerciseScreen(exercise: exercise),
             ),
-          );
+          ).then((_) => _fetchData());
         } else {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ActiveExerciseScreen(exercise: exercise),
             ),
-          );
+          ).then((_) => _fetchData());
         }
       },
       child: Container(

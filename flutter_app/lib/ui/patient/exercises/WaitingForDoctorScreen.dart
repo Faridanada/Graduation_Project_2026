@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/webrtc_service.dart';
+import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/exercises/active_exercice_screen.dart';
 
 class WaitingForDoctorScreen extends StatefulWidget {
@@ -80,6 +81,11 @@ class _WaitingForDoctorScreenState extends State<WaitingForDoctorScreen> {
         'exerciseTitle': widget.exercise['title'] ?? 'Passive-Monitored Session',
         'sessionChannel': _sessionChannel,
       },
+    );
+
+    // 4. Send a persistent database notification
+    await ApiService.notifyDoctorSessionStart(
+      exerciseTitle: widget.exercise['title'] ?? 'Passive-Monitored Session',
     );
   }
 

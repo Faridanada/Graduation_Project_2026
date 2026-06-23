@@ -27,7 +27,8 @@ class ApiService {
   }
 
   static String get baseUrl {
-    return "https://flexio-rehab.duckdns.org/api";
+    // return "https://flexio-rehab.duckdns.org/api";
+    return "http://10.0.2.2:5000/api";
   }
 
   static const String _tokenKey = 'jwt_token';
@@ -444,21 +445,41 @@ class ApiService {
     return null;
   }
 
-  static Future<bool> markExerciseComplete({required String planId, required String exerciseId, bool done = true}) async {
+  static Future<bool> markExerciseComplete(
+      {required String planId, required String exerciseId, required bool done}) async {
     final token = await _getToken();
     if (token == null) return false;
 
-    final response = await http.post(
-      Uri.parse("$baseUrl/patient/completions"),
-      headers: _headers(token),
-      body: jsonEncode({
-        "planId": planId,
-        "exerciseId": exerciseId,
-        "done": done,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/patient/completions'),
+        headers: _headers(token),
+        body: jsonEncode({
+          'planId': planId,
+          'exerciseId': exerciseId,
+          'done': done,
+        }),
+      );
+      return response.statusCode == 201;
+    } catch (_) {}
+    return false;
+  }
 
-    return response.statusCode == 200 || response.statusCode == 201;
+  static Future<bool> notifyDoctorSessionStart({required String exerciseTitle}) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/patient/notify-session-start'),
+        headers: _headers(token),
+        body: jsonEncode({
+          'exerciseTitle': exerciseTitle,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (_) {}
+    return false;
   }
 
   static Future<List<dynamic>> getCompletions({String? planId}) async {
@@ -1127,6 +1148,24 @@ class ApiService {
       return response.statusCode == 201 || response.statusCode == 200;
     } catch (_) {}
     return false;
+  }
+
+  /// Get Session History for Patient
+  static Future<List<dynamic>> getSessionHistory() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/patient/sessions'),
+        headers: _headers(token),
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        return _normalizeJsonValue(decoded['data']) ?? [];
+      }
+    } catch (_) {}
+    return [];
   }
 
   static Future<bool> notifyDoctorSessionCompleted() async {

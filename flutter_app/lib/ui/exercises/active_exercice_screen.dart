@@ -48,6 +48,10 @@ class _ActiveExerciseScreenState extends State<ActiveExerciseScreen> {
     final int numEx = widget.exercise['numberOfExercises'] as int? ?? 0;
     final int numReps = widget.exercise['numberOfReps'] as int? ?? 0;
     final int? reps = (numEx * numReps) > 0 ? (numEx * numReps) : null;
+    final dynamic minAngleRaw = widget.exercise['minAngle'];
+    final dynamic maxAngleRaw = widget.exercise['maxAngle'];
+    final int? minAngle = minAngleRaw != null ? int.tryParse(minAngleRaw.toString()) : null;
+    final int? maxAngle = maxAngleRaw != null ? int.tryParse(maxAngleRaw.toString()) : null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -81,39 +85,7 @@ class _ActiveExerciseScreenState extends State<ActiveExerciseScreen> {
                     ),
                   ],
                 ),                const SizedBox(height: 32),
-
-                /// HERO
-                _card(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 6,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Complete the exercise exactly as prescribed by your doctor.',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        flex: 4,
-                        child: Image.asset('assets/images/exercise22.png'),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
 
 
@@ -132,16 +104,25 @@ class _ActiveExerciseScreenState extends State<ActiveExerciseScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      if (reps != null)
-                        Row(
-                          children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          if (reps != null)
                             _OverviewItem(
                               icon: Icons.sync,
                               title: 'Reps',
                               value: '$reps total',
                             ),
+                          if (minAngle != null && maxAngle != null) ...[
+                            if (reps != null) const _Divider(),
+                            _OverviewItem(
+                              icon: Icons.straighten,
+                              title: 'Range',
+                              value: '$minAngle° - $maxAngle°',
+                            ),
                           ],
-                        ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

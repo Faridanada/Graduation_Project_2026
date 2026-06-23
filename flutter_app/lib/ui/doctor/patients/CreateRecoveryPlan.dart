@@ -687,30 +687,14 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                   },
                 ),
                 const SizedBox(height: 12),
-                Builder(
-                  builder: (context) {
-                    final holdValue = exercises[eIdx]['holdAngle'];
-                    String? errorMsg;
-                    if (holdValue == null) {
-                      errorMsg = 'Required';
-                    } else if (holdValue < 0 || holdValue > 135) {
-                      errorMsg = 'Must be 0–135°';
-                    }
-                    return TextFormField(
-                      initialValue: holdValue?.toString() ?? '',
-                      decoration: InputDecoration(
-                        labelText: 'Hold Angle (°)',
-                        border: const OutlineInputBorder(),
-                        errorText: errorMsg,
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
-                        exercises[eIdx]['holdAngle'] = int.tryParse(v);
-                        (context as Element).markNeedsBuild();
-                      },
-                    );
-                  }
+                TextFormField(
+                  initialValue: exercises[eIdx]['holdAngle']?.toString() ?? '',
+                  decoration: const InputDecoration(labelText: 'Hold Angle (°)', border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) {
+                    if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+                    exercises[eIdx]['holdAngle'] = int.tryParse(v) ?? 90;
+                  },
                 ),
               ],
             )

@@ -415,6 +415,7 @@ const dbService = {
       const notifications = await this.getNotificationsForUser(doctorId);
       // Exclude connection requests from the "Alerts" count as per user preference
       const alertsCount = notifications.filter(n => !n.isRead && n.title !== "New Connection Request").length;
+      const connectionRequestsCount = notifications.filter(n => !n.isRead && n.title === "New Connection Request").length;
 
       // Fetch pending reviews count from Wounds table
       const woundsData = await ddbDocClient.send(new ScanCommand({
@@ -428,11 +429,25 @@ const dbService = {
       }));
       const pendingReviewsCount = (woundsData.Items || []).length;
 
+      // Fetch pending patient requests from Requests table
+      const requestsData = await ddbDocClient.send(new ScanCommand({
+        TableName: "Requests",
+        FilterExpression: "doctorId = :doctorId AND #statusAttr = :pendingStatus",
+        ExpressionAttributeNames: { "#statusAttr": "status" },
+        ExpressionAttributeValues: {
+          ":doctorId": doctorId,
+          ":pendingStatus": "pending"
+        }
+      }));
+      const pendingRequestsCount = (requestsData.Items || []).length;
+
       return {
         activePatients: patients.length,
         todaySessions: appointmentsToday.length,
         alerts: alertsCount,
         pendingReviews: pendingReviewsCount,
+        pendingRequests: pendingRequestsCount,
+        connectionRequests: connectionRequestsCount,
       };
     } catch (error) {
       console.error("Error in getDashboardStats:", error);
@@ -1589,6 +1604,29 @@ const dbService = {
 
   // --- COMPLETIONS ---
 
+  async getPlanProgress(planId) {
+    try {
+        const exercisesData = await ddbDocClient.send(new ScanCommand({
+            TableName: "Exercises",
+            FilterExpression: "planId = :planId",
+            ExpressionAttributeValues: { ":planId": planId }
+        }));
+        const totalExercises = (exercisesData.Items || []).length;
+
+        const completionsData = await ddbDocClient.send(new ScanCommand({
+            TableName: "Completions",
+            FilterExpression: "planId = :planId",
+            ExpressionAttributeValues: { ":planId": planId }
+        }));
+        
+        const completedExercises = new Set((completionsData.Items || []).filter(c => c.done).map(c => c.exerciseId)).size;
+        return totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 0;
+    } catch (e) {
+        console.error("DynamoDB error (getPlanProgress):", e);
+        return 0;
+    }
+  },
+
   async markExerciseComplete(patientId, { planId, exerciseId, done = true }) {
     try {
       const d = new Date();
@@ -1611,6 +1649,39 @@ const dbService = {
         TableName: "Completions",
         Item: record
       }));
+
+      // Update the plan's overallProgress
+      try {
+        const planData = await ddbDocClient.send(new GetCommand({
+            TableName: "RecoveryPlans",
+            Key: { id: planId }
+        }));
+        const plan = planData.Item;
+        let totalExercises = 0;
+        if (plan && plan.phases) {
+            plan.phases.forEach(phase => {
+                if (phase.exercises) totalExercises += phase.exercises.length;
+            });
+        }
+
+        const completionsData = await ddbDocClient.send(new ScanCommand({
+            TableName: "Completions",
+            FilterExpression: "planId = :planId",
+            ExpressionAttributeValues: { ":planId": planId }
+        }));
+        
+        const completedExercises = new Set((completionsData.Items || []).filter(c => c.done).map(c => c.exerciseId)).size;
+        const progress = totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : (completedExercises > 0 ? 100 : 0);
+
+        await ddbDocClient.send(new UpdateCommand({
+            TableName: "RecoveryPlans",
+            Key: { id: planId },
+            UpdateExpression: "set overallProgress = :p",
+            ExpressionAttributeValues: { ":p": progress }
+        }));
+      } catch(e) {
+        console.error("DynamoDB error updating plan progress:", e);
+      }
 
       return record;
     } catch (error) {

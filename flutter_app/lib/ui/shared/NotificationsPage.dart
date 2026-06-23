@@ -7,6 +7,8 @@ import 'package:rehabilitation_app/ui/doctor/patients/ActivePatientsPage.dart';
 import 'package:rehabilitation_app/ui/doctor/patients/PatientProfilePage.dart';
 import 'package:rehabilitation_app/ui/patient/home/patientHome.dart';
 import 'package:rehabilitation_app/ui/patient/recovery/recovery_plan_screen.dart';
+import 'package:rehabilitation_app/ui/doctor/management/Appointments.dart';
+import 'package:rehabilitation_app/ui/patient/appointments/BookAppointments.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -161,10 +163,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (type.contains('Message')) {
       iconData = Icons.mail_outline;
       iconColor = Colors.orange;
+    } else if (type.contains('Appointment')) {
+      iconData = Icons.calendar_today;
+      iconColor = Colors.purple;
     } else if (type.contains('Wound') || type.contains('Recovery')) {
       iconData = Icons.healing_outlined;
       iconColor = Colors.red;
-    } else if (type.contains('Exercise')) {
+    } else if (type.contains('Exercise') || type.contains('Session')) {
       iconData = Icons.check_circle_outline;
       iconColor = Colors.green;
     }
@@ -234,11 +239,57 @@ class _NotificationsPageState extends State<NotificationsPage> {
           } else {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const RecoveryPlanScreen()));
           }
+        } else if (type.contains('Session')) {
+          if (_userRole == 'doctor') {
+            final msg = notif['message'] ?? '';
+            final nameMatch = RegExp(r'^(.*?)\s+has completed').firstMatch(msg);
+            
+            if (nameMatch != null) {
+              final pName = nameMatch.group(1);
+              
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const Center(child: CircularProgressIndicator()),
+              );
+              
+              final patients = await ApiService.getDoctorPatients();
+              
+              if (context.mounted) {
+                Navigator.pop(context);
+                
+                final matchedPatient = patients.cast<Map<String, dynamic>?>().firstWhere(
+                  (p) => p?['name'] == pName,
+                  orElse: () => null,
+                );
+                
+                if (matchedPatient != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PatientProfilePage(
+                        patientId: (matchedPatient['id'] ?? matchedPatient['_id'] ?? '').toString(),
+                        patientName: pName!,
+                      ),
+                    ),
+                  );
+                  return;
+                }
+              }
+            }
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const ActivePatientsPage()));
+          }
         } else if (type.contains('Exercise')) {
           if (_userRole == 'doctor') {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ActivePatientsPage()));
           } else {
             Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const PatientHomeScreen()), (route) => false);
+          }
+        } else if (type.contains('Appointment')) {
+          if (_userRole == 'doctor') {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => Appointments()));
+          } else {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => BookAppoint()));
           }
         }
       },

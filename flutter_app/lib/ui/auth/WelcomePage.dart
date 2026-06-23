@@ -19,8 +19,8 @@ class _WelcomePageState extends State<WelcomePage> with SingleTickerProviderStat
       duration: const Duration(seconds: 3), // 3 seconds for one full spin
     )..repeat();
 
-    // Navigate to onboarding after exactly 2 full spins (6 seconds)
-    Future.delayed(const Duration(seconds: 6), () {
+    // Navigate to onboarding after exactly 1 full spin (3 seconds)
+    Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(

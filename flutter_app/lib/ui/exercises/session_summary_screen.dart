@@ -73,35 +73,36 @@ class SessionSummaryScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
 
-              const SizedBox(height: 16),
-
-              /// MESSAGE
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
-                ),
+              /// SUMMARY STATS
+              _card(
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    const Icon(Icons.star, color: Colors.green),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        "Excellent performance!\nConsistency like this leads to faster recovery.",
-                        style: TextStyle(color: Colors.green),
-                      ),
+                    _stat(
+                      Icons.repeat,
+                      "Sets",
+                      "${exercise['numberOfExercises'] ?? exercise['setsTotal'] ?? 3}",
+                      "Total",
                     ),
-                    const CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.medical_services, color: Colors.green, size: 20),
-                    )
+                    _stat(
+                      Icons.fitness_center,
+                      "Reps",
+                      "${exercise['numberOfReps'] ?? exercise['repsTotal'] ?? 10}",
+                      "Per Set",
+                    ),
+                    _stat(
+                      Icons.straighten,
+                      "Range",
+                      (exercise['minAngle'] != null && exercise['maxAngle'] != null) 
+                          ? "${exercise['minAngle']}°-${exercise['maxAngle']}°"
+                          : "Not Set",
+                      "Target",
+                    ),
                   ],
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 24),
 
               /// BACK TO HOME
               SizedBox(
@@ -122,56 +123,30 @@ class SessionSummaryScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 10),
-
-              /// NOTIFY DOCTOR
-              GestureDetector(
-                onTap: () async {
-                  final success = await ApiService.notifyDoctorSessionCompleted();
-                  if (!context.mounted) return;
-                  
-                  if (success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Doctor has been notified of your session completion!"),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Failed to notify doctor. Please try again."),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: primaryBlue),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.send, color: primaryBlue),
-                      SizedBox(width: 8),
-                      Text(
-                        "Notify Doctor",
-                        style: TextStyle(
-                            color: primaryBlue, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// CARD
+  Widget _card({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 
