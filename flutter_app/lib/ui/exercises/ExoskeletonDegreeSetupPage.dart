@@ -24,13 +24,14 @@ class _ExoskeletonDegreeSetupPageState
     extends State<ExoskeletonDegreeSetupPage> {
   int? _minDegree;
   int? _maxDegree;
+  int? _targetReps;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -39,134 +40,103 @@ class _ExoskeletonDegreeSetupPageState
           },
         ),
         title: const Text(
-          'Set Exoskeleton Degrees',
+          'Degree Setup',
           style: TextStyle(
             color: Colors.black,
             fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
           ),
         ),
         centerTitle: true,
       ),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.05), blurRadius: 10)
-                  ],
+              // 1. Patient Info (Minimal Text)
+              const Text(
+                'PATIENT',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  color: Colors.grey,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Patient: ${widget.patientName}',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Exercise: ${widget.exerciseTitle}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.patientName,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.exerciseTitle,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 16),
-              // Live Video Feed Placeholder
-              Container(
-                width: double.infinity,
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)
-                  ],
-                ),
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.videocam_outlined, color: Colors.white54, size: 40),
-                      SizedBox(height: 8),
-                      Text(
-                        'LIVE VIDEO FEED',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+
+              // 3. Clean Degree Inputs
+              _buildCleanDegreeRow(
+                label: 'Minimum Degree',
+                value: _minDegree,
+                isMin: true,
+                isReps: false,
+                onTapManual: () => _showDegreeInputDialog(isMin: true, isReps: false),
+                onIncrement: () => _adjustDegree(isMin: true, isReps: false, delta: 1),
+                onDecrement: () => _adjustDegree(isMin: true, isReps: false, delta: -1),
               ),
-              const Spacer(flex: 1),
-              Center(
-                child: Column(
-                  children: [
-                    const Text(
-                      'Set Min and Max Degree',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildDegreeInput(
-                          label: 'Set Min Value',
-                          value: _minDegree,
-                          onTapManual: () => _showDegreeInputDialog(isMin: true),
-                          onIncrement: () => _adjustDegree(isMin: true, delta: 1),
-                          onDecrement: () => _adjustDegree(isMin: true, delta: -1),
-                        ),
-                        const SizedBox(width: 44),
-                        _buildDegreeInput(
-                          label: 'Set Max Value',
-                          value: _maxDegree,
-                          onTapManual: () => _showDegreeInputDialog(isMin: false),
-                          onIncrement: () => _adjustDegree(isMin: false, delta: 1),
-                          onDecrement: () => _adjustDegree(isMin: false, delta: -1),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Divider(height: 1, color: Color(0xFFEEEEEE)),
               ),
-              const Spacer(flex: 2),
+
+              _buildCleanDegreeRow(
+                label: 'Maximum Degree',
+                value: _maxDegree,
+                isMin: false,
+                isReps: false,
+                onTapManual: () => _showDegreeInputDialog(isMin: false, isReps: false),
+                onIncrement: () => _adjustDegree(isMin: false, isReps: false, delta: 1),
+                onDecrement: () => _adjustDegree(isMin: false, isReps: false, delta: -1),
+              ),
+
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+              ),
+
+              _buildCleanDegreeRow(
+                label: 'Target Repetitions',
+                value: _targetReps,
+                isMin: false,
+                isReps: true,
+                onTapManual: () => _showDegreeInputDialog(isMin: false, isReps: true),
+                onIncrement: () => _adjustDegree(isMin: false, isReps: true, delta: 1),
+                onDecrement: () => _adjustDegree(isMin: false, isReps: true, delta: -1),
+              ),
+
+              const Spacer(),
+
+              // 4. Action Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (_minDegree == null || _maxDegree == null) {
+                    if (_minDegree == null || _maxDegree == null || _targetReps == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Please set both min and max degrees.'),
+                          content: Text('Please set min/max degrees and target reps.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -192,6 +162,7 @@ class _ExoskeletonDegreeSetupPageState
                           exerciseTitle: widget.exerciseTitle,
                           initialMinDegree: _minDegree,
                           initialMaxDegree: _maxDegree,
+                          targetReps: _targetReps,
                         ),
                       ),
                     );
@@ -199,117 +170,96 @@ class _ExoskeletonDegreeSetupPageState
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.medium),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 0,
-                    side:
-                        const BorderSide(color: AppColors.primary, width: 1.2),
                   ),
                   child: const Text(
-                    'Continue to Monitor Exercise',
+                    'Start Monitoring',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
               ),
             ],
           ),
-              ),
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildDegreeInput({
+  Widget _buildCleanDegreeRow({
     required String label,
     required int? value,
+    required bool isMin,
+    required bool isReps,
     required VoidCallback onTapManual,
     required VoidCallback onIncrement,
     required VoidCallback onDecrement,
   }) {
-    final exampleValue = label.contains('Min') ? '0' : '90';
-    final displayText = value == null ? '$exampleValue°' : '$value°';
+    final exampleValue = isReps ? '10' : (isMin ? '0' : '90');
+    final symbol = isReps ? '' : '°';
+    final displayText = value == null ? '$exampleValue$symbol' : '$value$symbol';
     final isExample = value == null;
 
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onTapManual,
-          child: Container(
-            width: 110,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadius.medium),
-              border: Border.all(
-                color: AppColors.accent,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)
-              ],
-            ),
-            child: Text(
-              displayText,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: isExample ? FontWeight.w500 : FontWeight.bold,
-                color: isExample ? Colors.grey[400] : AppColors.accent,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
         Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildAdjustButton(icon: Icons.remove, onPressed: onDecrement),
-            const SizedBox(width: 8),
-            _buildAdjustButton(icon: Icons.add, onPressed: onIncrement),
+            IconButton(
+              icon: const Icon(Icons.remove_circle_outline),
+              color: Colors.grey[400],
+              iconSize: 28,
+              onPressed: onDecrement,
+            ),
+            GestureDetector(
+              onTap: onTapManual,
+              child: Container(
+                width: 70,
+                alignment: Alignment.center,
+                child: Text(
+                  displayText,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: isExample ? FontWeight.w500 : FontWeight.bold,
+                    color: isExample ? Colors.grey[400] : AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add_circle),
+              color: AppColors.primary,
+              iconSize: 28,
+              onPressed: onIncrement,
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildAdjustButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: 38,
-      height: 38,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          padding: EdgeInsets.zero,
-          side: const BorderSide(color: AppColors.accent),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child: Icon(icon, size: 18, color: AppColors.accent),
-      ),
-    );
-  }
-
-  void _adjustDegree({required bool isMin, required int delta}) {
+  void _adjustDegree({required bool isMin, required bool isReps, required int delta}) {
+    if (isReps) {
+      final current = _targetReps ?? 10;
+      final next = (current + delta).clamp(1, 100);
+      setState(() => _targetReps = next);
+      return;
+    }
     final current = (isMin ? _minDegree : _maxDegree) ?? (isMin ? 0 : 90);
     final next = (current + delta).clamp(0, 180);
     _setDegree(isMin: isMin, value: next);
@@ -342,9 +292,9 @@ class _ExoskeletonDegreeSetupPageState
     });
   }
 
-  void _showDegreeInputDialog({required bool isMin}) {
+  void _showDegreeInputDialog({required bool isMin, required bool isReps}) {
     final TextEditingController controller = TextEditingController();
-    final currentValue = isMin ? _minDegree : _maxDegree;
+    final currentValue = isReps ? _targetReps : (isMin ? _minDegree : _maxDegree);
     if (currentValue != null) {
       controller.text = currentValue.toString();
     }
@@ -354,7 +304,7 @@ class _ExoskeletonDegreeSetupPageState
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            isMin ? 'Set Minimum Degree' : 'Set Maximum Degree',
+            isReps ? 'Set Target Reps' : (isMin ? 'Set Minimum Degree' : 'Set Maximum Degree'),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
             ),
@@ -364,8 +314,8 @@ class _ExoskeletonDegreeSetupPageState
             keyboardType: TextInputType.number,
             autofocus: true,
             decoration: InputDecoration(
-              labelText: 'Degree (0-180)',
-              suffixText: '°',
+              labelText: isReps ? 'Reps' : 'Degree (0-180)',
+              suffixText: isReps ? '' : '°',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.medium),
               ),
@@ -391,16 +341,27 @@ class _ExoskeletonDegreeSetupPageState
             ElevatedButton(
               onPressed: () {
                 final value = int.tryParse(controller.text);
-                if (value != null && value >= 0 && value <= 180) {
-                  _setDegree(isMin: isMin, value: value);
-                  Navigator.of(context).pop();
+                if (isReps) {
+                  if (value != null && value > 0) {
+                    setState(() => _targetReps = value);
+                    Navigator.of(context).pop();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter valid reps'), backgroundColor: Colors.red),
+                    );
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a valid degree (0-180)'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  if (value != null && value >= 0 && value <= 180) {
+                    _setDegree(isMin: isMin, value: value);
+                    Navigator.of(context).pop();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter a valid degree (0-180)'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(
