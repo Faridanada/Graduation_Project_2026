@@ -931,7 +931,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/profile'),
         headers: _headers(token),
-      );
+      ).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         developer
@@ -945,6 +945,27 @@ class ApiService {
       developer.log('getUserProfile: Exception - $e');
     }
     return null;
+  }
+
+  /// Get current user profile, throwing an exception on network errors
+  static Future<Map<String, dynamic>?> getUserProfileOrThrow() async {
+    final token = await _getToken();
+    if (token == null) {
+      return null;
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/profile'),
+      headers: _headers(token),
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['user'];
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      throw Exception('Server Error: ${response.statusCode}');
+    }
   }
 
   /// Global notifier for profile updates

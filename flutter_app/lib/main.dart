@@ -58,26 +58,49 @@ class _InitialCoordinatorState extends State<InitialCoordinator> {
       return;
     }
 
-    // Attempt to validate token by fetching profile
-    final profile = await ApiService.getUserProfile();
+    try {
+      // Attempt to validate token by fetching profile
+      final profile = await ApiService.getUserProfileOrThrow();
 
-    if (mounted) {
-      if (profile == null) {
-        // Token was invalid or expired
-        await ApiService.clearToken();
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const WelcomePage()));
-      } else {
-        // Active session. Route based on role
-        final String role =
-            profile['role']?.toString().toLowerCase() ?? 'patient';
-        if (role == 'doctor') {
+      if (mounted) {
+        if (profile == null) {
+          // Token was invalid or expired
+          await ApiService.clearToken();
           Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const DoctorHome()));
+              MaterialPageRoute(builder: (_) => const WelcomePage()));
         } else {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(
-              builder: (_) => const patient_home.PatientHomeScreen()));
+          // Active session. Route based on role
+          final String role =
+              profile['role']?.toString().toLowerCase() ?? 'patient';
+          if (role == 'doctor') {
+            Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const DoctorHome()));
+          } else {
+            Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (_) => const patient_home.PatientHomeScreen()));
+          }
         }
+      }
+    } catch (e) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Network Error'),
+            content: const Text(
+                'Could not connect to the server. Please check your internet connection and try again.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _checkAuth(); // Retry
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        );
       }
     }
   }
