@@ -442,20 +442,26 @@ const patientController = {
   async notifySessionStart(req, res) {
     try {
       const patientId = req.user.id;
-      const { exerciseTitle } = req.body;
+      const { exerciseTitle, patientName, sessionChannel } = req.body;
       const patient = await dbService.getUserById(patientId);
       
       if (!patient || !patient.assignedDoctorId) {
         return res.status(400).json({ statusCode: 400, message: 'No doctor assigned' });
       }
 
-      const patientName = patient.name || 'Your patient';
+      const pName = patientName || patient.name || 'Your patient';
       const title = exerciseTitle || 'Passive-Monitored Session';
       
       await dbService.createNotification(
         patient.assignedDoctorId,
         "Live Session Request",
-        `${patientName} is waiting for you to start their live session: ${title}.`
+        `${pName} is waiting for you to start their live session: ${title}.`,
+        {
+          type: "live_session_request",
+          patientName: pName,
+          exerciseTitle: title,
+          sessionChannel: sessionChannel
+        }
       );
 
       res.status(200).json({ statusCode: 200, message: 'Doctor notified of session start' });

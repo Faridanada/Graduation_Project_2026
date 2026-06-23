@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/webrtc_service.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/ui/exercises/active_exercice_screen.dart';
+import 'package:rehabilitation_app/ui/exercises/passive_live_session_screen.dart';
 
 class WaitingForDoctorScreen extends StatefulWidget {
   final Map<String, dynamic> exercise;
@@ -60,11 +61,17 @@ class _WaitingForDoctorScreenState extends State<WaitingForDoctorScreen> {
         updatedExercise['minAngle'] = minDegree;
         updatedExercise['maxAngle'] = maxDegree;
 
-        // Navigate to the active exercise screen
+        Widget nextScreen;
+        if (updatedExercise['exerciseType'] == 'Passive-Monitored') {
+          nextScreen = PassiveLiveSessionScreen(exercise: updatedExercise);
+        } else {
+          nextScreen = ActiveExerciseScreen(exercise: updatedExercise);
+        }
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => ActiveExerciseScreen(exercise: updatedExercise),
+            builder: (_) => nextScreen,
           ),
         );
       }
@@ -86,6 +93,8 @@ class _WaitingForDoctorScreenState extends State<WaitingForDoctorScreen> {
     // 4. Send a persistent database notification
     await ApiService.notifyDoctorSessionStart(
       exerciseTitle: widget.exercise['title'] ?? 'Passive-Monitored Session',
+      patientName: widget.patientName,
+      sessionChannel: _sessionChannel,
     );
   }
 

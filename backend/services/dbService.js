@@ -799,7 +799,7 @@ const dbService = {
 
   // --- NEW NOTIFICATIONS & CHAT METHODS ---
 
-  async createNotification(userId, title, message) {
+  async createNotification(userId, title, message, metadata = null) {
     // Non-fatal: notification failure should never crash the main operation
     try {
       if (!userId) return null; // skip if no recipient
@@ -811,6 +811,9 @@ const dbService = {
         isRead: false,
         createdAt: new Date().toISOString()
       };
+      if (metadata) {
+        newNotification.metadata = metadata;
+      }
       await ddbDocClient.send(new PutCommand({
         TableName: "Notifications",
         Item: newNotification

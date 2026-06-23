@@ -465,7 +465,11 @@ class ApiService {
     return false;
   }
 
-  static Future<bool> notifyDoctorSessionStart({required String exerciseTitle}) async {
+  static Future<bool> notifyDoctorSessionStart({
+    required String exerciseTitle,
+    required String patientName,
+    required String sessionChannel,
+  }) async {
     final token = await _getToken();
     if (token == null) return false;
 
@@ -475,6 +479,8 @@ class ApiService {
         headers: _headers(token),
         body: jsonEncode({
           'exerciseTitle': exerciseTitle,
+          'patientName': patientName,
+          'sessionChannel': sessionChannel,
         }),
       );
       return response.statusCode == 200;
