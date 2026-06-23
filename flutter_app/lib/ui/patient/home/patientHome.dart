@@ -585,20 +585,24 @@ class _HomeContentState extends State<_HomeContent> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 22,
-          vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF4A90E2),
-          borderRadius: BorderRadius.circular(24),
+          color: const Color(0xFF2196F3),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2196F3).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: const Text(
           "Start Now",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontSize: 12,
           ),
         ),
       ),

@@ -219,6 +219,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
             'numberOfExercises': 3,
             'numberOfReps': 10,
             'stabilizationDays': null,
+            'scheduledDays': [1, 2, 3, 4, 5, 6, 7],
           }
         ],
       });
@@ -600,6 +601,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                                   'numberOfExercises': 3,
                                   'numberOfReps': 10,
                                   'stabilizationDays': null,
+                                  'scheduledDays': [1, 2, 3, 4, 5, 6, 7],
                                 });
                               });
                             }
@@ -622,8 +624,8 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
     final type = exercises[eIdx]['exerciseType'] ?? 'Active';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
@@ -671,7 +673,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           if (type == 'Stabilization')
             Column(
               children: [
@@ -720,7 +722,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     Expanded(
                       child: TextFormField(
                         initialValue: exercises[eIdx]['numberOfExercises'].toString(),
-                        decoration: const InputDecoration(labelText: 'No. of Exercises', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(labelText: 'Sets', border: OutlineInputBorder()),
                         keyboardType: TextInputType.number,
                         onChanged: (v) {
                           if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
@@ -728,7 +730,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: TextFormField(
                         initialValue: exercises[eIdx]['numberOfReps'].toString(),
@@ -743,7 +745,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                   ],
                 ),
                 if (type != 'Passive-Monitored') ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
@@ -757,7 +759,7 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           initialValue: exercises[eIdx]['maxAngle'].toString(),
@@ -772,6 +774,78 @@ class _CreateRecoveryPlanState extends State<CreateRecoveryPlan> {
                     ],
                   ),
                 ],
+                const SizedBox(height: 24),
+                Builder(builder: (context) {
+                  List<dynamic> rawDays = exercises[eIdx]['scheduledDays'] as List<dynamic>? ?? [1, 2, 3, 4, 5, 6, 7];
+                  List<int> scheduledDays = rawDays.map((e) => int.tryParse(e.toString()) ?? 1).toList();
+                  
+                  int daysCount = 0;
+                  if (_phases[phaseIdx]['startDate'] != null && _phases[phaseIdx]['endDate'] != null) {
+                    final start = DateTime.tryParse(_phases[phaseIdx]['startDate']);
+                    final end = DateTime.tryParse(_phases[phaseIdx]['endDate']);
+                    if (start != null && end != null) {
+                      for (DateTime d = start; d.isBefore(end.add(const Duration(days: 1))); d = d.add(const Duration(days: 1))) {
+                        if (scheduledDays.contains(d.weekday)) {
+                          daysCount++;
+                        }
+                      }
+                    }
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Frequency", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 2),
+                      const Text("Which days the patient performs this exercise", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          for (int d = 1; d <= 7; d++)
+                              FilterChip(
+                                label: Text(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d - 1]),
+                                selected: scheduledDays.contains(d),
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      scheduledDays.add(d);
+                                      scheduledDays.sort();
+                                    } else {
+                                      scheduledDays.remove(d);
+                                    }
+                                    exercises[eIdx]['scheduledDays'] = List<int>.from(scheduledDays);
+                                    _hasUnsavedChanges = true;
+                                  });
+                                },
+                                backgroundColor: Colors.transparent,
+                                selectedColor: const Color(0xFF6BA5CF).withOpacity(0.2),
+                                checkmarkColor: const Color(0xFF6BA5CF),
+                                side: BorderSide(
+                                  color: scheduledDays.contains(d) ? Colors.transparent : Colors.grey.shade400,
+                                ),
+                                labelStyle: TextStyle(
+                                  color: scheduledDays.contains(d) ? const Color(0xFF6BA5CF) : Colors.grey.shade700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        daysCount == 0 
+                            ? "Appears on 0 days in this phase — patient will never see this exercise."
+                            : "Appears on $daysCount days in this phase.",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: daysCount == 0 ? Colors.red : Colors.grey,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
               ],
             ),
         ],

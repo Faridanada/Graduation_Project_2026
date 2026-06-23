@@ -247,7 +247,18 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
         }
       }
     }
-    final List<dynamic> exercises = (activePhase != null && activePhase['exercises'] is List) ? activePhase['exercises'] : [];
+    final List<dynamic> allExercises = (activePhase != null && activePhase['exercises'] is List) ? activePhase['exercises'] : [];
+    
+    final int todayWeekday = DateTime.now().weekday;
+    final List<dynamic> exercises = allExercises.where((ex) {
+      if (ex is! Map) return true;
+      if (ex['exerciseType'] == 'Stabilization') return true;
+      if (ex['scheduledDays'] == null || ex['scheduledDays'] is! List) return true;
+      
+      List<dynamic> rawDays = ex['scheduledDays'];
+      List<int> scheduledDays = rawDays.map((e) => int.tryParse(e.toString()) ?? -1).toList();
+      return scheduledDays.contains(todayWeekday);
+    }).toList();
     
     final int tipIndex = DateTime.now().difference(DateTime(2024, 1, 1)).inDays % RecoveryPlanScreen._dailyTips.length;
     final tip = RecoveryPlanScreen._dailyTips[tipIndex];
@@ -757,20 +768,24 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 22,
-          vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF4A90E2),
-          borderRadius: BorderRadius.circular(24),
+          color: const Color(0xFF2196F3),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2196F3).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: const Text(
           "Start Now",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontSize: 12,
           ),
         ),
       ),
