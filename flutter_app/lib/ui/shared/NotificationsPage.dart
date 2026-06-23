@@ -10,6 +10,7 @@ import 'package:rehabilitation_app/ui/patient/recovery/recovery_plan_screen.dart
 import 'package:rehabilitation_app/ui/doctor/management/Appointments.dart';
 import 'package:rehabilitation_app/ui/patient/appointments/BookAppointments.dart';
 import 'package:rehabilitation_app/ui/exercises/ExoskeletonDegreeSetupPage.dart';
+import 'package:rehabilitation_app/services/webrtc_service.dart';
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
 
@@ -239,6 +240,31 @@ class _NotificationsPageState extends State<NotificationsPage> {
           } else {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const RecoveryPlanScreen()));
           }
+        } else if (type == 'Live Session Request') {
+          if (_userRole == 'doctor' && notif['metadata'] != null) {
+            final meta = notif['metadata'];
+            final sessionChannel = meta['sessionChannel'] ?? '';
+            
+            if (sessionChannel.isNotEmpty) {
+              WebRTCService().sendCustomSignaling(
+                targetSessionId: sessionChannel,
+                data: {
+                  'webrtc_type': 'doctor_accepted',
+                },
+              );
+            }
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ExoskeletonDegreeSetupPage(
+                  patientName: meta['patientName'] ?? 'Unknown Patient',
+                  exerciseTitle: meta['exerciseTitle'] ?? 'Session',
+                  sessionChannel: sessionChannel,
+                ),
+              ),
+            );
+          }
         } else if (type.contains('Session')) {
           if (_userRole == 'doctor') {
             final msg = notif['message'] ?? '';
@@ -284,20 +310,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ActivePatientsPage()));
           } else {
             Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const PatientHomeScreen()), (route) => false);
-          }
-        } else if (type == 'Live Session Request') {
-          if (_userRole == 'doctor' && notif['metadata'] != null) {
-            final meta = notif['metadata'];
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ExoskeletonDegreeSetupPage(
-                  patientName: meta['patientName'] ?? 'Unknown Patient',
-                  exerciseTitle: meta['exerciseTitle'] ?? 'Session',
-                  sessionChannel: meta['sessionChannel'] ?? '',
-                ),
-              ),
-            );
           }
         } else if (type.contains('Appointment')) {
           if (_userRole == 'doctor') {
