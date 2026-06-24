@@ -27,6 +27,7 @@ def generate_llm_summary(payload: dict, model: Optional[str] = None) -> Optional
             "Focus on movement quality, fatigue, asymmetry, safety risks, and potential "
             "recommendations for follow-up or exercise modification. "
             "Do not diagnose the patient. Keep the response concise, evidence-based, and professional. "
+            "Make it in the form of a continuous report paragraph explaining what is going on. "
             f"Payload:\n{json.dumps(payload, indent=2)}"
         )
         response = client.chat.completions.create(
