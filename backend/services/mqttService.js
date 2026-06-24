@@ -142,6 +142,9 @@ class MqttService {
         gx2: payload.gx2, gy2: payload.gy2, gz2: payload.gz2,
       };
 
+      // === TEMPORARY SPAM LOG ===
+      console.log(`[MQTT] Caught ESP32 packet! TS: ${payload.ts} | Device: ${payload.deviceId}`);
+
       sessionBuffer.addReading(deviceId, 'emg', emgReading);
       sessionBuffer.addReading(deviceId, 'imu', imuReading);
 
