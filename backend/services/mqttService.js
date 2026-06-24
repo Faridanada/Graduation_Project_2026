@@ -49,7 +49,6 @@ class MqttService {
       // Subscribe to topics
       this.client.subscribe('flexio/+/emg');
       this.client.subscribe('flexio/+/imu');
-      this.client.subscribe('flexio/+/stream'); // New 16-column stream format
       this.client.subscribe('flexio/+/bundle');
       this.client.subscribe('flexio/+/keyword');
       this.client.subscribe('flexio/+/heartbeat');
@@ -66,14 +65,8 @@ class MqttService {
     this.client.on('message', async (topic, message) => {
       try {
         const strMsg = message.toString().trim();
-        
-        // Handle raw 16-column stream format
-        if (topic.endsWith('/stream')) {
-          await this.handleStreamString(topic, strMsg);
-          return;
-        }
 
-        // Handle structured JSON payloads (legacy format or structured commands)
+        // Handle structured JSON payloads
         if (strMsg.startsWith('{')) {
           const payload = JSON.parse(strMsg);
           await this.handleMessage(topic, payload);
@@ -167,8 +160,6 @@ class MqttService {
       return;
     }
 
-    sessionBuffer.addReading(deviceId, kind, payload);
-
     // Determine target session
     const patientId = await this.getPatientIdForDevice(deviceId);
     if (!patientId) {
@@ -176,7 +167,7 @@ class MqttService {
       return;
     }
 
-    // 1. Add to active session buffer
+    // 1. Add to active session buffer (keyword → event)
     let normalizedKind = kind;
     if (kind === 'keyword') normalizedKind = 'event';
     sessionBuffer.addReading(deviceId, normalizedKind, payload);
@@ -188,69 +179,6 @@ class MqttService {
     }
   }
 
-  async handleStreamString(topic, strMsg) {
-    const parts = topic.split('/');
-    if (parts.length !== 3 || parts[0] !== 'flexio') return;
-    const deviceId = parts[1];
-
-    const lines = strMsg.split('\n');
-    
-    const emgSamples1 = [];
-    const emgSamples2 = [];
-    const on1Samples = [];
-    const on2Samples = [];
-    const imuSamples = [];
-
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      const cols = line.trim().split(/\s+/).map(Number);
-      if (cols.length < 16) continue;
-
-      emgSamples1.push(cols[0]);
-      emgSamples2.push(cols[1]);
-      on1Samples.push(cols[2]);
-      on2Samples.push(cols[3]);
-
-      imuSamples.push({
-        thighGravity: [cols[4], cols[5], cols[6]],
-        thighGyro: [cols[7], cols[8], cols[9]],
-        shinGravity: [cols[10], cols[11], cols[12]],
-        shinGyro: [cols[13], cols[14], cols[15]]
-      });
-    }
-
-    if (emgSamples1.length === 0) return;
-
-    // The ESP does not send a timestamp; we must append the arrival time
-    const ts = Date.now();
-
-    const emgPayload = {
-      ts,
-      deviceId,
-      sensors: [
-        { ch: 'emg1', samples: emgSamples1 },
-        { ch: 'emg2', samples: emgSamples2 },
-        { ch: 'on1', samples: on1Samples },
-        { ch: 'on2', samples: on2Samples }
-      ]
-    };
-
-    const imuPayload = {
-      ts,
-      deviceId,
-      samples: imuSamples
-    };
-
-    sessionBuffer.addReading(deviceId, 'emg', emgPayload);
-    sessionBuffer.addReading(deviceId, 'imu', imuPayload);
-
-    // Broadcast to live websocket clients
-    const activeSession = sessionBuffer.getActiveSessionForDevice(deviceId);
-    if (activeSession) {
-      liveSocket.broadcast(activeSession.sessionId, { kind: 'emg', data: emgPayload });
-      liveSocket.broadcast(activeSession.sessionId, { kind: 'imu', data: imuPayload });
-    }
-  }
 }
 
 module.exports = new MqttService();
