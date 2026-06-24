@@ -399,6 +399,32 @@ const doctorController = {
         }
     },
 
+    // PUT /api/doctor/recovery-plan/:planId/phases/:phaseIndex/approve
+    async approvePhase(req, res) {
+        try {
+            const { planId, phaseIndex } = req.params;
+            const index = parseInt(phaseIndex, 10);
+            if (isNaN(index)) {
+                return res.status(400).json({ statusCode: 400, message: 'Invalid phase index' });
+            }
+
+            const plan = await dbService.approvePhase(planId, index);
+            
+            if (plan) {
+                await dbService.createNotification(
+                    plan.patientId,
+                    "Next Phase Approved",
+                    "Your doctor has approved and unlocked the next phase of your recovery plan."
+                );
+            }
+
+            res.json({ statusCode: 200, message: 'Phase approved and activated' });
+        } catch (error) {
+            console.error('Error approving phase:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error approving phase' });
+        }
+    },
+
     // DELETE /api/doctor/recovery-plan/:id
     async deleteRecoveryPlan(req, res) {
         try {

@@ -425,7 +425,7 @@ const patientController = {
             await dbService.createNotification(
               patient.assignedDoctorId,
               "Recovery Phase Completed",
-              `${patient.name || 'Your patient'} has requested the doctor to start the next phase.`
+              `${patient.name || 'Your patient'} has completed their current phase and requested approval to start the next phase.`
             );
           }
         }

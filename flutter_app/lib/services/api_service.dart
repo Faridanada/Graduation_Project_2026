@@ -141,6 +141,18 @@ class ApiService {
 
   // --- DOCTOR ENDPOINTS ---
 
+  static Future<bool> approvePhase(String planId, int phaseIndex) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final response = await http.put(
+      Uri.parse("$baseUrl/doctor/recovery-plan/$planId/phases/$phaseIndex/approve"),
+      headers: _headers(token),
+    );
+
+    return response.statusCode == 200;
+  }
+
   static Future<Map<String, dynamic>> getDoctorStats() async {
     final token = await _getToken();
     if (token == null) return {};

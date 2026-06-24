@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:rehabilitation_app/services/webrtc_service.dart';
+import 'package:rehabilitation_app/ui/doctor/home/DoctorHome.dart';
 
 class Exoskeleton extends StatefulWidget {
   final String patientName;
@@ -11,7 +12,7 @@ class Exoskeleton extends StatefulWidget {
   const Exoskeleton({
     Key? key,
     this.patientName = 'Selected Patient',
-    this.exerciseTitle = 'Passive Exercise Monitoring',
+    this.exerciseTitle = 'Passive-Monitored',
     this.initialMinDegree,
     this.initialMaxDegree,
   }) : super(key: key);
@@ -162,23 +163,65 @@ class _ExoskeletonState extends State<Exoskeleton> {
                 ],
               ),
               const SizedBox(height: 32),
-
-              // Metrics Section
-              _buildMetricsSection(),
-              const SizedBox(height: 24),
-
-              // Current Angle Display
-              _buildCurrentAngleDisplay(),
-              const SizedBox(height: 24),
-
-              // Control Buttons
-              _buildControlButtons(),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_minDegree == null || _maxDegree == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please set min/max degrees.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    
+                    WebRTCService().sendCustomSignaling(
+                      targetSessionId: 'exercise_session_1',
+                      data: {
+                        'webrtc_type': 'angles_set',
+                        'min': _minDegree,
+                        'max': _maxDegree,
+                      },
+                    );
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Session started. Angles sent to patient.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => DoctorHome()),
+                      (route) => false,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromRGBO(128, 155, 206, 1),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Start Session',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
@@ -742,30 +785,6 @@ class _ExoskeletonState extends State<Exoskeleton> {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      selectedItemColor: const Color(0xFF95B8D1),
-      unselectedItemColor: Colors.grey,
-      currentIndex: 0,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          label: 'Chats',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          label: 'Profile',
-        ),
-      ],
     );
   }
 }

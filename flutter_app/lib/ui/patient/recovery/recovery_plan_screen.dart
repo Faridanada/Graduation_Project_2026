@@ -404,27 +404,49 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
                       borderColor: phases[i]['status'] == 'Completed' ||
                               phases[i]['status'] == 'Active'
                           ? Colors.blue
-                          : (phases[i]['status'] == 'Overdue' ? Colors.red : Colors.grey.shade300),
+                          : (phases[i]['status'] == 'Pending Approval' ? Colors.orange : (phases[i]['status'] == 'Overdue' ? Colors.red : Colors.grey.shade300)),
                       badgeColor: phases[i]['status'] == 'Completed'
                           ? const Color(0xFFE8F0FF)
-                          : (phases[i]['status'] == 'Overdue' ? const Color(0xFFFFEBEB) : const Color(0xFFF1F3F6)),
+                          : (phases[i]['status'] == 'Pending Approval' ? const Color(0xFFFFF4E5) : (phases[i]['status'] == 'Overdue' ? const Color(0xFFFFEBEB) : const Color(0xFFF1F3F6))),
                       circleColor: phases[i]['status'] == 'Completed' ||
                               phases[i]['status'] == 'Active'
                           ? Colors.blue
-                          : (phases[i]['status'] == 'Overdue' ? Colors.red : Colors.grey),
+                          : (phases[i]['status'] == 'Pending Approval' ? Colors.orange : (phases[i]['status'] == 'Overdue' ? Colors.red : Colors.grey)),
                       statusTextColor: phases[i]['status'] == 'Completed'
                           ? Colors.green
                           : (phases[i]['status'] == 'Active'
                               ? Colors.blue
-                              : (phases[i]['status'] == 'Overdue' ? Colors.red : Colors.grey)),
+                              : (phases[i]['status'] == 'Pending Approval' ? Colors.orange : (phases[i]['status'] == 'Overdue' ? Colors.red : Colors.grey))),
                       onMarkCompleted: (!widget.isDoctorView && (phases[i]['status'] == 'Active' || phases[i]['status'] == 'Overdue'))
                           ? () async {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marking phase completed...')));
                               final success = await ApiService.markPhaseCompleted(_planData!['id'], i);
                               if (success) {
                                 if (!widget.isDoctorView) _fetchData();
+                                if (context.mounted) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Phase Completed'),
+                                      content: const Text('A request has been sent to your doctor to unlock the next phase.'),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+                                      ],
+                                    ),
+                                  );
+                                }
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to complete phase', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
+                              }
+                            }
+                          : null,
+                      onApprovePhase: (widget.isDoctorView && phases[i]['status'] == 'Pending Approval')
+                          ? () async {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Approving phase...')));
+                              final success = await ApiService.approvePhase(_planData!['id'], i);
+                              if (success) {
+                                _fetchData();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to approve phase', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
                               }
                             }
                           : null,
@@ -834,6 +856,7 @@ class _PhaseCard extends StatelessWidget {
   final Color circleColor;
   final Color statusTextColor;
   final VoidCallback? onMarkCompleted;
+  final VoidCallback? onApprovePhase;
 
   const _PhaseCard({
     required this.number,
@@ -846,6 +869,7 @@ class _PhaseCard extends StatelessWidget {
     required this.circleColor,
     required this.statusTextColor,
     this.onMarkCompleted,
+    this.onApprovePhase,
   });
 
   @override
@@ -888,7 +912,7 @@ class _PhaseCard extends StatelessWidget {
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: status == "Completed" ? const Color(0xFFE8F8EF) : badgeColor,
+                color: status == "Completed" ? const Color(0xFFE8F8EF) : (status == "Pending Approval" ? const Color(0xFFFFF4E5) : badgeColor),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -899,10 +923,15 @@ class _PhaseCard extends StatelessWidget {
                       padding: EdgeInsets.only(right: 4),
                       child: Icon(Icons.check, color: Colors.green, size: 14),
                     ),
+                  if (status == "Pending Approval")
+                    const Padding(
+                      padding: EdgeInsets.only(right: 4),
+                      child: Icon(Icons.access_time, color: Colors.orange, size: 14),
+                    ),
                   Text(
                     status,
                     style: TextStyle(
-                      color: status == "Completed" ? Colors.green : statusTextColor,
+                      color: status == "Completed" ? Colors.green : (status == "Pending Approval" ? Colors.orange : statusTextColor),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -969,6 +998,23 @@ class _PhaseCard extends StatelessWidget {
                             elevation: 0,
                           ),
                           child: const Text("Mark Phase as Complete", style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                    if (onApprovePhase != null) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: onApprovePhase,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          child: const Text("Approve Next Phase", style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],

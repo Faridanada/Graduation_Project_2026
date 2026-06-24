@@ -1589,6 +1589,12 @@ const dbService = {
       plan.phases[phaseIndex].isManuallyCompleted = true;
       plan.phases[phaseIndex].status = 'Completed';
 
+      if (phaseIndex + 1 < plan.phases.length) {
+        if (plan.phases[phaseIndex + 1].status === 'Upcoming') {
+          plan.phases[phaseIndex + 1].status = 'Pending Approval';
+        }
+      }
+
       const totalPhases = plan.phases.length;
       const completedPhases = plan.phases.filter(p => p.isManuallyCompleted || p.status === 'Completed').length;
       plan.overallProgress = totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
@@ -1606,6 +1612,36 @@ const dbService = {
   },
 
   // --- COMPLETIONS ---
+
+  async approvePhase(planId, phaseIndex) {
+    try {
+      const planRes = await ddbDocClient.send(new GetCommand({
+        TableName: "RecoveryPlans",
+        Key: { id: planId }
+      }));
+
+      if (!planRes.Item) throw new Error("Plan not found");
+
+      const plan = planRes.Item;
+      if (!plan.phases || phaseIndex < 0 || phaseIndex >= plan.phases.length) {
+        throw new Error("Invalid phase index");
+      }
+
+      if (plan.phases[phaseIndex].status === 'Pending Approval' || plan.phases[phaseIndex].status === 'Upcoming') {
+        plan.phases[phaseIndex].status = 'Active';
+      }
+
+      await ddbDocClient.send(new PutCommand({
+        TableName: "RecoveryPlans",
+        Item: plan
+      }));
+
+      return plan;
+    } catch (error) {
+      console.error("DynamoDB error (approvePhase):", error);
+      throw error;
+    }
+  },
 
   async getPlanProgress(planId) {
     try {
