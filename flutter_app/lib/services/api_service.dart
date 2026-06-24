@@ -27,8 +27,8 @@ class ApiService {
   }
 
   static String get baseUrl {
-    // return "https://flexio-rehab.duckdns.org/api";
-    return "http://10.0.2.2:5000/api";
+    return "https://flexio-rehab.duckdns.org/api";
+    // return "http://10.0.2.2:5000/api";
   }
 
   static const String _tokenKey = 'jwt_token';
