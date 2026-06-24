@@ -10,23 +10,30 @@ async function createMockSession() {
 
   const TOTAL_SAMPLES = 140;
 
-  const emgSamples1 = [];
-  const emgSamples2 = [];
+  const emgSamples = [];
   const imuSamples = [];
 
+  const baseTime = Date.now();
+
   for (let i = 0; i < TOTAL_SAMPLES; i++) {
-    // 1 smooth cycle over the 140 samples (half sine wave: 0 -> 1 -> 0)
+    const ts = baseTime + (i * 20); // 50Hz = 20ms per sample
     const cyclePosition = i / TOTAL_SAMPLES;
     const activation = Math.sin(Math.PI * cyclePosition);
 
-    // Clean EMG signals (absolutely NO Math.random noise)
+    // Flat EMG data (2 data columns + 2 on columns = 4 columns + ts = 5 columns in CSV)
     const emg1 = Math.max(0.02, Math.min(1.0, 0.05 + activation * 0.9));
     const emg2 = Math.max(0.02, Math.min(0.3, 0.03 + activation * 0.12));
 
-    emgSamples1.push(Number(emg1.toFixed(4)));
-    emgSamples2.push(Number(emg2.toFixed(4)));
+    emgSamples.push({
+      ts,
+      emg1: Number(emg1.toFixed(4)),
+      emg2: Number(emg2.toFixed(4)),
+      on1: 1,
+      on2: 1
+    });
 
-    // Clean IMU signals
+    // Flat IMU data (12 data columns + ts = 13 columns in CSV)
+    // 12 IMU columns + 4 EMG columns = 16 data columns total across the two CSVs
     const kneeAngle = activation * 70; // 0 to 70 degrees
     const thighPitch = kneeAngle * 0.25;
     const shinPitch = kneeAngle;
@@ -34,42 +41,28 @@ async function createMockSession() {
     const thighRad = (thighPitch * Math.PI) / 180;
     const shinRad = (shinPitch * Math.PI) / 180;
 
+    // We populate the 12 columns: ax1..gz1 and ax2..gz2
     imuSamples.push({
-      kneeAngle: Number(kneeAngle.toFixed(2)),
-      thighGravity: [
-        Number(Math.sin(thighRad).toFixed(4)),
-        0.0000,
-        Number(Math.cos(thighRad).toFixed(4))
-      ],
-      shinGravity: [
-        Number(Math.sin(shinRad).toFixed(4)),
-        0.0000,
-        Number(Math.cos(shinRad).toFixed(4))
-      ]
+      ts,
+      ax1: Number(Math.sin(thighRad).toFixed(4)),
+      ay1: 0.0000,
+      az1: Number(Math.cos(thighRad).toFixed(4)),
+      gx1: 0.01, gy1: 0.0, gz1: 0.0,
+      ax2: Number(Math.sin(shinRad).toFixed(4)),
+      ay2: 0.0000,
+      az2: Number(Math.cos(shinRad).toFixed(4)),
+      gx2: 0.01, gy2: 0.0, gz2: 0.0
     });
   }
 
   const buffer = {
     patientId,
-    emg: [
-      {
-        ts: Date.now(),
-        sensors: [
-          { ch: 'emg1', samples: emgSamples1 },
-          { ch: 'emg2', samples: emgSamples2 }
-        ]
-      }
-    ],
-    imu: [
-      {
-        ts: Date.now(),
-        samples: imuSamples
-      }
-    ],
+    emg: emgSamples,
+    imu: imuSamples,
     events: []
   };
 
-  console.log(`Uploading noise-free CSVs to S3 using the new wide format...`);
+  console.log(`Uploading noise-free CSVs to S3 using the flat 16-column format...`);
   const s3Prefix = await flushSessionToS3(sessionId, buffer);
   console.log(`Successfully uploaded to S3: ${s3Prefix}`);
 
