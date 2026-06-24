@@ -193,14 +193,11 @@ def build_report(
     report = {
         "generatedAt": _now_iso(),
         "model": "flexio-svm-v1" if classification else "flexio-metrics-v1",
-        "summary": summary,
+        "summary": llm_summary if llm_summary else summary,
         "metrics": metrics_out,
         "observations": observations,
         "concerns": concerns,
         "recommendations": recommendations,
         "safetyEvents": safety_events,
     }
-    if llm_summary:
-        report["aiSummary"] = llm_summary
-        report["aiAnalysis"] = llm_summary
     return report
