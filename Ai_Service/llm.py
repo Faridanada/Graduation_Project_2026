@@ -36,5 +36,6 @@ def generate_llm_summary(payload: dict, model: Optional[str] = None) -> Optional
             temperature=0.2,
         )
         return response.choices[0].message.content or None
-    except Exception:
+    except Exception as e:
+        print(f"❌ OpenAI Error: {type(e).__name__} - {e}")
         return None

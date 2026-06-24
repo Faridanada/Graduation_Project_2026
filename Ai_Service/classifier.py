@@ -16,8 +16,8 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-MODEL_PATH = os.getenv("SVM_MODEL_PATH", "svm_model.pkl")
-SCALER_PATH = os.getenv("SVM_SCALER_PATH", "scaler.pkl")
+MODEL_PATH = os.getenv("SVM_MODEL_PATH", "models/svm_model.pkl")
+SCALER_PATH = os.getenv("SVM_SCALER_PATH", "models/scaler.pkl")
 WINDOW_SAMPLES = int(os.getenv("WINDOW_SAMPLES_EMG", "100"))
 STEP_SAMPLES = int(os.getenv("STEP_SAMPLES_EMG", "50"))
 
