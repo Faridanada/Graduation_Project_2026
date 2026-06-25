@@ -51,8 +51,12 @@ exports.startSession = async (req, res) => {
       if (devices && devices.length > 0) {
         deviceId = devices[0].id;
       } else {
-        console.log(`[SessionController] Warning: No device found for patient ${patientId}. Falling back to test-device-1.`);
-        deviceId = 'test-device-1';
+        // No deviceId in request and patient has no assigned device.
+        // Fall back to the default prototype device. In a production
+        // deployment with multiple exoskeletons, the client would be
+        // required to specify deviceId explicitly.
+        deviceId = 'dev_test_001';
+        console.log(`[startSession] No deviceId specified for patient ${patientId}, using default 'dev_test_001'`);
       }
     }
 
