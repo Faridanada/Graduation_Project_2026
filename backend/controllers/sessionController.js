@@ -84,6 +84,12 @@ exports.startSession = async (req, res) => {
     // In-memory buffer
     sessionBuffer.startSession(sessionId, patientId, exerciseId, deviceId);
 
+    const mqttService = require('../services/mqttService');
+    if (mqttService.client) {
+      mqttService.client.publish(`flexio/${deviceId}/cmd`, JSON.stringify({ type: 'start' }));
+      console.log(`[MQTT] Published start command to flexio/${deviceId}/cmd`);
+    }
+
     res.status(201).json({ message: "Session started", sessionId, startTime });
   } catch (error) {
     console.error("Start Session Error:", error);
@@ -158,6 +164,12 @@ exports.endSession = async (req, res) => {
     triggerReportGeneration(sessionId, patientId, s3KeyPrefix)
       .catch(err => console.warn('[report] trigger failed:', err.message));
 
+    const mqttService = require('../services/mqttService');
+    if (mqttService.client) {
+      mqttService.client.publish(`flexio/${dbRecord.deviceId}/cmd`, JSON.stringify({ type: 'stop' }));
+      console.log(`[MQTT] Published stop command to flexio/${dbRecord.deviceId}/cmd`);
+    }
+
     res.json({ message: "Session ended", session: updatedSession });
   } catch (error) {
     console.error("End Session Error:", error);
@@ -180,6 +192,12 @@ exports.abortSession = async (req, res) => {
     }
 
     sessionBuffer.abortSession(sessionId);
+
+    const mqttService = require('../services/mqttService');
+    if (mqttService.client) {
+      mqttService.client.publish(`flexio/${dbRecord.deviceId}/cmd`, JSON.stringify({ type: 'stop' }));
+      console.log(`[MQTT] Published stop command to flexio/${dbRecord.deviceId}/cmd`);
+    }
 
     const updatedSession = await dbService.updateSession(sessionId, {
       status: "aborted",
