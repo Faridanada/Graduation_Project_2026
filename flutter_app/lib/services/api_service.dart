@@ -477,6 +477,40 @@ class ApiService {
     return false;
   }
 
+  static Future<bool> endSession(String sessionId, {Map<String, dynamic>? summary}) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/sessions/$sessionId/end'),
+        headers: _headers(token),
+        body: summary != null ? jsonEncode({'summary': summary}) : null,
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {}
+    return false;
+  }
+
+  static Future<Map<String, dynamic>?> startSession({String? exerciseId}) async {
+    final token = await _getToken();
+    if (token == null) return null;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/sessions/start'),
+        headers: _headers(token),
+        body: jsonEncode({
+          if (exerciseId != null) 'exerciseId': exerciseId,
+        }),
+      );
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   static Future<bool> notifyDoctorSessionStart({
     required String exerciseTitle,
     required String patientName,

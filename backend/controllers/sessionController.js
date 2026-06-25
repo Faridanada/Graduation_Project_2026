@@ -42,11 +42,17 @@ exports.getMyDevices = async (req, res) => {
 
 exports.startSession = async (req, res) => {
   try {
-    const { exerciseId, deviceId } = req.body;
+    const { exerciseId } = req.body;
+    let { deviceId } = req.body;
     const patientId = req.user.id;
 
     if (!deviceId) {
-      return res.status(400).json({ message: "deviceId is required" });
+      const devices = await dbService.getDevicesForPatient(patientId);
+      if (devices && devices.length > 0) {
+        deviceId = devices[0].id;
+      } else {
+        return res.status(400).json({ message: "No device assigned to patient. Cannot start session." });
+      }
     }
 
     // Verify device belongs to patient
@@ -121,6 +127,8 @@ exports.endSession = async (req, res) => {
       finalStatus = "abort_flush_failed";
     }
 
+    const { summary } = req.body;
+
     // Update DB
     const updates = {
       endTime: endTimeDate.toISOString(),
@@ -129,6 +137,10 @@ exports.endSession = async (req, res) => {
       durationSeconds,
       events: buffer.events // encrypted by dbService automatically
     };
+
+    if (summary) {
+      updates.summary = summary;
+    }
 
     if (s3KeyPrefix) {
       updates.waveformS3Key = s3KeyPrefix;

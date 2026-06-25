@@ -760,8 +760,15 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
 
   Widget _gradientButton(BuildContext context, Map<String, dynamic> exercise) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        // Start the backend session to invoke the MQTT listener
+        final response = await ApiService.startSession(exerciseId: exercise['id']);
+        if (response != null && response['sessionId'] != null) {
+          exercise['sessionId'] = response['sessionId'];
+        }
+
         if (exercise['exerciseType'] == 'Passive-Monitored' && _patientProfile?['assignedDoctorId'] != null) {
+          if (!context.mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -774,6 +781,7 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
             ),
           );
         } else if (exercise['exerciseType'] == 'Passive') {
+          if (!context.mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -781,6 +789,7 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
             ),
           ).then((_) => _fetchData());
         } else {
+          if (!context.mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(

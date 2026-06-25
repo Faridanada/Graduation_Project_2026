@@ -312,13 +312,19 @@ class _PassiveLiveSessionScreenState
         await ApiService.completeExercise(exId, 1);
       }
       
-      await ApiService.saveSession({
+      final summaryData = {
         "exerciseId": exId,
         "durationMinutes": 10,
         "repsCompleted": _repsCompleted,
         "accuracy": 100,
         "date": DateTime.now().toIso8601String()
-      });
+      };
+
+      if (widget.exercise!['sessionId'] != null) {
+        await ApiService.endSession(widget.exercise!['sessionId'], summary: summaryData);
+      } else {
+        await ApiService.saveSession(summaryData);
+      }
 
       if (mounted) {
         Navigator.pop(context); // close loading

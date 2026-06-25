@@ -428,13 +428,19 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
       await ApiService.completeExercise(exId, totalRepsCompleted);
     }
 
-    await ApiService.saveSession({
+    final summaryData = {
       "exerciseId": exId,
       "durationMinutes": widget.exercise['estimatedTimeMin'] ?? 10,
       "repsCompleted": totalRepsCompleted,
       "accuracy": 88,
       "date": DateTime.now().toIso8601String()
-    });
+    };
+
+    if (widget.exercise['sessionId'] != null) {
+      await ApiService.endSession(widget.exercise['sessionId'], summary: summaryData);
+    } else {
+      await ApiService.saveSession(summaryData);
+    }
 
     if (context.mounted) {
       Navigator.pop(context); // close loading dialog
