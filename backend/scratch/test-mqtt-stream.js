@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 async function runMqttTest() {
   const deviceId = "test-device-1";
   const patientId = "1773960006547";
-  const baseUrl = "http://localhost:5000/api";
+  const baseUrl = process.env.API_URL || "http://localhost:5000/api";
 
   console.log('1. Forging JWT token for test patient...');
   const token = jwt.sign({ id: patientId, role: 'patient' }, process.env.JWT_SECRET, { expiresIn: '1h' });
