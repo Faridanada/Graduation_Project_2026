@@ -1292,6 +1292,9 @@ const dbService = {
       plans.forEach(plan => {
         if (plan.phases && Array.isArray(plan.phases)) {
           plan.phases = plan.phases.map(phase => {
+            if (phase.status === 'Pending Approval') {
+              return phase;
+            }
             if (phase.isManuallyCompleted) {
               phase.status = 'Completed';
               phase.active = false;
