@@ -35,16 +35,24 @@ const argv = yargs(hideBin(process.argv))
 
 const deviceId = argv.device;
 const rate = argv.rate;
-let brokerUrl = argv.host;
+const brokerUrl = argv.host;
 
-// URL-based credential injection to completely bypass client authorization bugs
+// Explicit connection options required by the MQTT client library
+const options = {
+  clientId: `sim_esp_${Math.random().toString(16).slice(3)}`,
+  clean: true,
+  connectTimeout: 4000,
+  reconnectPeriod: 5000,
+};
+
+// Force assign credentials if passed via terminal flags
 if (argv.username && argv.password) {
-  const credentials = `${encodeURIComponent(argv.username)}:${encodeURIComponent(argv.password)}`;
-  brokerUrl = brokerUrl.replace('mqtt://', `mqtt://${credentials}@`);
+  options.username = argv.username.trim();
+  options.password = argv.password.trim();
 }
 
-console.log(`Connecting to broker...`);
-const client = mqtt.connect(brokerUrl);
+console.log(`Connecting to MQTT broker at ${brokerUrl}...`);
+const client = mqtt.connect(brokerUrl, options);
 
 let t = 0;
 
@@ -53,14 +61,14 @@ client.on('connect', () => {
 
   setInterval(() => {
     // Generate sine waves for leg trajectory tracking
-    const angleThigh = Math.sin(t) * 45; // -45 to 45
-    const angleCalf = Math.sin(t) * 90;  // -90 to 90
+    const angleThigh = Math.sin(t) * 45; // -45 to 45 degrees
+    const angleCalf = Math.sin(t) * 90;  // -90 to 90 degrees
 
     // Simulate EMG activity (spikes above 20 to test Flutter's dynamic warning banner)
     const emg1 = Math.abs(Math.sin(t * 5) * 50);
     const emg2 = Math.abs(Math.cos(t * 5) * 50);
 
-    // FLATTENED SCHEMA - Matches exactly what MqttService.js expects
+    // FLATTENED SCHEMA - Matches exactly what MqttService.js validation expects
     const bundle = {
       ts: Date.now(),
       deviceId: deviceId,
@@ -87,7 +95,7 @@ client.on('connect', () => {
     const topic = `flexio/${deviceId}/bundle`;
     client.publish(topic, JSON.stringify(bundle));
 
-    t += (rate / 1000); // increment dt
+    t += (rate / 1000); // increment time state by dt in seconds
 
   }, rate);
 });
