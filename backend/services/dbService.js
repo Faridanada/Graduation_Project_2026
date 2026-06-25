@@ -1830,6 +1830,24 @@ const dbService = {
       console.error("DynamoDB error (findActiveSessionsByDevice):", error);
       throw error;
     }
+  },
+
+  async findActiveSessionsByPatient(patientId) {
+    try {
+      const result = await ddbDocClient.send(new ScanCommand({
+        TableName: 'Sessions',
+        FilterExpression: 'patientId = :pid AND #s = :st',
+        ExpressionAttributeNames: { '#s': 'status' },
+        ExpressionAttributeValues: {
+          ':pid': patientId,
+          ':st': 'active',
+        },
+      }));
+      return result.Items || [];
+    } catch (error) {
+      console.error("DynamoDB error (findActiveSessionsByPatient):", error);
+      throw error;
+    }
   }
 };
 

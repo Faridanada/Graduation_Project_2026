@@ -31,7 +31,14 @@ class WebRTCService {
     _sessionId = sessionId;
 
     final token = ApiService.currentToken ?? '';
-    final wsUrl = ApiService.baseUrl.replaceFirst('http', 'ws').replaceFirst('/api', '/ws/live?token=$token');
+    String wsUrl;
+    if (ApiService.baseUrl.startsWith('https://')) {
+      wsUrl = 'wss://' + ApiService.baseUrl.substring('https://'.length).replaceFirst('/api', '/ws/live?token=$token');
+    } else if (ApiService.baseUrl.startsWith('http://')) {
+      wsUrl = 'ws://' + ApiService.baseUrl.substring('http://'.length).replaceFirst('/api', '/ws/live?token=$token');
+    } else {
+      throw Exception('Invalid baseUrl scheme: ${ApiService.baseUrl}');
+    }
     
     print('WebRTCService: Connecting to $wsUrl for session $sessionId');
 
@@ -54,8 +61,10 @@ class WebRTCService {
         await _initWebRTC(isPatient);
       }
 
-    } catch (e) {
-      print('WebSocket error: $e');
+    } catch (e, st) {
+      print('[WebRTCService] WebSocket connect FAILED: $e');
+      print(st);
+      rethrow;
     }
   }
 

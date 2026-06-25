@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/services/sensor_data_service.dart';
+import 'package:rehabilitation_app/services/webrtc_service.dart';
 
 class StabilizationExerciseScreen extends StatefulWidget {
   final Map<String, dynamic> exercise;
@@ -18,12 +19,27 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
   bool isTargetReached = false;
   Timer? _timer;
   bool _isSaving = false;
+  String? _connectError;
 
   @override
   void initState() {
     super.initState();
     targetAngle = widget.exercise['holdAngle'] as int? ?? 90; // Default to 90 if not set
     SensorDataService().kneeAngle.addListener(_onKneeAngleChanged);
+    _initSocket();
+  }
+
+  Future<void> _initSocket() async {
+    final sessionId = widget.exercise['sessionId'];
+    if (sessionId != null) {
+      try {
+        await WebRTCService().initConnection(sessionId, isPatient: true, initMedia: false);
+      } catch (e) {
+        if (mounted) {
+          setState(() => _connectError = 'Connection failed: $e');
+        }
+      }
+    }
   }
 
   void _onKneeAngleChanged() {
@@ -42,6 +58,8 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
   @override
   void dispose() {
     SensorDataService().kneeAngle.removeListener(_onKneeAngleChanged);
+    SensorDataService().reset();
+    WebRTCService().dispose();
     super.dispose();
   }
 
@@ -207,6 +225,27 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
                     ),
                   ),
                 ],
+              )
+            else if (_connectError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(
+                      _connectError!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
               )
             else
               const Padding(

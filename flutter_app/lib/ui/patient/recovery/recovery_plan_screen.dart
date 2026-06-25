@@ -633,7 +633,18 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
           );
         } else {
           trailingWidget = GestureDetector(
-            onTap: () {
+            onTap: () async {
+              final response = await ApiService.startSession(exerciseId: rawExercise['id'] ?? rawExercise['_id']);
+              if (response != null && response['sessionId'] != null) {
+                rawExercise['sessionId'] = response['sessionId'];
+              } else {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Failed to start session. Please log out and log in again."), backgroundColor: Colors.red),
+                );
+                return;
+              }
+              if (!context.mounted) return;
               Navigator.push(
                 context,
                 MaterialPageRoute(

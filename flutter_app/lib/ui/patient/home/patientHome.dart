@@ -601,7 +601,19 @@ class _HomeContentState extends State<_HomeContent> {
 
   Widget _gradientButton(BuildContext context, Map<String, dynamic> exercise) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        final response = await ApiService.startSession(exerciseId: exercise['id'] ?? exercise['_id']);
+        if (response != null && response['sessionId'] != null) {
+          exercise['sessionId'] = response['sessionId'];
+        } else {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to start session. Please log out and log in again."), backgroundColor: Colors.red),
+          );
+          return;
+        }
+        if (!context.mounted) return;
+
         if (exercise['exerciseType'] == 'Passive-Monitored' && assignedDoctor != null) {
           Navigator.push(
             context,

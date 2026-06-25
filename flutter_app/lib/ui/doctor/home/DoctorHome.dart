@@ -49,7 +49,10 @@ class _DoctorHomeState extends State<DoctorHome> {
   StreamSubscription? _signalingSub;
 
   void _setupSignaling(String doctorId) async {
-    await _webRTC.initConnection('doctor_$doctorId', isPatient: false);
+    // Note: initConnection('doctor_$doctorId') was removed because the doctor app 
+    // now polls for the patient's active session in MonitorEx.dart.
+    // await _webRTC.initConnection('doctor_$doctorId', isPatient: false);
+    
     _signalingSub?.cancel();
     _signalingSub = _webRTC.signalingStream.listen((data) {
       if (data['webrtc_type'] == 'patient_waiting') {

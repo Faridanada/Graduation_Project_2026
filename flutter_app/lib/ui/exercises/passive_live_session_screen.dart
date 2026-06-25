@@ -25,6 +25,7 @@ class _PassiveLiveSessionScreenState
   Timer? _timer;
   Timer? _waitingTimer;
   bool _showWaitingError = false;
+  String? _connectError;
   int _repsCompleted = 0;
   int _repsTotal = 15;
 
@@ -33,10 +34,7 @@ class _PassiveLiveSessionScreenState
     super.initState();
     if (widget.exercise != null) {
       _repsTotal = widget.exercise!['repsTotal'] ?? 15;
-      final sessionId = widget.exercise!['sessionId'];
-      if (sessionId != null) {
-        WebRTCService().initConnection(sessionId, isPatient: true, initMedia: false);
-      }
+      _initSocket();
     }
     SensorDataService().repCount.addListener(_onRepCountChanged);
 
@@ -47,6 +45,19 @@ class _PassiveLiveSessionScreenState
         });
       }
     });
+  }
+
+  Future<void> _initSocket() async {
+    final sessionId = widget.exercise!['sessionId'];
+    if (sessionId != null) {
+      try {
+        await WebRTCService().initConnection(sessionId, isPatient: true, initMedia: false);
+      } catch (e) {
+        if (mounted) {
+          setState(() => _connectError = 'Connection failed: $e');
+        }
+      }
+    }
   }
 
   void _onRepCountChanged() {
@@ -65,6 +76,7 @@ class _PassiveLiveSessionScreenState
   void dispose() {
     _waitingTimer?.cancel();
     SensorDataService().repCount.removeListener(_onRepCountChanged);
+    SensorDataService().reset();
     WebRTCService().dispose();
     super.dispose();
   }
@@ -117,6 +129,16 @@ class _PassiveLiveSessionScreenState
                   valueListenable: SensorDataService().hasData,
                   builder: (context, hasData, _) {
                     if (!hasData) {
+                      if (_connectError != null) {
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                            const SizedBox(height: 12),
+                            Text(_connectError!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
+                          ],
+                        );
+                      }
                       return Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

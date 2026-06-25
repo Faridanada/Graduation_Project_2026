@@ -31,6 +31,8 @@ class MonitorEx extends StatefulWidget {
 class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMixin {
   bool _isPaused = false;
   bool _isMonitoring = false;
+  bool _patientInSession = false;
+  Timer? _pollTimer;
   
   // Real data parameters (reps and accuracy simulation removed per request)
   int _targetReps = 0;
@@ -55,6 +57,27 @@ class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMix
 
     SensorDataService().kneeAngle.addListener(_onKneeAngleChanged);
     SensorDataService().repCount.addListener(_onRepCountChanged);
+    
+    _startPollingForSession();
+  }
+
+  void _startPollingForSession() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      // Prototype: fetch the first patient for the doctor to monitor
+      final patients = await ApiService.getDoctorPatients();
+      if (patients.isEmpty) return;
+      final patientId = patients[0]['id']?.toString() ?? patients[0]['_id']?.toString();
+      if (patientId == null) return;
+
+      final s = await ApiService.getActivePatientSession(patientId);
+      if (s != null && mounted) {
+        _pollTimer?.cancel();
+        final sessionId = s['sessionId'] as String;
+        await WebRTCService().initConnection(sessionId, isPatient: false);
+        setState(() => _patientInSession = true);
+      }
+    });
   }
 
   void _onKneeAngleChanged() {
@@ -75,9 +98,12 @@ class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMix
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _pulseController.dispose();
     SensorDataService().kneeAngle.removeListener(_onKneeAngleChanged);
     SensorDataService().repCount.removeListener(_onRepCountChanged);
+    SensorDataService().reset();
+    WebRTCService().dispose();
     super.dispose();
   }
 
@@ -105,17 +131,35 @@ class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMix
           },
         ),
         title: const Text(
-          'Live Monitoring',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+          "Monitor Session",
+          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
-        centerTitle: true,
+        iconTheme: const IconThemeData(color: AppColors.primary),
       ),
-      body: SafeArea(
-        child: Padding(
+      body: !_patientInSession
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.videocam_off, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Patient is not currently in a session.",
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      _startPollingForSession();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Refresh"),
+                  ),
+                ],
+              ),
+            )
+          : SafeArea(
+              child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

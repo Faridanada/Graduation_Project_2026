@@ -564,6 +564,26 @@ class ApiService {
     return null;
   }
 
+  static Future<Map<String, dynamic>?> getActivePatientSession(String patientId) async {
+    final token = await _getToken();
+    if (token == null) return null;
+    
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/sessions/patients/$patientId/active-session'),
+        headers: _headers(token),
+      );
+      if (response.statusCode == 404) return null;     // no active session
+      if (response.statusCode != 200) {
+        throw Exception('getActivePatientSession failed: ${response.statusCode}');
+      }
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (e) {
+      print('ApiService: getActivePatientSession exception: $e');
+      return null;
+    }
+  }
+
   static Future<bool> notifyDoctorSessionStart({
     required String exerciseTitle,
     required String patientName,

@@ -22,6 +22,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   Timer? _timer;
   Timer? _waitingTimer;
   bool _showWaitingError = false;
+  String? _connectError;
   
   int _currentRep = 0;
   int _repsPerSet = 10;
@@ -35,10 +36,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
     _totalSets = widget.exercise['numberOfExercises'] ?? widget.exercise['setsTotal'] ?? 3;
     
     // START WEBSOCKET CONNECTION
-    final sessionId = widget.exercise['sessionId'];
-    if (sessionId != null) {
-      WebRTCService().initConnection(sessionId, isPatient: true, initMedia: false);
-    }
+    _initSocket();
 
     SensorDataService().repCount.addListener(_onRepCountChanged);
 
@@ -49,6 +47,19 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
         });
       }
     });
+  }
+
+  Future<void> _initSocket() async {
+    final sessionId = widget.exercise['sessionId'];
+    if (sessionId != null) {
+      try {
+        await WebRTCService().initConnection(sessionId, isPatient: true, initMedia: false);
+      } catch (e) {
+        if (mounted) {
+          setState(() => _connectError = 'Connection failed: $e');
+        }
+      }
+    }
   }
 
   void _onRepCountChanged() {
@@ -75,6 +86,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   void dispose() {
     _waitingTimer?.cancel();
     SensorDataService().repCount.removeListener(_onRepCountChanged);
+    SensorDataService().reset();
     WebRTCService().dispose();
     super.dispose();
   }
@@ -131,6 +143,22 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                   valueListenable: SensorDataService().hasData,
                   builder: (context, hasData, _) {
                     if (!hasData) {
+                      if (_connectError != null) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                                const SizedBox(height: 12),
+                                Text(_connectError!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 50),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
                       return Column(
                         children: [
                           const SizedBox(height: 50),

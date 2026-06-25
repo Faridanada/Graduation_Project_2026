@@ -456,3 +456,36 @@ exports.receiveAiReport = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.getActiveSessionForPatient = async (req, res) => {
+  try {
+    const requestingUserId = req.user.id;
+    const requestingRole   = req.user.role;
+    const { patientId } = req.params;
+
+    // Auth: a patient can only see their own; a doctor can see any of their patients
+    if (requestingRole === 'patient' && requestingUserId !== patientId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const sessions = await dbService.findActiveSessionsByPatient(patientId);
+    if (!sessions.length) {
+      return res.status(404).json({
+        active: false,
+        message: 'No active session for this patient.',
+      });
+    }
+    const latest = sessions.reduce(
+      (a, b) => (a.startTime > b.startTime ? a : b)
+    );
+    return res.json({
+      active: true,
+      sessionId: latest.id || latest.sessionId,
+      deviceId:  latest.deviceId,
+      startTime: latest.startTime,
+    });
+  } catch (err) {
+    console.error('[getActiveSessionForPatient]', err);
+    return res.status(500).json({ error: err.message });
+  }
+};

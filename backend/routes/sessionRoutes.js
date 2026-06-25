@@ -19,6 +19,7 @@ router.post('/start', sessionController.startSession);
 router.post('/:sessionId/end', sessionController.endSession);
 router.post('/:sessionId/abort', sessionController.abortSession);
 router.get('/patient/:patientId', sessionController.getPatientSessions);
+router.get('/patients/:patientId/active-session', sessionController.getActiveSessionForPatient);
 router.get('/:sessionId', sessionController.getSessionDetails);
 router.post('/:sessionId/simulate', sessionController.simulateTelemetry);
 router.get('/:sessionId/waveform', sessionController.getSessionWaveformUrls);
