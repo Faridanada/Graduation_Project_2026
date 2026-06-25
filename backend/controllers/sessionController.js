@@ -56,10 +56,12 @@ exports.startSession = async (req, res) => {
       }
     }
 
-    // Verify device belongs to patient
+    // Allow any patient to start a session with a shared device
+    // (Previous ownership check was removed here per 'shared device' requirements)
     const device = await dbService.getDeviceById(deviceId);
-    if (!device || device.patientId !== patientId) {
-      return res.status(403).json({ message: "Device not found or not assigned to you" });
+    if (!device) {
+      // It's okay if device doesn't exist in Devices table for test devices
+      console.log(`[SessionController] Device ${deviceId} not found in Devices table, allowing anyway for shared use.`);
     }
 
     const sessionId = `sess_${uuidv4()}`;
@@ -83,6 +85,11 @@ exports.startSession = async (req, res) => {
 
     // In-memory buffer
     sessionBuffer.startSession(sessionId, patientId, exerciseId, deviceId);
+
+    // --- Added for Shared Device Routing ---
+    const mqttService = require('../services/mqttService');
+    mqttService.invalidateDeviceCache(deviceId);
+    // ---------------------------------------
 
     res.status(201).json({ message: "Session started", sessionId, startTime });
   } catch (error) {
@@ -157,6 +164,11 @@ exports.endSession = async (req, res) => {
     // Fire report generation trigger (fire-and-forget)
     triggerReportGeneration(sessionId, patientId, s3KeyPrefix)
       .catch(err => console.warn('[report] trigger failed:', err.message));
+
+    // --- Added for Shared Device Routing ---
+    const mqttService = require('../services/mqttService');
+    mqttService.invalidateDeviceCache(dbRecord.deviceId);
+    // ---------------------------------------
 
     res.json({ message: "Session ended", session: updatedSession });
   } catch (error) {

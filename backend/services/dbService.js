@@ -1806,6 +1806,30 @@ const dbService = {
       console.error("DynamoDB error (getCompletionsForPatient):", error);
       throw error;
     }
+  },
+
+  async findActiveSessionsByDevice(deviceId) {
+    try {
+      const result = await ddbDocClient.send(new ScanCommand({
+        TableName: 'Sessions',
+        FilterExpression: 'deviceId = :did AND #s = :st',
+        ExpressionAttributeNames: { '#s': 'status' },
+        ExpressionAttributeValues: {
+          ':did': deviceId,
+          ':st': 'active',
+        },
+      }));
+      
+      const items = result.Items || [];
+      return items.map(item => {
+        // Just return decrypted fields for uniformity if necessary, 
+        // but session properties we care about are status/deviceId/patientId
+        return item;
+      });
+    } catch (error) {
+      console.error("DynamoDB error (findActiveSessionsByDevice):", error);
+      throw error;
+    }
   }
 };
 
