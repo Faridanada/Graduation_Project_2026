@@ -1314,9 +1314,15 @@ const dbService = {
                 phase.active = true;
                 phase.completed = false;
               } else {
-                phase.status = 'Upcoming';
-                phase.active = false;
-                phase.completed = false;
+                if (phase.status === 'Active') {
+                  phase.status = 'Active';
+                  phase.active = true;
+                  phase.completed = false;
+                } else {
+                  phase.status = 'Upcoming';
+                  phase.active = false;
+                  phase.completed = false;
+                }
               }
             }
             return phase;

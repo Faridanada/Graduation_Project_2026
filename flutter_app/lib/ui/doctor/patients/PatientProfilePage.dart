@@ -116,8 +116,6 @@ class _PatientProfilePageState extends State<PatientProfilePage>
                 ? const Center(child: Text('Failed to load profile', style: TextStyle(fontFamily: 'Poppins')))
                 : Column(
                     children: [
-                      // Check for pending phase
-                      if (_hasPendingPhase()) _buildPendingPhaseBanner(),
                       Expanded(
                         child: _buildContent(),
                       ),
@@ -129,8 +127,16 @@ class _PatientProfilePageState extends State<PatientProfilePage>
 
   Map<String, dynamic>? _getPendingPhaseData() {
     final plansList = _patientData?['recoveryPlans'] as List?;
+    final List<dynamic> plans = [];
+    
     if (plansList != null) {
-      for (var plan in plansList) {
+      plans.addAll(plansList);
+    } else if (_patientData?['recoveryPlan'] != null) {
+      plans.add(_patientData!['recoveryPlan']);
+    }
+
+    for (var plan in plans) {
+      if (plan is Map) {
         final phases = plan['phases'] as List?;
         if (phases != null) {
           for (var i = 0; i < phases.length; i++) {
@@ -251,6 +257,8 @@ class _PatientProfilePageState extends State<PatientProfilePage>
                     ),
                   ],
                 ),
+                // Check for pending phase inside the header
+                if (_hasPendingPhase()) _buildPendingPhaseBanner(),
                 // Avatar
                 Container(
                   padding: const EdgeInsets.all(4),
