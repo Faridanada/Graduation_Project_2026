@@ -1643,6 +1643,43 @@ const dbService = {
     }
   },
 
+  async declinePhase(planId, phaseIndex) {
+    try {
+      const planRes = await ddbDocClient.send(new GetCommand({
+        TableName: "RecoveryPlans",
+        Key: { id: planId }
+      }));
+
+      if (!planRes.Item) throw new Error("Plan not found");
+
+      const plan = planRes.Item;
+      if (!plan.phases || phaseIndex < 0 || phaseIndex >= plan.phases.length) {
+        throw new Error("Invalid phase index");
+      }
+
+      // Mark the current requested phase back to Upcoming
+      if (plan.phases[phaseIndex].status === 'Pending Approval') {
+        plan.phases[phaseIndex].status = 'Upcoming';
+      }
+      
+      // Mark the previous phase back to Active so the patient can continue
+      if (phaseIndex > 0 && plan.phases[phaseIndex - 1].status === 'Completed') {
+        plan.phases[phaseIndex - 1].status = 'Active';
+        plan.phases[phaseIndex - 1].isManuallyCompleted = false;
+      }
+
+      await ddbDocClient.send(new PutCommand({
+        TableName: "RecoveryPlans",
+        Item: plan
+      }));
+
+      return plan;
+    } catch (error) {
+      console.error("DynamoDB error (declinePhase):", error);
+      throw error;
+    }
+  },
+
   async getPlanProgress(planId) {
     try {
         const exercisesData = await ddbDocClient.send(new ScanCommand({

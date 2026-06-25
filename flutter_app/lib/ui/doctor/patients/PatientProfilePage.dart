@@ -109,12 +109,109 @@ class _PatientProfilePageState extends State<PatientProfilePage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      extendBodyBehindAppBar: true,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _patientData == null
-              ? const Center(child: Text('Failed to load patient data'))
-              : _buildContent(),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _patientData == null
+                ? const Center(child: Text('Failed to load profile', style: TextStyle(fontFamily: 'Poppins')))
+                : Column(
+                    children: [
+                      // Check for pending phase
+                      if (_hasPendingPhase()) _buildPendingPhaseBanner(),
+                      Expanded(
+                        child: _buildContent(),
+                      ),
+                    ],
+                  ),
+      ),
+    );
+  }
+
+  Map<String, dynamic>? _getPendingPhaseData() {
+    final plansList = _patientData?['recoveryPlans'] as List?;
+    if (plansList != null) {
+      for (var plan in plansList) {
+        final phases = plan['phases'] as List?;
+        if (phases != null) {
+          for (var i = 0; i < phases.length; i++) {
+            if (phases[i]['status'] == 'Pending Approval') {
+              return {
+                'planId': plan['id'] ?? plan['_id'],
+                'phaseIndex': i,
+              };
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  bool _hasPendingPhase() => _getPendingPhaseData() != null;
+
+  Widget _buildPendingPhaseBanner() {
+    final pendingData = _getPendingPhaseData();
+    if (pendingData == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        border: Border(bottom: BorderSide(color: Colors.orange.shade200)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Colors.orange),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Patient requested approval for the next recovery phase.',
+              style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              setState(() => _isLoading = true);
+              final success = await ApiService.approvePhase(pendingData['planId'], pendingData['phaseIndex']);
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Phase Approved!')));
+                await _loadData();
+              } else {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to approve.'), backgroundColor: Colors.red));
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: const Size(0, 0),
+              elevation: 0,
+            ),
+            child: const Text('Approve', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: () async {
+              setState(() => _isLoading = true);
+              final success = await ApiService.declinePhase(pendingData['planId'], pendingData['phaseIndex']);
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Phase Declined.')));
+                await _loadData();
+              } else {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to decline.'), backgroundColor: Colors.red));
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey.shade700,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: const Size(0, 0),
+            ),
+            child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
+        ],
+      ),
     );
   }
 

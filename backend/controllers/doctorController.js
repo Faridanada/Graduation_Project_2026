@@ -429,6 +429,32 @@ const doctorController = {
         }
     },
 
+    // PUT /api/doctor/recovery-plan/:planId/phases/:phaseIndex/decline
+    async declinePhase(req, res) {
+        try {
+            const { planId, phaseIndex } = req.params;
+            const index = parseInt(phaseIndex, 10);
+            if (isNaN(index)) {
+                return res.status(400).json({ statusCode: 400, message: 'Invalid phase index' });
+            }
+
+            const plan = await dbService.declinePhase(planId, index);
+            
+            if (plan) {
+                await dbService.createNotification(
+                    plan.patientId,
+                    "Phase Approval Declined",
+                    "Your doctor has declined your request to move to the next phase. Please continue with your current phase."
+                );
+            }
+
+            res.json({ statusCode: 200, message: 'Phase declined and previous phase reactivated' });
+        } catch (error) {
+            console.error('Error declining phase:', error);
+            res.status(500).json({ statusCode: 500, message: 'Server error declining phase' });
+        }
+    },
+
     // DELETE /api/doctor/recovery-plan/:id
     async deleteRecoveryPlan(req, res) {
         try {
