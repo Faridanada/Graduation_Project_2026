@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/services/sensor_data_service.dart';
 import 'package:rehabilitation_app/ui/exercises/session_summary_screen.dart';
 
 class LiveSessionScreen extends StatefulWidget {
@@ -29,29 +30,32 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
     super.initState();
     _repsPerSet = widget.exercise['numberOfReps'] ?? widget.exercise['repsTotal'] ?? 10;
     _totalSets = widget.exercise['numberOfExercises'] ?? widget.exercise['setsTotal'] ?? 3;
-    _startSimulation();
+    SensorDataService().repCount.addListener(_onRepCountChanged);
   }
 
-  void _startSimulation() {
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (!isPaused && !isStopped && !isEmergencyStopped && mounted) {
-        setState(() {
-          if (_currentRep < _repsPerSet) {
-            _currentRep++;
-          } else if (_currentSet < _totalSets) {
-            _currentSet++;
-            _currentRep = 1; // Start the first rep of the next set
+  void _onRepCountChanged() {
+    if (!isPaused && !isStopped && !isEmergencyStopped && mounted) {
+      setState(() {
+        int newTotalReps = SensorDataService().repCount.value;
+        if (newTotalReps > 0) {
+          // Calculate current set and rep within set based on total continuous reps
+          int completedSets = newTotalReps ~/ _repsPerSet;
+          _currentSet = (completedSets < _totalSets) ? completedSets + 1 : _totalSets;
+          
+          if (_currentSet >= _totalSets && newTotalReps >= _repsPerSet * _totalSets) {
+             _currentRep = _repsPerSet; // Max out at final rep
           } else {
-            timer.cancel(); // Finished all sets
+             _currentRep = newTotalReps % _repsPerSet;
+             if (_currentRep == 0 && newTotalReps > 0) _currentRep = _repsPerSet; // end of a set
           }
-        });
-      }
-    });
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    SensorDataService().repCount.removeListener(_onRepCountChanged);
     super.dispose();
   }
 
@@ -102,38 +106,54 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
 
                 const SizedBox(height: 32),
 
-                /// RING
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      height: 240,
-                      width: 240,
-                      child: CircularProgressIndicator(
-                        value: _progress,
-                        strokeWidth: 18,
-                        strokeCap: StrokeCap.round,
-                        color: primaryBlue,
-                        backgroundColor: Colors.grey.shade300,
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
+                /// WAITING STATE & DATA
+                ValueListenableBuilder<bool>(
+                  valueListenable: SensorDataService().hasData,
+                  builder: (context, hasData, _) {
+                    if (!hasData) {
+                      return Column(
+                        children: [
+                          const SizedBox(height: 50),
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          const Text("Waiting for sensor data...", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          const SizedBox(height: 50),
+                        ],
+                      );
+                    }
+                    return Stack(
+                      alignment: Alignment.center,
                       children: [
-                        Text("$_currentRep",
-                            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text("of $_repsPerSet Reps",
-                            style: const TextStyle(color: Colors.grey, fontSize: 16)),
-                        const SizedBox(height: 8),
-                        Icon(
-                          isPaused ? Icons.play_arrow : Icons.pause,
-                          size: 24,
-                          color: Colors.grey,
+                        SizedBox(
+                          height: 240,
+                          width: 240,
+                          child: CircularProgressIndicator(
+                            value: _progress,
+                            strokeWidth: 18,
+                            strokeCap: StrokeCap.round,
+                            color: primaryBlue,
+                            backgroundColor: Colors.grey.shade300,
+                          ),
                         ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text("$_currentRep",
+                                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text("of $_repsPerSet Reps",
+                                style: const TextStyle(color: Colors.grey, fontSize: 16)),
+                            const SizedBox(height: 8),
+                            Icon(
+                              isPaused ? Icons.play_arrow : Icons.pause,
+                              size: 24,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        )
                       ],
-                    )
-                  ],
+                    );
+                  }
                 ),
 
                 const SizedBox(height: 48),
@@ -152,6 +172,10 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     style: const TextStyle(color: Colors.grey)),
 
                 const SizedBox(height: 24),
+
+                _buildCalibrateButton(),
+
+                const SizedBox(height: 12),
 
                 _buildEmergencyButton(),
 
@@ -183,17 +207,23 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
                     )),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: _statCard(
-                      icon: Icons.straighten,
-                      iconColor: primaryBlue,
-                      title: "Angle Range",
-                      value: (minAngle != null && maxAngle != null) ? "$minAngle° - $maxAngle°" : "Not Set",
-                      bottom: LinearProgressIndicator(
-                        value: _progress,
-                        color: primaryBlue,
-                        backgroundColor: Colors.grey.shade300,
-                      ),
-                    )),
+                        child: ValueListenableBuilder<double>(
+                          valueListenable: SensorDataService().kneeAngle,
+                          builder: (context, angle, _) {
+                            return _statCard(
+                              icon: Icons.straighten,
+                              iconColor: primaryBlue,
+                              title: "Live Knee Angle",
+                              value: "${angle.toStringAsFixed(1)}°",
+                              bottom: LinearProgressIndicator(
+                                value: (angle + 90) / 180.0, // rough normalized progress for UI
+                                color: primaryBlue,
+                                backgroundColor: Colors.grey.shade300,
+                              ),
+                            );
+                          }
+                        )
+                    ),
                   ],
                 ),
 
@@ -304,6 +334,44 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
     );
   }
 
+  /// CALIBRATE BUTTON
+  Widget _buildCalibrateButton() {
+    return Column(
+      children: [
+        const Text("Fully extend your leg before tapping Calibrate.", style: TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () async {
+            if (widget.exercise['sessionId'] != null) {
+              await ApiService.calibrateSession(widget.exercise['sessionId']);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sensors calibrated to 0 degrees.')));
+              }
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: primaryBlue,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text(
+                "CALIBRATE SENSORS",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// EMERGENCY BUTTON
   Widget _buildEmergencyButton() {
     return GestureDetector(
@@ -350,6 +418,9 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
       isEmergencyStopped = true;
       isPaused = false;
     });
+    if (widget.exercise['sessionId'] != null) {
+      ApiService.sendSessionCommand(widget.exercise['sessionId'], {'type': 'stop', 'reason': 'patient_emergency'});
+    }
     _showEmergencyDialog();
   }
 

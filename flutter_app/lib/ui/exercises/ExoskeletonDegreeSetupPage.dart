@@ -163,6 +163,7 @@ class _ExoskeletonDegreeSetupPageState
                           initialMinDegree: _minDegree,
                           initialMaxDegree: _maxDegree,
                           targetReps: _targetReps,
+                          sessionId: widget.sessionChannel,
                         ),
                       ),
                     );

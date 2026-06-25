@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/ui/app_theme.dart';
 import 'package:rehabilitation_app/services/webrtc_service.dart';
+import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/services/sensor_data_service.dart';
 import 'package:rehabilitation_app/ui/doctor/home/DoctorHome.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class MonitorEx extends StatefulWidget {
   final String patientName;
@@ -9,6 +12,7 @@ class MonitorEx extends StatefulWidget {
   final int? initialMinDegree;
   final int? initialMaxDegree;
   final int? targetReps;
+  final String? sessionId;
 
   const MonitorEx({
     Key? key,
@@ -17,6 +21,7 @@ class MonitorEx extends StatefulWidget {
     this.initialMinDegree,
     this.initialMaxDegree,
     this.targetReps,
+    this.sessionId,
   }) : super(key: key);
 
   @override
@@ -31,7 +36,8 @@ class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMix
   int _targetReps = 0;
   int _minDegree = 0;
   int _maxDegree = 90;
-  int _currentAngle = 0; // In a real scenario, this would update via WebSocket/WebRTC
+  int _currentAngle = 0;
+  int _currentReps = 0;
   
   late AnimationController _pulseController;
 
@@ -41,17 +47,37 @@ class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMix
     _minDegree = widget.initialMinDegree ?? 0;
     _maxDegree = widget.initialMaxDegree ?? 90;
     _targetReps = widget.targetReps ?? 0;
-    _currentAngle = _minDegree; // Start at min
     
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+
+    SensorDataService().kneeAngle.addListener(_onKneeAngleChanged);
+    SensorDataService().repCount.addListener(_onRepCountChanged);
+  }
+
+  void _onKneeAngleChanged() {
+    if (mounted && _isMonitoring) {
+      setState(() {
+        _currentAngle = SensorDataService().kneeAngle.value.round();
+      });
+    }
+  }
+
+  void _onRepCountChanged() {
+    if (mounted && _isMonitoring) {
+      setState(() {
+        _currentReps = SensorDataService().repCount.value;
+      });
+    }
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    SensorDataService().kneeAngle.removeListener(_onKneeAngleChanged);
+    SensorDataService().repCount.removeListener(_onRepCountChanged);
     super.dispose();
   }
 
@@ -137,26 +163,45 @@ class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMix
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
+                      // We ensure the RTCVideoView replaces the placeholder when active
                       Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _isMonitoring ? Icons.videocam_outlined : Icons.videocam_off_outlined,
-                              color: Colors.grey, 
-                              size: 48
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _isMonitoring ? 'LIVE FEED' : 'READY TO START',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
+                        child: WebRTCService().isConnected && _isMonitoring
+                            ? ValueListenableBuilder<bool>(
+                                valueListenable: SensorDataService().hasData,
+                                builder: (context, hasData, _) {
+                                  if (!hasData) {
+                                    return Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        CircularProgressIndicator(),
+                                        SizedBox(height: 16),
+                                        Text("Waiting for sensor data...", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                                      ],
+                                    );
+                                  }
+                                  // Fallback text since actual video stream builder is typically handled elsewhere or passed in
+                                  return const Text("Sensor Data Streaming Active", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold));
+                                }
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _isMonitoring ? Icons.videocam_outlined : Icons.videocam_off_outlined,
+                                    color: Colors.grey, 
+                                    size: 48
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _isMonitoring ? 'CONNECTING...' : 'READY TO START',
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
                       ),
                       
                       // Status Indicator
@@ -204,24 +249,70 @@ class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMix
 
               const SizedBox(height: 16),
 
+              // Calibrate Button
+              if (_isMonitoring)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      if (widget.sessionId != null) {
+                        await ApiService.calibrateSession(widget.sessionId!);
+                      }
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Calibration command sent.'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.settings_overscan, color: Colors.white, size: 22),
+                    label: const Text(
+                      'CALIBRATE SENSORS',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 12),
+
               // Emergency Stop Button (Under Live Feed)
               if (_isMonitoring)
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
                       _toggleMonitoring();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Emergency stop activated! Session terminated.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => DoctorHome()),
-                        (route) => false,
-                      );
+                      if (widget.sessionId != null) {
+                        await ApiService.sendSessionCommand(widget.sessionId!, {'type': 'stop', 'reason': 'doctor_emergency'});
+                      }
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Emergency stop activated! Session terminated.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => DoctorHome()),
+                          (route) => false,
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red.shade500,
@@ -250,7 +341,7 @@ class _MonitorExState extends State<MonitorEx> with SingleTickerProviderStateMix
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildCleanMetric('Target Reps', '$_targetReps', Icons.repeat),
+                  _buildCleanMetric('Target Reps', '$_currentReps/$_targetReps', Icons.repeat),
                   Container(width: 1, height: 40, color: Colors.grey[200]),
                   _buildCleanMetric('Set Bounds', '$_minDegree°-$_maxDegree°', Icons.settings_ethernet),
                   Container(width: 1, height: 40, color: Colors.grey[200]),

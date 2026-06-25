@@ -320,6 +320,56 @@ exports.simulateTelemetry = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+// ================= HARDWARE COMMANDS & CALIBRATION =================
+
+exports.calibrateSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const dbRecord = await dbService.getSessionById(sessionId);
+    if (!dbRecord) return res.status(404).json({ message: "Session not found" });
+
+    // Ensure session is active
+    if (dbRecord.status !== 'active') {
+      return res.status(400).json({ message: "Session is not active" });
+    }
+
+    const sensorFusion = require('../services/sensorFusion');
+    const offset = sensorFusion.calibrate(sessionId);
+
+    res.json({ message: "Calibration successful", offset });
+  } catch (error) {
+    console.error("Calibrate Session Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.commandSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { type, payload } = req.body; // e.g. type: 'stop' | 'set_angle'
+    const dbRecord = await dbService.getSessionById(sessionId);
+    if (!dbRecord) return res.status(404).json({ message: "Session not found" });
+
+    // Ensure session is active
+    if (dbRecord.status !== 'active') {
+      return res.status(400).json({ message: "Session is not active" });
+    }
+
+    const deviceId = dbRecord.deviceId;
+    console.log(`[STUB] No ESP listening on cmd topic yet. Publishing command to flexio/${deviceId}/cmd`, type, payload);
+
+    const mqttService = require('../services/mqttService');
+    if (mqttService.client) {
+      mqttService.client.publish(`flexio/${deviceId}/cmd`, JSON.stringify({ type, ...payload }));
+    }
+
+    res.json({ message: "Command dispatched" });
+  } catch (error) {
+    console.error("Command Session Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // ================= AI REPORT WEBHOOK =================
 
 exports.receiveAiReport = async (req, res) => {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/services/sensor_data_service.dart';
 
 class StabilizationExerciseScreen extends StatefulWidget {
   final Map<String, dynamic> exercise;
@@ -22,29 +23,25 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
   void initState() {
     super.initState();
     targetAngle = widget.exercise['holdAngle'] as int? ?? 90; // Default to 90 if not set
-    _startSimulatedHardware();
+    SensorDataService().kneeAngle.addListener(_onKneeAngleChanged);
   }
 
-  void _startSimulatedHardware() {
-    // Simulate receiving data from hardware, incrementing the angle every 200ms
-    _timer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
-      if (currentAngle < targetAngle) {
-        setState(() {
-          currentAngle++;
-        });
-      } else {
-        // Target reached!
-        setState(() {
+  void _onKneeAngleChanged() {
+    if (mounted) {
+      setState(() {
+        currentAngle = SensorDataService().kneeAngle.value.round();
+        if ((currentAngle - targetAngle).abs() <= 5) {
           isTargetReached = true;
-        });
-        _timer?.cancel();
-      }
-    });
+        } else {
+          isTargetReached = false;
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    SensorDataService().kneeAngle.removeListener(_onKneeAngleChanged);
     super.dispose();
   }
 
@@ -96,45 +93,61 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
             const SizedBox(height: 40),
 
             /// GAUGE OR VISUAL FEEDBACK
-            Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 250,
-                    height: 250,
-                    child: CircularProgressIndicator(
-                      value: progress,
-                      strokeWidth: 20,
-                      backgroundColor: Colors.grey.shade300,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF4A90E2),
-                      ),
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
+            ValueListenableBuilder<bool>(
+              valueListenable: SensorDataService().hasData,
+              builder: (context, hasData, _) {
+                if (!hasData) {
+                  return Column(
                     children: [
-                      Text(
-                        '$currentAngle°',
-                        style: TextStyle(
-                          fontSize: 60,
-                          fontWeight: FontWeight.bold,
-                          color: isTargetReached ? const Color(0xFF4A90E2) : Colors.black87,
+                      const SizedBox(height: 50),
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      const Text("Waiting for sensor data...", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                      const SizedBox(height: 50),
+                    ],
+                  );
+                }
+                return Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 250,
+                        height: 250,
+                        child: CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 20,
+                          backgroundColor: Colors.grey.shade300,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF4A90E2),
+                          ),
                         ),
                       ),
-                      Text(
-                        'Target: $targetAngle°',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$currentAngle°',
+                            style: TextStyle(
+                              fontSize: 60,
+                              fontWeight: FontWeight.bold,
+                              color: isTargetReached ? const Color(0xFF4A90E2) : Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'Target: $targetAngle°',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                );
+              }
             ),
 
             const SizedBox(height: 60),
@@ -208,6 +221,130 @@ class _StabilizationExerciseScreenState extends State<StabilizationExerciseScree
                   ),
                 ),
               ),
+
+            const SizedBox(height: 20),
+
+            ValueListenableBuilder<double>(
+              valueListenable: SensorDataService().emg1,
+              builder: (context, emgValue, _) {
+                if (emgValue > 20) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: BorderRadius.circular(8)),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.warning, color: Colors.orange),
+                          SizedBox(width: 8),
+                          Expanded(child: Text("Muscle activity detected! Keep your leg still.", style: TextStyle(color: Colors.orange))),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }
+            ),
+
+            const SizedBox(height: 20),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildCalibrateButton(),
+            ),
+
+            const SizedBox(height: 12),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildEmergencyButton(),
+            ),
+
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// CALIBRATE BUTTON
+  Widget _buildCalibrateButton() {
+    return Column(
+      children: [
+        const Text("Fully extend your leg before tapping Calibrate.", style: TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () async {
+            if (widget.exercise['sessionId'] != null) {
+              await ApiService.calibrateSession(widget.exercise['sessionId']);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sensors calibrated to 0 degrees.')));
+              }
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4A90E2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text(
+                "CALIBRATE SENSORS",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// EMERGENCY BUTTON
+  Widget _buildEmergencyButton() {
+    return GestureDetector(
+      onTap: () async {
+        if (widget.exercise['sessionId'] != null) {
+          await ApiService.sendSessionCommand(widget.exercise['sessionId'], {'type': 'stop', 'reason': 'patient_emergency'});
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Emergency Stop Activated!')));
+          Navigator.pop(context);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Text(
+              "EMERGENCY STOP",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                letterSpacing: 1.2,
+              ),
+            ),
           ],
         ),
       ),

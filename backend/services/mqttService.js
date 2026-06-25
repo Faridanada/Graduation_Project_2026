@@ -14,6 +14,7 @@ class MqttService {
     this.client = null;
     this.deviceCache = new Map(); // deviceId -> { patientId, lastFetched }
     this.CACHE_TTL = 60000; // 60 seconds
+    this._lastBroadcasts = new Map();
   }
 
   init() {
@@ -150,10 +151,24 @@ class MqttService {
 
       const activeSession = sessionBuffer.getActiveSessionForDevice(deviceId);
       if (activeSession) {
-        liveSocket.broadcast(activeSession.sessionId, {
-          kind: 'bundle',
-          data: payload,
-        });
+        // Process through sensor fusion
+        const fusionData = require('./sensorFusion').processBundle(activeSession.sessionId, payload);
+        
+        // Throttle broadcasts to ~10Hz (100ms)
+        const now = Date.now();
+        const lastBroadcast = this._lastBroadcasts.get(activeSession.sessionId) || 0;
+        if (now - lastBroadcast >= 100) {
+          this._lastBroadcasts.set(activeSession.sessionId, now);
+          
+          liveSocket.broadcast(activeSession.sessionId, {
+            kind: 'bundle',
+            data: {
+              ...payload,
+              kneeAngle: fusionData.kneeAngle,
+              repCount: fusionData.repCount
+            },
+          });
+        }
       }
       return;
     }

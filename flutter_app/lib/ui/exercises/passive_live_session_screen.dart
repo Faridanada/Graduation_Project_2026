@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
+import 'package:rehabilitation_app/services/sensor_data_service.dart';
 import 'package:rehabilitation_app/ui/exercises/session_summary_screen.dart';
 
 class PassiveLiveSessionScreen extends StatefulWidget {
@@ -30,29 +31,25 @@ class _PassiveLiveSessionScreenState
     if (widget.exercise != null) {
       _repsTotal = widget.exercise!['repsTotal'] ?? 15;
     }
-    _startSimulation();
+    SensorDataService().repCount.addListener(_onRepCountChanged);
+  }
+
+  void _onRepCountChanged() {
+    if (!isPaused && !isStopped && !isEmergencyStopped && mounted) {
+      setState(() {
+        _repsCompleted = SensorDataService().repCount.value;
+        if (_repsCompleted >= _repsTotal && _repsTotal > 0) {
+          _repsCompleted = _repsTotal;
+          _endSession(); // Automatically end when reps are done
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    SensorDataService().repCount.removeListener(_onRepCountChanged);
     super.dispose();
-  }
-
-  void _startSimulation() {
-    // Simulate reps incrementing every 3 seconds for demo purposes
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (!isPaused && !isStopped && !isEmergencyStopped) {
-        setState(() {
-          if (_repsCompleted < _repsTotal) {
-            _repsCompleted++;
-          } else {
-            timer.cancel();
-            _endSession(); // Automatically end when reps are done
-          }
-        });
-      }
-    });
   }
 
   double get progress => _repsTotal > 0 ? _repsCompleted / _repsTotal : 0;
@@ -98,37 +95,53 @@ class _PassiveLiveSessionScreenState
 
                 const SizedBox(height: 20),
 
-                /// RING
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      height: 180,
-                      width: 180,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 14,
-                        strokeCap: StrokeCap.round,
-                        color: primaryBlue,
-                        backgroundColor: Colors.grey.shade300,
-                      ),
-                    ),
-                    Column(
+                /// WAITING STATE & RING
+                ValueListenableBuilder<bool>(
+                  valueListenable: SensorDataService().hasData,
+                  builder: (context, hasData, _) {
+                    if (!hasData) {
+                      return Column(
+                        children: [
+                          const SizedBox(height: 50),
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          const Text("Waiting for sensor data...", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          const SizedBox(height: 50),
+                        ],
+                      );
+                    }
+                    return Stack(
+                      alignment: Alignment.center,
                       children: [
-                        Text("$_repsCompleted",
-                            style: const TextStyle(
-                                fontSize: 28, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text("of $_repsTotal Reps",
-                            style: const TextStyle(color: Colors.grey)),
-                        const SizedBox(height: 6),
-                        Icon(
-                          isPaused ? Icons.play_arrow : Icons.pause,
-                          size: 18,
+                        SizedBox(
+                          height: 180,
+                          width: 180,
+                          child: CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 14,
+                            strokeCap: StrokeCap.round,
+                            color: primaryBlue,
+                            backgroundColor: Colors.grey.shade300,
+                          ),
                         ),
+                        Column(
+                          children: [
+                            Text("$_repsCompleted",
+                                style: const TextStyle(
+                                    fontSize: 28, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text("of $_repsTotal Reps",
+                                style: const TextStyle(color: Colors.grey)),
+                            const SizedBox(height: 6),
+                            Icon(
+                              isPaused ? Icons.play_arrow : Icons.pause,
+                              size: 18,
+                            ),
+                          ],
+                        )
                       ],
-                    )
-                  ],
+                    );
+                  }
                 ),
 
                 const SizedBox(height: 18),
@@ -147,6 +160,31 @@ class _PassiveLiveSessionScreenState
                     style: const TextStyle(color: Colors.grey)),
 
                 const SizedBox(height: 16),
+                
+                ValueListenableBuilder<double>(
+                  valueListenable: SensorDataService().emg1,
+                  builder: (context, emgValue, _) {
+                    if (emgValue > 20) { // Arbitrary threshold for active muscle
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: BorderRadius.circular(8)),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.warning, color: Colors.orange),
+                            SizedBox(width: 8),
+                            Expanded(child: Text("Muscle activity detected! Relax your leg for passive motion.", style: TextStyle(color: Colors.orange))),
+                          ],
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }
+                ),
+
+                _buildCalibrateButton(),
+
+                const SizedBox(height: 12),
 
                 _buildEmergencyButton(),
 
@@ -344,7 +382,48 @@ class _PassiveLiveSessionScreenState
       isEmergencyStopped = true;
       isPaused = false;
     });
+    if (widget.exercise != null && widget.exercise!['sessionId'] != null) {
+      ApiService.sendSessionCommand(widget.exercise!['sessionId'], {'type': 'stop', 'reason': 'patient_emergency'});
+    }
     _showEmergencyDialog();
+  }
+
+  /// CALIBRATE BUTTON
+  Widget _buildCalibrateButton() {
+    return Column(
+      children: [
+        const Text("Fully extend your leg before tapping Calibrate.", style: TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () async {
+            if (widget.exercise != null && widget.exercise!['sessionId'] != null) {
+              await ApiService.calibrateSession(widget.exercise!['sessionId']);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sensors calibrated to 0 degrees.')));
+              }
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: primaryBlue,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text(
+                "CALIBRATE SENSORS",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   /// TOGGLE PAUSE

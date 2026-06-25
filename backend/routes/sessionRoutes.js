@@ -22,6 +22,8 @@ router.get('/patient/:patientId', sessionController.getPatientSessions);
 router.get('/:sessionId', sessionController.getSessionDetails);
 router.post('/:sessionId/simulate', sessionController.simulateTelemetry);
 router.get('/:sessionId/waveform', sessionController.getSessionWaveformUrls);
+router.post('/:sessionId/calibrate', sessionController.calibrateSession);
+router.post('/:sessionId/command', sessionController.commandSession);
 
 // Reports
 router.get('/:sessionId/report', reportController.getReport);

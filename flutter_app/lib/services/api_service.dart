@@ -504,6 +504,35 @@ class ApiService {
     return false;
   }
 
+  static Future<bool> calibrateSession(String sessionId) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/sessions/$sessionId/calibrate'),
+        headers: _headers(token),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {}
+    return false;
+  }
+
+  static Future<bool> sendSessionCommand(String sessionId, Map<String, dynamic> payload) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/sessions/$sessionId/command'),
+        headers: _headers(token),
+        body: jsonEncode(payload),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {}
+    return false;
+  }
+
   static Future<Map<String, dynamic>?> startSession({String? exerciseId}) async {
     final token = await _getToken();
     if (token == null) return null;
