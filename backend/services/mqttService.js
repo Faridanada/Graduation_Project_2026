@@ -82,21 +82,39 @@ class MqttService {
     if (!deviceId) return null;
 
     const cached = this.deviceCache.get(deviceId);
-    if (cached && (Date.now() - cached.lastFetched) < this.CACHE_TTL) {
+    const now = Date.now();
+    if (cached && cached.expiresAt > now) {
       return cached.patientId;
     }
 
+    let patientId = null;
     try {
-      const device = await dbService.getDeviceById(deviceId);
-      if (device && device.patientId) {
-        this.deviceCache.set(deviceId, { patientId: device.patientId, lastFetched: Date.now() });
-        return device.patientId;
+      const sessions = await dbService.findActiveSessionsByDevice(deviceId);
+      if (sessions && sessions.length > 0) {
+        // Take the most recently started, in case of races
+        const latest = sessions.reduce(
+          (a, b) => (a.startTime > b.startTime ? a : b)
+        );
+        patientId = latest.patientId;
       }
     } catch (err) {
-      console.error(`[MQTT] Error fetching device ${deviceId}:`, err);
+      console.warn(`[MQTT] getPatientIdForDevice DB error: ${err.message}`);
+      return null;
     }
-    return null;
+
+    this.deviceCache.set(deviceId, {
+      patientId,
+      expiresAt: now + 5000,
+    });
+    return patientId;
   }
+
+  invalidateDeviceCache(deviceId) {
+    if (deviceId) {
+      this.deviceCache.delete(deviceId);
+    }
+  }
+
 
   async handleMessage(topic, payload) {
     // Topic format: flexio/{deviceId}/{kind}

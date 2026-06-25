@@ -56,10 +56,12 @@ exports.startSession = async (req, res) => {
       }
     }
 
-    // Verify device belongs to patient
+    // Allow any patient to start a session with a shared device
+    // (Previous ownership check was removed here per 'shared device' requirements)
     const device = await dbService.getDeviceById(deviceId);
-    if (!device || device.patientId !== patientId) {
-      return res.status(403).json({ message: "Device not found or not assigned to you" });
+    if (!device) {
+      // It's okay if device doesn't exist in Devices table for test devices
+      console.log(`[SessionController] Device ${deviceId} not found in Devices table, allowing anyway for shared use.`);
     }
 
     const sessionId = `sess_${uuidv4()}`;
@@ -84,7 +86,13 @@ exports.startSession = async (req, res) => {
     // In-memory buffer
     sessionBuffer.startSession(sessionId, patientId, exerciseId, deviceId);
 
+    // --- Added for Shared Device Routing ---
     const mqttService = require('../services/mqttService');
+    if (typeof mqttService.invalidateDeviceCache === 'function') {
+      mqttService.invalidateDeviceCache(deviceId);
+    }
+    // ---------------------------------------
+    
     if (mqttService.client) {
       mqttService.client.publish(`flexio/${deviceId}/cmd`, JSON.stringify({ type: 'start' }));
       console.log(`[MQTT] Published start command to flexio/${deviceId}/cmd`);
@@ -164,7 +172,13 @@ exports.endSession = async (req, res) => {
     triggerReportGeneration(sessionId, patientId, s3KeyPrefix)
       .catch(err => console.warn('[report] trigger failed:', err.message));
 
+    // --- Added for Shared Device Routing ---
     const mqttService = require('../services/mqttService');
+    if (typeof mqttService.invalidateDeviceCache === 'function') {
+      mqttService.invalidateDeviceCache(dbRecord.deviceId);
+    }
+    // ---------------------------------------
+    
     if (mqttService.client) {
       mqttService.client.publish(`flexio/${dbRecord.deviceId}/cmd`, JSON.stringify({ type: 'stop' }));
       console.log(`[MQTT] Published stop command to flexio/${dbRecord.deviceId}/cmd`);
