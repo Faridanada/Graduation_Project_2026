@@ -765,6 +765,15 @@ class _RecoveryPlanScreenState extends State<RecoveryPlanScreen> {
         final response = await ApiService.startSession(exerciseId: exercise['id']);
         if (response != null && response['sessionId'] != null) {
           exercise['sessionId'] = response['sessionId'];
+        } else {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Failed to start session. Please log out and log in again."),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
         }
 
         if (exercise['exerciseType'] == 'Passive-Monitored' && _patientProfile?['assignedDoctorId'] != null) {

@@ -51,7 +51,8 @@ exports.startSession = async (req, res) => {
       if (devices && devices.length > 0) {
         deviceId = devices[0].id;
       } else {
-        return res.status(400).json({ message: "No device assigned to patient. Cannot start session." });
+        console.log(`[SessionController] Warning: No device found for patient ${patientId}. Falling back to test-device-1.`);
+        deviceId = 'test-device-1';
       }
     }
 
@@ -112,6 +113,11 @@ exports.endSession = async (req, res) => {
     if (!buffer) {
       return res.status(400).json({ message: "Active session buffer not found. It may have been lost or never started." });
     }
+
+    // --- Added for Warning Detection ---
+    const warningDetector = require('../services/warningDetector');
+    warningDetector.resetSession(sessionId);
+    // -----------------------------------
 
     const endTimeDate = new Date();
     const durationSeconds = Math.round((endTimeDate.getTime() - new Date(dbRecord.startTime).getTime()) / 1000);

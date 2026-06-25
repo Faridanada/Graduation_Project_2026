@@ -27,11 +27,13 @@ class WebRTCService {
   
   bool get isConnected => _socket != null && _socket!.readyState == WebSocket.open;
 
-  Future<void> initConnection(String sessionId, {required bool isPatient}) async {
+  Future<void> initConnection(String sessionId, {required bool isPatient, bool initMedia = true}) async {
     _sessionId = sessionId;
 
     final token = ApiService.currentToken ?? '';
     final wsUrl = ApiService.baseUrl.replaceFirst('http', 'ws').replaceFirst('/api', '/ws/live?token=$token');
+    
+    print('WebRTCService: Connecting to $wsUrl for session $sessionId');
 
     try {
       _socket = await WebSocket.connect(wsUrl);
@@ -48,9 +50,9 @@ class WebRTCService {
         print('WebSocket closed');
       });
 
-      // We only want to init WebRTC media automatically if this is not just a signaling-only connection,
-      // but for now we'll keep the existing behavior to avoid breaking current functionality.
-      await _initWebRTC(isPatient);
+      if (initMedia) {
+        await _initWebRTC(isPatient);
+      }
 
     } catch (e) {
       print('WebSocket error: $e');

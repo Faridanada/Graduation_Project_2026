@@ -35,6 +35,11 @@ app.get("/", (req, res) => {
   res.send("Backend running ✅");
 });
 
+app.get("/api/debug/sessions", (req, res) => {
+  const sessionBuffer = require('./services/sessionBuffer');
+  res.json({ sessions: Array.from(sessionBuffer._deviceToSession.entries()) });
+});
+
 async function start() {
   try {
     await dbService.ready;

@@ -533,22 +533,34 @@ class ApiService {
     return false;
   }
 
-  static Future<Map<String, dynamic>?> startSession({String? exerciseId}) async {
-    final token = await _getToken();
+  static Future<Map<String, dynamic>?> startSession({
+    required String exerciseId,
+    String? deviceId,
+  }) async {
+    final token = currentToken;
     if (token == null) return null;
+
+    final url = '$baseUrl/sessions/start';
+    print('ApiService: startSession calling $url');
 
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/sessions/start'),
+        Uri.parse(url),
         headers: _headers(token),
         body: jsonEncode({
-          if (exerciseId != null) 'exerciseId': exerciseId,
+          'exerciseId': exerciseId,
+          if (deviceId != null) 'deviceId': deviceId,
         }),
       );
-      if (response.statusCode == 201) {
+      print('ApiService: startSession response status: ${response.statusCode}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
+      } else {
+        print('ApiService: startSession error body: ${response.body}');
       }
-    } catch (_) {}
+    } catch (e) {
+      print('ApiService: startSession exception: $e');
+    }
     return null;
   }
 

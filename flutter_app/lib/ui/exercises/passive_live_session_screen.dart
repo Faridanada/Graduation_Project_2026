@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rehabilitation_app/services/api_service.dart';
 import 'package:rehabilitation_app/services/sensor_data_service.dart';
+import 'package:rehabilitation_app/services/webrtc_service.dart';
 import 'package:rehabilitation_app/ui/exercises/session_summary_screen.dart';
 
 class PassiveLiveSessionScreen extends StatefulWidget {
@@ -22,6 +23,8 @@ class _PassiveLiveSessionScreenState
   bool isEmergencyStopped = false;
 
   Timer? _timer;
+  Timer? _waitingTimer;
+  bool _showWaitingError = false;
   int _repsCompleted = 0;
   int _repsTotal = 15;
 
@@ -30,8 +33,20 @@ class _PassiveLiveSessionScreenState
     super.initState();
     if (widget.exercise != null) {
       _repsTotal = widget.exercise!['repsTotal'] ?? 15;
+      final sessionId = widget.exercise!['sessionId'];
+      if (sessionId != null) {
+        WebRTCService().initConnection(sessionId, isPatient: true, initMedia: false);
+      }
     }
     SensorDataService().repCount.addListener(_onRepCountChanged);
+
+    _waitingTimer = Timer(const Duration(seconds: 10), () {
+      if (!SensorDataService().hasData.value && mounted) {
+        setState(() {
+          _showWaitingError = true;
+        });
+      }
+    });
   }
 
   void _onRepCountChanged() {
@@ -48,7 +63,9 @@ class _PassiveLiveSessionScreenState
 
   @override
   void dispose() {
+    _waitingTimer?.cancel();
     SensorDataService().repCount.removeListener(_onRepCountChanged);
+    WebRTCService().dispose();
     super.dispose();
   }
 
@@ -101,12 +118,21 @@ class _PassiveLiveSessionScreenState
                   builder: (context, hasData, _) {
                     if (!hasData) {
                       return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const SizedBox(height: 50),
-                          const CircularProgressIndicator(),
+                          if (!_showWaitingError) const CircularProgressIndicator(),
                           const SizedBox(height: 16),
-                          const Text("Waiting for sensor data...", style: TextStyle(color: Colors.grey, fontSize: 16)),
-                          const SizedBox(height: 50),
+                          Text(
+                            _showWaitingError 
+                                ? "No sensor data received.\nPlease ensure the hardware simulator is running and you have logged in again." 
+                                : "Waiting for sensor data...", 
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: _showWaitingError ? Colors.red : Colors.grey, 
+                              fontSize: 16,
+                              fontWeight: _showWaitingError ? FontWeight.bold : FontWeight.normal
+                            )
+                          ),
                         ],
                       );
                     }

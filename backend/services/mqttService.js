@@ -154,12 +154,18 @@ class MqttService {
         // Process through sensor fusion
         const fusionData = require('./sensorFusion').processBundle(activeSession.sessionId, payload);
         
+        // --- Added for Warning Detection ---
+        const warningDetector = require('./warningDetector');
+        warningDetector.processReading(activeSession.sessionId, payload);
+        // -----------------------------------
+
         // Throttle broadcasts to ~10Hz (100ms)
         const now = Date.now();
         const lastBroadcast = this._lastBroadcasts.get(activeSession.sessionId) || 0;
         if (now - lastBroadcast >= 100) {
           this._lastBroadcasts.set(activeSession.sessionId, now);
           
+          // console.log(`[MQTT] Broadcasting bundle to session ${activeSession.sessionId}`);
           liveSocket.broadcast(activeSession.sessionId, {
             kind: 'bundle',
             data: {
@@ -169,6 +175,8 @@ class MqttService {
             },
           });
         }
+      } else {
+        // console.log(`[MQTT] Ignored packet: No active session for device ${deviceId}`);
       }
       return;
     }

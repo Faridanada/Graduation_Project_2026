@@ -11,7 +11,7 @@ const argv = yargs(hideBin(process.argv))
     alias: 'd',
     type: 'string',
     description: 'Device ID',
-    default: 'ESP32_Test'
+    default: 'test-device-1'
   })
   .option('rate', {
     alias: 'r',

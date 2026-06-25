@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 
+import 'package:rehabilitation_app/services/api_service.dart';
+
 class AuthService {
-  static const String baseUrl = "https://flexio-rehab.duckdns.org/api";
+  static String get baseUrl => ApiService.baseUrl;
 
   // REGISTER
   static Future<Map<String, dynamic>> register({
