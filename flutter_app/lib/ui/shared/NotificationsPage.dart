@@ -198,8 +198,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
           }
         } else if (type.contains('Recovery')) {
           if (_userRole == 'doctor') {
+            final metadata = notif['metadata'] as Map<String, dynamic>?;
+            if (metadata != null && metadata['patientId'] != null) {
+              final pId = metadata['patientId'].toString();
+              
+              // We have the exact patient ID from metadata!
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PatientProfilePage(
+                    patientId: pId,
+                    patientName: 'Patient', // It will fetch details on the next page
+                  ),
+                ),
+              );
+              return;
+            }
+
             final msg = notif['message'] ?? '';
-            final nameMatch = RegExp(r'^(.*?)\s+has requested').firstMatch(msg);
+            final nameMatch = RegExp(r'^(.*?)\s+(has requested|has completed)').firstMatch(msg);
             
             if (nameMatch != null) {
               final pName = nameMatch.group(1);

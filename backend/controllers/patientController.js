@@ -350,7 +350,8 @@ const patientController = {
       await dbService.createNotification(
         patient.assignedDoctorId,
         "Recovery Plan Request",
-        `${patientName} has requested you to set up a recovery plan.`
+        `${patientName} has requested you to set up a recovery plan.`,
+        { patientId: patientId, type: "recovery_plan_request" }
       );
 
       res.status(200).json({ statusCode: 200, message: 'Reminder sent to doctor' });
@@ -425,7 +426,8 @@ const patientController = {
             await dbService.createNotification(
               patient.assignedDoctorId,
               "Recovery Phase Completed",
-              `${patient.name || 'Your patient'} has completed their current phase and requested approval to start the next phase.`
+              `${patient.name || 'Your patient'} has completed their current phase and requested approval to start the next phase.`,
+              { patientId: patientId, type: "phase_approval_request" }
             );
           }
         }

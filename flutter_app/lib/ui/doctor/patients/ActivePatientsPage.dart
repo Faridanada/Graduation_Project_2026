@@ -38,12 +38,16 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
                     'phone': p['phone'] ?? p['profileData']?['phone'] ?? 'N/A',
                     'injuryType': p['injuryType'] ?? p['profileData']?['injuryType'] ?? 'Unknown',
                     'progress': p['progress'] ?? 0,
-                    'status': (p['hasPlan'] == true) 
-                        ? 'On Track'
-                        : 'New',
-                    'statusColor': (p['hasPlan'] == true)
-                        ? Colors.teal
-                        : Colors.blue,
+                    'status': (p['pendingPhaseApproval'] == true)
+                        ? 'Action Needed'
+                        : (p['hasPlan'] == true) 
+                            ? 'On Track'
+                            : 'New',
+                    'statusColor': (p['pendingPhaseApproval'] == true)
+                        ? Colors.orange
+                        : (p['hasPlan'] == true)
+                            ? Colors.teal
+                            : Colors.blue,
                     'createdAt': p['createdAt'] ?? '',
                   })
               .toList();
@@ -194,17 +198,24 @@ class _ActivePatientsPageState extends State<ActivePatientsPage> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _buildFilterChip('All'),
                 const SizedBox(width: 8),
+                _buildFilterChip('Action Needed'),
+                const SizedBox(width: 8),
+                _buildFilterChip('New'),
+                const SizedBox(width: 8),
                 _buildFilterChip('On Track'),
-                const Spacer(),
+                const SizedBox(width: 16),
                 _buildSortButton(),
               ],
             ),
           ),
+        ),
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())

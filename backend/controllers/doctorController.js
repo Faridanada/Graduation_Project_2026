@@ -27,20 +27,24 @@ const doctorController = {
                     if (plans && plans.length > 0) {
                         const activePlan = plans[0]; // Assuming first is most recent/active
                         const phases = activePlan.phases || [];
+                        const pendingApproval = phases.some(p => p.status === 'Pending Approval');
                         if (phases.length > 0) {
                             patient.progress = await dbService.getPlanProgress(activePlan.id);
                         } else {
                             patient.progress = await dbService.getPlanProgress(activePlan.id);
                         }
                         patient.hasPlan = true;
+                        patient.pendingPhaseApproval = pendingApproval;
                     } else {
                         patient.progress = 0;
                         patient.hasPlan = false;
+                        patient.pendingPhaseApproval = false;
                     }
                 } catch(e) {
                     console.error('Error fetching plan for progress:', e);
                     patient.progress = 0;
                     patient.hasPlan = false;
+                    patient.pendingPhaseApproval = false;
                 }
                 return patient;
             }));
