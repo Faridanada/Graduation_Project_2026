@@ -1,6 +1,6 @@
 const THRESHOLD = 10; // Minimum angle change to count as a rep
 const DEBOUNCE_TIME = 1000; // 1 second debounce for rep counting
-const ALPHA = 0.98; // Complementary filter constant
+const ALPHA = 0.0; // Complementary filter constant
 
 class SensorFusion {
   constructor() {
