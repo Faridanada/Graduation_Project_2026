@@ -22,12 +22,18 @@ def generate_llm_summary(payload: dict, model: Optional[str] = None) -> Optional
         client = OpenAI(api_key=api_key)
         selected_model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         prompt = (
-            "You are a rehabilaitation and physical therapy analysis assistant. "
+            "You are a rehabilitation and physical therapy analysis assistant. "
             "Analyze the following session metrics and classifier output for a clinician. "
-            "Focus on movement quality, fatigue, asymmetry, safety risks, and potential "
-            "recommendations for follow-up or exercise modification. "
+            "Use the knee angle values produced by the compute_metrics() function and its _knee_angle_series() helper, rather than raw IMU sensor readings. "
+            "Do not report raw accelerometer or gyroscope values. "
             "Do not diagnose the patient. Keep the response concise, evidence-based, and professional. "
-            "Make it in the form of a continuous report paragraph explaining what is going on. "
+            "If a classifier label is present, describe form quality without mentioning confidence or probability. "
+            "Interpret the angle using the following small helper logic: "
+            "function computeKneeAngle(ax1, ay1, az1, gx1, ax2, ay2, az2, gx2, dt) { "
+            "const thighAngle = Math.atan2(ay1, az1) * (180 / Math.PI); "
+            "const calfAngle = Math.atan2(ay2, az2) * (180 / Math.PI); "
+            "return thighAngle - calfAngle; "
+            "} "
             f"Payload:\n{json.dumps(payload, indent=2)}"
         )
         response = client.chat.completions.create(
