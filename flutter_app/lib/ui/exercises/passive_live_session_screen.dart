@@ -21,6 +21,8 @@ class _PassiveLiveSessionScreenState
   bool isPaused = false;
   bool isStopped = false;
   bool isEmergencyStopped = false;
+  bool isCalibrated = false;
+  bool hasStartedMotor = false;
 
   Timer? _timer;
   Timer? _waitingTimer;
@@ -195,16 +197,16 @@ class _PassiveLiveSessionScreenState
                 const SizedBox(height: 18),
 
                 Text(
-                  isEmergencyStopped ? "EMERGENCY STOPPED" : (isStopped ? "Session Stopped" : (isPaused ? "Session Paused" : "Device moving your leg")),
+                  isEmergencyStopped ? "EMERGENCY STOPPED" : (isStopped ? "Session Stopped" : (!hasStartedMotor ? (!isCalibrated ? "Waiting for Calibration" : "Ready to Start") : (isPaused ? "Session Paused" : "Device moving your leg"))),
                     style: TextStyle(
-                        color: isEmergencyStopped ? Colors.red : (isStopped ? Colors.red : (isPaused ? Colors.orange : primaryBlue)),
+                        color: isEmergencyStopped ? Colors.red : (isStopped ? Colors.red : (!hasStartedMotor ? Colors.orange : (isPaused ? Colors.orange : primaryBlue))),
                         fontWeight: FontWeight.bold,
                         fontSize: 16)),
 
                 const SizedBox(height: 6),
 
                 Text(
-                  isEmergencyStopped ? "Doctor has been alerted." : (isStopped ? "Press Restart to begin again." : (isPaused ? "Take your time." : "Please relax and breathe normally.")),
+                  isEmergencyStopped ? "Doctor has been alerted." : (isStopped ? "Press Restart to begin again." : (!hasStartedMotor ? (!isCalibrated ? "Please fully extend your leg and calibrate." : "Press Start Passive Motion to begin.") : (isPaused ? "Take your time." : "Please relax and breathe normally."))),
                     style: const TextStyle(color: Colors.grey)),
 
                 const SizedBox(height: 16),
@@ -254,20 +256,39 @@ class _PassiveLiveSessionScreenState
                 const SizedBox(height: 14),
 
                 /// BUTTONS
-                Row(
-                  children: [
-                    Expanded(
-                        child: _button(
-                            isPaused ? "Resume" : "Pause", 
-                            isPaused ? Icons.play_arrow : Icons.pause, 
-                            isPaused ? primaryBlue : primaryBlue, 
-                            _togglePause)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                        child: _button(
-                            "Stop", Icons.stop, Colors.red, _showStopDialog)),
-                  ],
-                ),
+                if (!hasStartedMotor)
+                  _button(
+                      "Start Passive Motion",
+                      Icons.play_circle_fill,
+                      isCalibrated ? Colors.green : Colors.grey,
+                      () {
+                        if (!isCalibrated) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please calibrate sensors first.')));
+                          return;
+                        }
+                        if (widget.exercise != null && widget.exercise!['sessionId'] != null) {
+                          ApiService.sendSessionCommand(widget.exercise!['sessionId'], {'type': 'start_motor', 'mode': 'passive'});
+                        }
+                        setState(() {
+                          hasStartedMotor = true;
+                          isPaused = false;
+                        });
+                      })
+                else
+                  Row(
+                    children: [
+                      Expanded(
+                          child: _button(
+                              isPaused ? "Resume" : "Pause", 
+                              isPaused ? Icons.play_arrow : Icons.pause, 
+                              isPaused ? primaryBlue : primaryBlue, 
+                              _togglePause)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: _button(
+                              "Stop", Icons.stop, Colors.red, _showStopDialog)),
+                    ],
+                  ),
 
                 const SizedBox(height: 20),
               ],
@@ -447,6 +468,9 @@ class _PassiveLiveSessionScreenState
             if (widget.exercise != null && widget.exercise!['sessionId'] != null) {
               await ApiService.calibrateSession(widget.exercise!['sessionId']);
               if (mounted) {
+                setState(() {
+                  isCalibrated = true;
+                });
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sensors calibrated to 0 degrees.')));
               }
             }
